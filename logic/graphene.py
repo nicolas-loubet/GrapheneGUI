@@ -64,8 +64,82 @@ class Graphene:
         self.oxide_coords = []
         return ox
     
+    def remove_atom_oxide(self, ox):
+        self.oxide_coords.remove(ox)
+    
     def add_oxydation_to_list_of_carbon(self, list_carbons, z_mode, prob_oh, prob_o):
-        pass
+        i_atom = self.get_number_atoms()
+        for carbon in list_carbons:
+            rand = random.random()*100
+            x,y,z = carbon[:3]
+            if rand <= prob_oh:
+                i_atom += 1
+                self.add_oxide(x,y,z,"OO",i_atom)
+            else:
+                i_atom += 1
+                self.add_oxide(x,y,z,"OE",i_atom)
+
+    def carbons_adjacent(self, carbon_center):
+        adjacent_carbons = []
+        min_dist= float("inf")
+        tolerance= .01
+        x,y= carbon_center[:2]
+
+        for carbon in self.carbon_coords:
+            if carbon == carbon_center: continue
+            x2,y2= carbon[:2]
+            d= self.distance_2D(x,y,x2,y2)
+            if d < min_dist-tolerance:
+                min_dist= d
+                adjacent_carbons= [carbon]
+            elif d <= min_dist+tolerance and d >= min_dist-tolerance:
+                adjacent_carbons.append(carbon)
+        return adjacent_carbons
+    
+    def get_nearest_carbon(self, x, y):
+        min_dist= float("inf")
+        nearest_carbon= None
+        for carbon in self.carbon_coords:
+            x2,y2= carbon[:2]
+            d= self.distance_2D(x,y,x2,y2)
+            if d < min_dist:
+                min_dist= d
+                nearest_carbon= carbon
+        return nearest_carbon
+
+    def is_position_occupied(self, x, y, z, threshold=0.1):
+        for ox in self.get_oxide_coords():
+            ox_x, ox_y, ox_z = ox[:3]
+            dist = self.distance_3D(x, y, z, ox_x, ox_y, ox_z)
+            if dist < threshold:
+                return True
+        return False
+    
+    def get_oxides_for_carbon(self, carbon_center):
+        oxides_to_remove = []
+        x, y = carbon_center[:2]
+        
+        min_dist= float("inf")
+        for carbon in self.carbon_coords:
+            if carbon == carbon_center: continue
+            x2,y2= carbon[:2]
+            d= self.distance_2D(x,y,x2,y2)
+            if d < min_dist:
+                min_dist= d
+        
+        for ox in self.oxide_coords:
+            ox_x, ox_y = ox[:2]
+            dist = self.distance_2D(x, y, ox_x, ox_y)
+            if dist < min_dist:
+                oxides_to_remove.append(ox)
+        
+        return oxides_to_remove
+
+    def distance_2D(self, x1, y1, x2, y2):
+        return np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+    
+    def distance_3D(self, x1, y1, z1, x2, y2, z2):
+        return np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2)
 
 def generatePatterns(initial_character="C"):
     result = []

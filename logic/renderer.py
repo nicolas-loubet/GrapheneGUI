@@ -3,8 +3,6 @@ import numpy as np
 from gi.repository import Gtk, Gdk, GLib
 
 class Renderer:
-    limits: list  # xy values of minimum and maximum values drawn
-
     def __init__(self, drawing_area, ruler_x, ruler_y, plates, cb_plates):
         self.drawing_area = drawing_area
         self.ruler_x = ruler_x
@@ -27,22 +25,36 @@ class Renderer:
         self.drawing_area.set_events(Gdk.EventMask.POINTER_MOTION_MASK)
         self.drawing_area.connect("motion-notify-event", self.on_motion_notify)
 
+    def pixel_to_nm(self, x_win, y_win):
+        if not self.plates or self.cb_plates.get_active() == -1:
+            return None, None
+
+        width = self.drawing_area.get_allocated_width()
+        height = self.drawing_area.get_allocated_height()
+
+        x_nm = x_win / self.scale + self.center_x - width / (2 * self.scale)
+        y_nm = y_win / self.scale + self.center_y - height / (2 * self.scale)
+        return x_nm, y_nm
+
     def on_motion_notify(self, widget, event):
         if not self.plates or self.cb_plates.get_active() == -1:
             widget.set_tooltip_text("")
             return
+
         plate = self.plates[self.cb_plates.get_active()]
-        x_win, y_win = event.x, event.y
-        x = x_win / self.scale + self.center_x - widget.get_allocated_width() / (2 * self.scale)
-        y = y_win / self.scale + self.center_y - widget.get_allocated_height() / (2 * self.scale)
+        x_nm, y_nm = self.pixel_to_nm(event.x, event.y)
+        if x_nm is None:
+            widget.set_tooltip_text("")
+            return
+
         for coord in plate.get_carbon_coords():
             x_atom, y_atom, z_atom, name, _ = coord
-            if (x - x_atom)**2 + (y - y_atom)**2 < 0.01:
+            if (x_nm - x_atom)**2 + (y_nm - y_atom)**2 < 0.01:
                 widget.set_tooltip_text(f"{name}: ({x_atom*10:.2f}, {y_atom*10:.2f}, {z_atom*10:.2f})")
                 return
         for coord in plate.get_oxide_coords():
             x_atom, y_atom, z_atom, name, _ = coord
-            if (x - x_atom)**2 + (y - y_atom)**2 < 0.01:
+            if (x_nm - x_atom)**2 + (y_nm - y_atom)**2 < 0.01:
                 widget.set_tooltip_text(f"{name}: ({x_atom*10:.2f}, {y_atom*10:.2f}, {z_atom*10:.2f})")
                 return
         widget.set_tooltip_text("")
@@ -104,7 +116,7 @@ class Renderer:
         for coord in plate.get_carbon_coords():
             x = coord[0]
             y = coord[1]
-            cr.arc(x, y, 0.03, 0, 2 * math.pi)
+            cr.arc(x, y, 0.035, 0, 2 * math.pi)
             cr.fill()
 
         for x, y, _, oxide_type, _ in plate.get_oxide_coords():
@@ -113,8 +125,8 @@ class Renderer:
             elif oxide_type == "OE":
                 cr.set_source_rgb(0, 0, 1)
             elif oxide_type == "HO":
-                cr.set_source_rgb(.8, .8, .8)
-            cr.arc(x, y, 0.015, 0, 2 * math.pi)
+                cr.set_source_rgb(.6, .6, .6)
+            cr.arc(x, y, 0.025, 0, 2 * math.pi)
             cr.fill()
 
         cr.restore()
@@ -141,16 +153,21 @@ class Renderer:
 
         cr.set_source_rgb(0, 0, 0)
         cr.set_line_width(2.0)
-        cr.move_to(pixel_x_min, height / 2)
-        cr.line_to(pixel_x_max, height / 2)
+        cr.move_to(pixel_x_min, 3*height / 4)
+        cr.line_to(pixel_x_max, 3*height / 4)
         cr.stroke()
 
         cr.set_font_size(12)
         for x in range(int(self.limits[0]*10), int(self.limits[1]*10) + 1):
             pixel_x = (x/10 - self.center_x) * self.scale + width / 2
-            cr.move_to(pixel_x, height / 2)
-            cr.line_to(pixel_x, height / 2 - (10 if x % 10 == 0 else 8 if x % 5 == 0 else 5))
+            cr.move_to(pixel_x, 3*height / 4)
+            cr.line_to(pixel_x, 3*height / 4 - (10 if x % 10 == 0 else 8 if x % 5 == 0 else 5))
             cr.stroke()
+
+            if x % 10 == 0:
+                cr.move_to(pixel_x-5, height / 2)
+                cr.show_text(str(x))
+
 
     def on_draw_ruler_y(self, widget, cr):
         if not self.plates or self.cb_plates.get_active() == -1:
@@ -167,14 +184,17 @@ class Renderer:
 
         cr.set_source_rgb(0, 0, 0)
         cr.set_line_width(2.0)
-        cr.move_to(width / 2, pixel_y_min)
-        cr.line_to(width / 2, pixel_y_max)
+        cr.move_to(3*width / 4, pixel_y_min)
+        cr.line_to(3*width / 4, pixel_y_max)
         cr.stroke()
 
         cr.set_font_size(12)
         for y in range(int(self.limits[2]*10), int(self.limits[3]*10) + 1):
             pixel_y = (y/10 - self.center_y) * self.scale + height / 2
-            cr.move_to(width / 2, pixel_y)
-            cr.line_to(width / 2 - (10 if y % 10 == 0 else 8 if y % 5 == 0 else 5), pixel_y)
+            cr.move_to(3*width / 4, pixel_y)
+            cr.line_to(3*width / 4 - (10 if y % 10 == 0 else 8 if y % 5 == 0 else 5), pixel_y)
             cr.stroke()
-            
+
+            if y % 10 == 0:
+                cr.move_to(width / 2 - 20, pixel_y+5)
+                cr.show_text(str(y))

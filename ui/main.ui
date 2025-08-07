@@ -139,7 +139,7 @@
                 <child>
                   <object class="GtkBox">
                     <property name="name">spacer_top_left</property>
-                    <property name="width-request">30</property>
+                    <property name="width-request">50</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <child>
@@ -155,7 +155,7 @@
                 <child>
                   <object class="GtkDrawingArea" id="ruler_x">
                     <property name="name">ruler_x</property>
-                    <property name="height-request">30</property>
+                    <property name="height-request">50</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                   </object>
@@ -179,7 +179,7 @@
                 <child>
                   <object class="GtkDrawingArea" id="ruler_y">
                     <property name="name">ruler_y</property>
-                    <property name="width-request">30</property>
+                    <property name="width-request">50</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                   </object>

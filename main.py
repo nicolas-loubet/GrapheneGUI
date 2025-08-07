@@ -1,5 +1,7 @@
 import gi
 import os
+import numpy as np
+import random
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GLib
 import math
@@ -30,6 +32,7 @@ class GrapheneApp:
         self.entry_selection = self.builder.get_object("entry_selection")
         self.btn_oh = self.builder.get_object("btn_oh")
         self.btn_o = self.builder.get_object("btn_o")
+        self.btn_remove_ox = self.builder.get_object("btn_remove_ox")
         self.btn_change_prob = self.builder.get_object("btn_change_prob")
         self.radio_random = self.builder.get_object("radio_random")
         self.radio_z_plus = self.builder.get_object("radio_z_plus")
@@ -67,8 +70,13 @@ class GrapheneApp:
         self.last_prob_o = 34
 
         self.plates = []
-
         self.renderer = Renderer(self.drawing_area, self.ruler_x, self.ruler_y, self.plates, self.cb_plates)
+
+        self.drawing_area.set_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+        self.drawing_area.connect("button-press-event", self.on_drawing_area_clicked)
+
+        self.active_oxide_mode = None
+        self.first_carbon = None
 
         css_provider = Gtk.CssProvider()
         css_provider.load_from_path("ui/styles.css")
@@ -84,7 +92,6 @@ class GrapheneApp:
         )
 
         self.window.connect("destroy", Gtk.main_quit)
-
         self.window.show_all()
 
 
@@ -112,7 +119,7 @@ class GrapheneApp:
             self.cb_plates.set_active(-1)
         
         self.drawing_area.queue_draw()
-        print(f"Plate {index} deleted")
+        print(f"Plate {index+1} deleted")
 
     def on_btn_import_clicked(self, button):
         self.dialog_import.show_all()
@@ -122,13 +129,89 @@ class GrapheneApp:
 
 
     # # # # # # # # # # # # # # #
+    # Main window: middle panel #
+    # # # # # # # # # # # # # # #
+
+    def clicked_carbon_add_OH(self, plate, carbon, z_sign, i_atom):
+        cx, cy, cz = carbon[:3]
+        o_x = cx
+        o_y = cy
+        o_z = cz + z_sign * 0.149
+        h_x = cx + .093
+        h_z = o_z + z_sign * 0.032
+
+        if not plate.is_position_occupied(o_x, o_y, o_z):
+            plate.add_oxide(o_x, o_y, o_z, "OO", i_atom)
+            i_atom += 1
+            plate.add_oxide(h_x, o_y, h_z, "HO", i_atom)
+            self.drawing_area.queue_draw()
+            print(f"Added OH at ({o_x*10:.2f}, {o_y*10:.2f}, {o_z*10:.2f}) and H at ({o_x:.3f}, {o_y:.3f}, {h_z:.3f})")
+        else:
+            print("Position already occupied by an oxide")
+
+    def clicked_carbon_add_O(self, plate, carbon, z_sign, i_atom):
+        adjacent_carbons = plate.carbons_adjacent(self.first_carbon)
+        if carbon in adjacent_carbons:
+            c1_x, c1_y, c1_z = self.first_carbon[:3]
+            c2_x, c2_y = carbon[:2]
+            o_x = (c1_x + c2_x) / 2
+            o_y = (c1_y + c2_y) / 2
+            o_z = c1_z + z_sign * 0.126
+
+            if not plate.is_position_occupied(o_x, o_y, o_z):
+                plate.add_oxide(o_x, o_y, o_z, "OE", i_atom)
+                self.drawing_area.queue_draw()
+                print(f"Added O at ({o_x*10:.2f}, {o_y*10:.2f}, {o_z*10:.2f})")
+            else:
+                print("Position already occupied by an oxide")
+        else:
+            print("Second carbon is not adjacent to the first")
+        self.first_carbon = None
+
+    def on_drawing_area_clicked(self, widget, event):
+        if self.cb_plates.get_active() == -1 or not self.active_oxide_mode:
+            return False
+
+        plate = self.plates[self.cb_plates.get_active()]
+        x, y = event.x, event.y
+        x_nm, y_nm = self.renderer.pixel_to_nm(x, y)
+
+        carbon = plate.get_nearest_carbon(x_nm, y_nm)
+        if not carbon:
+            return False
+
+        i_atom = plate.get_number_atoms() + 1
+        z_sign = 1 if self.z_mode == 0 else -1 if self.z_mode == 1 else random.choice([-1, 1])
+
+        if self.active_oxide_mode == "OH":
+            self.clicked_carbon_add_OH(plate, carbon, z_sign, i_atom)
+        elif self.active_oxide_mode == "O":
+            if self.first_carbon is None:
+                self.first_carbon = carbon
+                print("First carbon selected, click an adjacent carbon")
+            else:
+                self.clicked_carbon_add_O(plate, carbon, z_sign, i_atom)
+        elif self.active_oxide_mode == "Remove":
+            list_remove_ox= plate.get_oxides_for_carbon(carbon)
+            for ox in list_remove_ox:
+                plate.remove_atom_oxide(ox)
+            self.drawing_area.queue_draw()
+            print(f"{len(list_remove_ox)} atom{("s" if len(list_remove_ox) != 1 else "")} removed")
+
+        return True
+
+
+    # # # # # # # # # # # # # # #
     # Main window: lower panel  #
     # # # # # # # # # # # # # # #
 
     def on_btn_reduce_clicked(self, button):
+        if self.cb_plates.get_active() == -1:
+            return
         plate = self.plates[self.cb_plates.get_active()]
         plate.remove_oxides()
         self.drawing_area.queue_draw()
+        print("Oxides removed")
 
     def on_btn_change_prob_clicked(self, button):
         self.last_prob_oh = self.spin_prob_oh.get_value()
@@ -149,15 +232,15 @@ class GrapheneApp:
         if not expression:
             return
         try:
-            def evaluate_condition(x, y, z, expr):
+            def evaluate_condition(x, y, z, i_atom, expr):
                 expr = expr.replace('and', ' and ').replace('or', ' or ').replace('not', ' not ')
-                return eval(expr, {'x': x, 'y': y, 'z': z, 'and': lambda a, b: a and b, 'or': lambda a, b: a or b, 'not': lambda x: not x})
+                return eval(expr, {'x': x, 'y': y, 'z': z, 'index': i_atom, 'and': lambda a, b: a and b, 'or': lambda a, b: a or b, 'not': lambda x: not x})
 
             list_carbons = []
             for coord in plate.get_carbon_coords():
-                x, y, z = coord[:3]
+                x, y, z, _, i_atom = coord
                 x, y, z = x * 10, y * 10, z * 10
-                if evaluate_condition(x, y, z, expression):
+                if evaluate_condition(x, y, z, i_atom, expression):
                     list_carbons.append(coord)
             plate.add_oxydation_to_list_of_carbon(list_carbons, self.z_mode, self.last_prob_oh, self.last_prob_o)
 
@@ -167,13 +250,19 @@ class GrapheneApp:
             print("Not valid expression, exc=", e, end="\r")
 
     def on_btn_oh_clicked(self, button):
-        pass
+        self.active_oxide_mode = "OH" if self.active_oxide_mode != "OH" else None
+        self.first_carbon = None
+        print(f"OH mode {'activated' if self.active_oxide_mode == 'OH' else 'deactivated'}")
 
     def on_btn_o_clicked(self, button):
-        pass
+        self.active_oxide_mode = "O" if self.active_oxide_mode != "O" else None
+        self.first_carbon = None
+        print(f"O mode {'activated' if self.active_oxide_mode == 'O' else 'deactivated'}")
 
     def on_btn_remove_ox_clicked(self, button):
-        pass
+        self.active_oxide_mode = "Remove" if self.active_oxide_mode != "Remove" else None
+        self.first_carbon = None
+        print(f"Remove mode {'activated' if self.active_oxide_mode == 'Remove' else 'deactivated'}")
 
     def on_radio_toggled(self, button):
         if self.radio_z_plus.get_active():
