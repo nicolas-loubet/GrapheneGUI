@@ -7,7 +7,7 @@ from gi.repository import Gtk, Gdk, GLib
 import math
 from logic.graphene import Graphene, generatePatterns
 from logic.renderer import Renderer
-from logic.export_formats import writeGRO
+from logic.export_formats import writeGRO, writeXYZ, writeTOP, writePDB
 
 class GrapheneApp:
     def __init__(self):
@@ -196,6 +196,7 @@ class GrapheneApp:
             for ox in list_remove_ox:
                 plate.remove_atom_oxide(ox)
             self.drawing_area.queue_draw()
+            plate.recheck_ox_indexes()
             print(f"{len(list_remove_ox)} atom{("s" if len(list_remove_ox) != 1 else "")} removed")
 
         return True
@@ -219,7 +220,33 @@ class GrapheneApp:
         self.dialog_prob.show_all()
 
     def on_spin_random_value_changed(self, spin):
-        pass
+        if self.cb_plates.get_active() == -1 or not spin.get_value():
+            return
+        fraction_oxidation= spin.get_value()/100
+        plate= self.plates[self.cb_plates.get_active()]
+        all_carbons= plate.get_carbon_coords().copy()
+        number_oxidations_desired= int(fraction_oxidation * len(all_carbons))
+        
+        oxides_without_H= []
+        for ox in plate.get_oxide_coords():
+            if ox[3].startswith("O"):
+                oxides_without_H.append(ox)
+        number_oxidations_done= len(oxides_without_H)
+        
+        if number_oxidations_done > number_oxidations_desired:
+            remove_oxides= random.sample(oxides_without_H, number_oxidations_done - number_oxidations_desired)
+            for ox in remove_oxides:
+                plate.remove_atom_oxide(ox)
+            print(f"Removed {number_oxidations_done - number_oxidations_desired} oxides")
+        else:
+            for oxide_already_present in oxides_without_H:
+                all_carbons.remove(plate.get_nearest_carbon(*oxide_already_present[:2]))
+            oxide_new= random.sample(all_carbons, number_oxidations_desired - number_oxidations_done)
+            plate.add_oxydation_to_list_of_carbon(oxide_new, self.z_mode, self.last_prob_oh, self.last_prob_o)
+            print(f"Added {number_oxidations_desired - number_oxidations_done} new oxides")
+
+        self.drawing_area.queue_draw()
+        plate.recheck_ox_indexes()
 
     def on_entry_selection_changed(self, entry):
         expression = entry.get_text()
@@ -353,6 +380,19 @@ class GrapheneApp:
     
     def on_btn_export_ok_clicked(self, button):
         filename = self.dialog_export.get_filename()
+        if filename == None or len(filename) == 0:
+            dialog = Gtk.MessageDialog(
+                transient_for=self.dialog_export,
+                flags=0,
+                message_type=Gtk.MessageType.ERROR,
+                buttons=Gtk.ButtonsType.OK,
+                text="No filename",
+            )
+            dialog.run()
+            dialog.destroy()
+            return
+        if filename.find(".") == -1:
+            filename += ".gro"
         if filename and self.plates:
             if os.path.exists(filename):
                 dialog = Gtk.MessageDialog(
@@ -367,7 +407,28 @@ class GrapheneApp:
                 dialog.destroy()
                 if response != Gtk.ResponseType.YES:
                     return
-            writeGRO(filename, self.plates)
+                
+            if filename.endswith(".gro"):
+                writeGRO(filename, self.plates)
+            elif filename.endswith(".pdb"):
+                writePDB(filename, self.plates)
+            elif filename.endswith(".xyz"):
+                writeXYZ(filename, self.plates)
+            elif filename.endswith(".top"):
+                factor = self.spin_scale.get_value()/100.0
+                writeTOP(filename, self.plates, factor)
+            else:
+                dialog = Gtk.MessageDialog(
+                    transient_for=self.dialog_export,
+                    flags=0,
+                    message_type=Gtk.MessageType.ERROR,
+                    buttons=Gtk.ButtonsType.OK,
+                    text="Unsupported format",
+                )
+                dialog.format_secondary_text(f"Unsupported format: {filename}")
+                dialog.run()
+                dialog.destroy()
+                return
         self.dialog_export.hide()
 
     def on_btn_export_cancel_clicked(self, button):

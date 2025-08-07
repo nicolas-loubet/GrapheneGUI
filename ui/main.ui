@@ -107,7 +107,7 @@
             </child>
             <child>
               <object class="GtkButton" id="btn_export">
-                <property name="label" translatable="yes">Export</property>
+                <property name="label" translatable="yes">Export (.gro .xyz .pdb .top)</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>

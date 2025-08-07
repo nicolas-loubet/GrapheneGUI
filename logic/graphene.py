@@ -69,15 +69,52 @@ class Graphene:
     
     def add_oxydation_to_list_of_carbon(self, list_carbons, z_mode, prob_oh, prob_o):
         i_atom = self.get_number_atoms()
+        
+        oxidized_carbons = []
+        for ox in self.oxide_coords:
+            if ox[3] == "HO": continue
+            oxidized_carbons.append(self.get_nearest_carbon(ox[0], ox[1]))
+
         for carbon in list_carbons:
             rand = random.random()*100
-            x,y,z = carbon[:3]
+            x1, y1, z1 = carbon[:3]
+
+            if z_mode == 2: z_mode= random.choice([0,1])
+            z_dir = 1 if z_mode == 0 else -1
+
             if rand <= prob_oh:
                 i_atom += 1
-                self.add_oxide(x,y,z,"OO",i_atom)
-            else:
+                self.add_oxide(x1, y1, z1+z_dir*0.149, "OO", i_atom)
                 i_atom += 1
-                self.add_oxide(x,y,z,"OE",i_atom)
+                self.add_oxide(x1+.093, y1, z1+z_dir*0.181, "HO", i_atom)
+                oxidized_carbons.append(carbon)
+
+            else:
+                adjacent = self.carbons_adjacent(carbon)
+                found = False
+                for adj in adjacent:
+                    if adj in oxidized_carbons or adj in list_carbons:
+                        continue
+                    x2, y2, z2 = adj[:3]
+                    x_mid = (x1 + x2) / 2
+                    y_mid = (y1 + y2) / 2
+                    z_mid = (z1 + z2) / 2
+
+                    i_atom += 1
+                    self.add_oxide(x_mid, y_mid, z_mid+z_dir*0.126, "OE", i_atom)
+                    oxidized_carbons.append(carbon)
+                    oxidized_carbons.append(adj)
+                    found = True
+                    break
+
+                if not found:
+                    print(f"No adjacent carbon available for OE near {carbon[3]}, added OH instead")
+                    i_atom += 1
+                    self.add_oxide(x1, y1, z1+z_dir*0.149, "OO", i_atom)
+                    i_atom += 1
+                    self.add_oxide(x1+.093, y1, z1+z_dir*0.18, "HO", i_atom)
+                    oxidized_carbons.append(carbon)
+
 
     def carbons_adjacent(self, carbon_center):
         adjacent_carbons = []
@@ -134,6 +171,23 @@ class Graphene:
                 oxides_to_remove.append(ox)
         
         return oxides_to_remove
+    
+    def recheck_ox_indexes(self):
+        prev_ox= self.oxide_coords
+        self.oxide_coords= []
+        i_atom= len(self.carbon_coords)
+
+        for i in range(len(prev_ox)):
+            if prev_ox[i][3] == "OO":
+                if i+1 < len(prev_ox) and prev_ox[i+1][3] == "HO": continue
+
+                z_dir= 1 if prev_ox[i][2] > self.carbon_coords[0][2] else -1
+                new_ox= [prev_ox[i][0]+.093, prev_ox[i][1], prev_ox[i][2]+z_dir*.032, "HO", -1]
+                prev_ox= prev_ox[:i+1] + [new_ox] + prev_ox[i+1:]
+
+        for ox in prev_ox:
+            i_atom += 1
+            self.add_oxide(ox[0], ox[1], ox[2], ox[3], i_atom)
 
     def distance_2D(self, x1, y1, x2, y2):
         return np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
