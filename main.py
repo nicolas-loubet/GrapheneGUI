@@ -87,9 +87,16 @@ class GrapheneApp:
 
         self.window.show_all()
 
+
+    # # # # # # # # # # # # # # #
+    # Main window: upper panel  #
+    # # # # # # # # # # # # # # #
     def on_btn_create_clicked(self, button):
         self.dialog_create.show_all()
     
+    def on_cb_plates_changed(self, combo):
+        self.drawing_area.queue_draw()
+
     def on_btn_delete_clicked(self, button):
         index = self.cb_plates.get_active()
         if index >= 0:
@@ -97,6 +104,79 @@ class GrapheneApp:
             self.cb_plates.remove(index)
             self.cb_plates.set_active(-1)
         print("Plate deleted")
+
+    def on_btn_import_clicked(self, button):
+        self.dialog_import.show_all()
+
+    def on_btn_export_clicked(self, button):
+        self.dialog_export.show_all()
+
+
+    # # # # # # # # # # # # # # #
+    # Main window: lower panel  #
+    # # # # # # # # # # # # # # #
+
+    def on_btn_reduce_clicked(self, button):
+        plate = self.plates[self.cb_plates.get_active()]
+        plate.remove_oxides()
+        self.drawing_area.queue_draw()
+
+    def on_btn_change_prob_clicked(self, button):
+        self.last_prob_oh = self.spin_prob_oh.get_value()
+        self.last_prob_o = self.spin_prob_o.get_value()
+        self.dialog_prob.show_all()
+
+    def on_spin_random_value_changed(self, spin):
+        pass
+
+    def on_entry_selection_changed(self, entry):
+        expression = entry.get_text()
+        self.spin_random.set_sensitive(not expression)
+        if self.cb_plates.get_active() == -1:
+            return
+        plate = self.plates[self.cb_plates.get_active()]
+        plate.remove_oxides()
+        expression = entry.get_text()
+        if not expression:
+            return
+        try:
+            def evaluate_condition(x, y, z, expr):
+                expr = expr.replace('and', ' and ').replace('or', ' or ').replace('not', ' not ')
+                return eval(expr, {'x': x, 'y': y, 'z': z, 'and': lambda a, b: a and b, 'or': lambda a, b: a or b, 'not': lambda x: not x})
+
+            list_carbons = []
+            for coord in plate.get_carbon_coords():
+                x, y, z = coord[:3]
+                if evaluate_condition(x, y, z, expression):
+                    list_carbons.append(coord)
+            plate.add_oxydation_to_list_of_carbon(list_carbons, self.z_mode, self.last_prob_oh, self.last_prob_o)
+
+            self.drawing_area.queue_draw()
+            print(" "*60, end="\r")
+        except Exception as e:
+            print("Not valid expression, exc=", e, end="\r")
+
+    def on_btn_oh_clicked(self, button):
+        pass
+
+    def on_btn_o_clicked(self, button):
+        pass
+
+    def on_btn_remove_ox_clicked(self, button):
+        pass
+
+    def on_radio_toggled(self, button):
+        if self.radio_z_plus.get_active():
+            self.z_mode = 0  # z+
+        elif self.radio_z_minus.get_active():
+            self.z_mode = 1  # z-
+        else:
+            self.z_mode = 2  # z±
+
+
+    # # # # # # # # # # # # # # #
+    #       Create dialog       #
+    # # # # # # # # # # # # # # #
 
     def on_btn_create_ok_clicked(self, button):
         width = self.spin_width.get_value()
@@ -156,18 +236,22 @@ class GrapheneApp:
     def on_btn_create_cancel_clicked(self, button):
         self.dialog_create.hide()
 
-    def on_btn_import_clicked(self, button):
-        self.dialog_import.show_all()
 
+    # # # # # # # # # # # # # # #
+    #       Import dialog       #
+    # # # # # # # # # # # # # # #
+    
     def on_btn_import_ok_clicked(self, button):
         self.dialog_import.hide()
 
     def on_btn_import_cancel_clicked(self, button):
         self.dialog_import.hide()
 
-    def on_btn_export_clicked(self, button):
-        self.dialog_export.show_all()
 
+    # # # # # # # # # # # # # # #
+    #       Export dialog       #
+    # # # # # # # # # # # # # # #
+    
     def on_btn_export_ok_clicked(self, button):
         filename = self.dialog_export.get_filename()
         if filename and self.plates:
@@ -190,45 +274,11 @@ class GrapheneApp:
     def on_btn_export_cancel_clicked(self, button):
         self.dialog_export.hide()
 
-    def on_cb_plates_changed(self, combo):
-        self.drawing_area.queue_draw()
 
-    def on_spin_random_value_changed(self, spin):
-        pass
-
-    def on_entry_selection_changed(self, entry):
-        expression = entry.get_text()
-        self.spin_random.set_sensitive(not expression)
-        if self.cb_plates.get_active() == -1:
-            return
-        plate = self.plates[self.cb_plates.get_active()]
-        plate.remove_oxides()
-        expression = entry.get_text()
-        if not expression:
-            return
-        try:
-            def evaluate_condition(x, y, z, expr):
-                expr = expr.replace('and', ' and ').replace('or', ' or ').replace('not', ' not ')
-                return eval(expr, {'x': x, 'y': y, 'z': z, 'and': lambda a, b: a and b, 'or': lambda a, b: a or b, 'not': lambda x: not x})
-
-            list_carbons = []
-            for coord in plate.get_carbon_coords():
-                x, y, z = coord[:3]
-                if evaluate_condition(x, y, z, expression):
-                    list_carbons.append(coord)
-            plate.add_oxydation_to_list_of_carbon(list_carbons, self.z_mode, self.last_prob_oh, self.last_prob_o)
-
-            self.drawing_area.queue_draw()
-            print(" "*60, end="\r")
-        except Exception as e:
-            print("Not valid expression, exc=", e, end="\r")
-
-    def on_btn_oh_clicked(self, button):
-        pass
-
-    def on_btn_o_clicked(self, button):
-        pass
-
+    # # # # # # # # # # # # # # #
+    #    Probability dialog     #
+    # # # # # # # # # # # # # # #
+    
     def on_spin_prob_oh_changed(self, spin):
         value = spin.get_value()
         self.spin_prob_o.set_value(100 - value)
@@ -236,11 +286,6 @@ class GrapheneApp:
     def on_spin_prob_o_changed(self, spin):
         value = spin.get_value()
         self.spin_prob_oh.set_value(100 - value)
-
-    def on_btn_change_prob_clicked(self, button):
-        self.last_prob_oh = self.spin_prob_oh.get_value()
-        self.last_prob_o = self.spin_prob_o.get_value()
-        self.dialog_prob.show_all()
 
     def on_btn_prob_ok_clicked(self, button):
         self.last_prob_oh = self.spin_prob_oh.get_value()
@@ -252,13 +297,6 @@ class GrapheneApp:
         self.spin_prob_o.set_value(self.last_prob_o)
         self.dialog_prob.hide()
 
-    def on_radio_toggled(self, button):
-        if self.radio_z_plus.get_active():
-            self.z_mode = 0  # z+
-        elif self.radio_z_minus.get_active():
-            self.z_mode = 1  # z-
-        else:
-            self.z_mode = 2  # z±
 
 if __name__ == "__main__":
     app = GrapheneApp()
