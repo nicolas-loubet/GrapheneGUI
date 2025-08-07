@@ -99,11 +99,20 @@ class GrapheneApp:
 
     def on_btn_delete_clicked(self, button):
         index = self.cb_plates.get_active()
-        if index >= 0:
-            self.plates.pop(index)
-            self.cb_plates.remove(index)
+        if index < 0: return
+
+        self.plates.pop(index)
+        self.cb_plates.remove_all()
+        for i in range(len(self.plates)):
+            self.cb_plates.append_text(f"Plate {i + 1}")
+        
+        if self.plates:
+            self.cb_plates.set_active(0)
+        else:
             self.cb_plates.set_active(-1)
-        print("Plate deleted")
+        
+        self.drawing_area.queue_draw()
+        print(f"Plate {index} deleted")
 
     def on_btn_import_clicked(self, button):
         self.dialog_import.show_all()
@@ -147,6 +156,7 @@ class GrapheneApp:
             list_carbons = []
             for coord in plate.get_carbon_coords():
                 x, y, z = coord[:3]
+                x, y, z = x * 10, y * 10, z * 10
                 if evaluate_condition(x, y, z, expression):
                     list_carbons.append(coord)
             plate.add_oxydation_to_list_of_carbon(list_carbons, self.z_mode, self.last_prob_oh, self.last_prob_o)
@@ -231,7 +241,7 @@ class GrapheneApp:
         self.space_box_css_provider.load_from_data(css)
 
         self.dialog_create.hide()
-        print("Coords drawn")
+        print(f"Coords drawn: Plate {len(self.plates)}")
 
     def on_btn_create_cancel_clicked(self, button):
         self.dialog_create.hide()
