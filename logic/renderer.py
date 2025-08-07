@@ -36,13 +36,14 @@ class Renderer:
         x = x_win / self.scale + self.center_x - widget.get_allocated_width() / (2 * self.scale)
         y = y_win / self.scale + self.center_y - widget.get_allocated_height() / (2 * self.scale)
         for coord in plate.get_carbon_coords():
-            x_atom, y_atom, z_atom = float(coord[0]), float(coord[1]), float(coord[2])
+            x_atom, y_atom, z_atom, name, _ = coord
             if (x - x_atom)**2 + (y - y_atom)**2 < 0.01:
-                widget.set_tooltip_text(f"Carbon: ({x_atom:.3f}, {y_atom:.3f}, {z_atom:.3f})")
+                widget.set_tooltip_text(f"{name}: ({x_atom*10:.2f}, {y_atom*10:.2f}, {z_atom*10:.2f})")
                 return
-        for x_atom, y_atom, z_atom, oxide_type, _ in plate.get_oxide_coords():
+        for coord in plate.get_oxide_coords():
+            x_atom, y_atom, z_atom, name, _ = coord
             if (x - x_atom)**2 + (y - y_atom)**2 < 0.01:
-                widget.set_tooltip_text(f"{oxide_type}: ({x_atom:.3f}, {y_atom:.3f}, {z_atom:.3f})")
+                widget.set_tooltip_text(f"{name}: ({x_atom*10:.2f}, {y_atom*10:.2f}, {z_atom*10:.2f})")
                 return
         widget.set_tooltip_text("")
 

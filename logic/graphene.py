@@ -17,29 +17,27 @@ class Graphene:
         height = n_y * 6 * dy
         center_x_geom = width / 2
         center_y_geom = height / 2
-        center_z_geom = 0
 
         offset_x = center_x - center_x_geom
         offset_y = center_y - center_y_geom
-        offset_z = center_z - center_z_geom
 
         for iy in range(n_y):
             ybase = iy * 6 * dy
             for ix in range(n_x):
-                coords.append([dx * ix * 2 + offset_x, ybase + dy + offset_y, center_z + offset_z, name_atoms[i_atom - 1], i_atom])
+                coords.append([dx * ix * 2 + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom - 1], i_atom])
                 i_atom += 1
-                coords.append([dx * (ix * 2 + 1) + offset_x, ybase + offset_y, center_z + offset_z, name_atoms[i_atom - 1], i_atom])
+                coords.append([dx * (ix * 2 + 1) + offset_x, ybase + offset_y, center_z, name_atoms[i_atom - 1], i_atom])
                 i_atom += 1
-            coords.append([dx * n_x * 2 + offset_x, ybase + dy + offset_y, center_z + offset_z, name_atoms[i_atom - 1], i_atom])
+            coords.append([dx * n_x * 2 + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom - 1], i_atom])
             i_atom += 1
 
             ybase = ybase + dy * 3
             for ix in range(n_x):
-                coords.append([dx * ix * 2 + offset_x, ybase + offset_y, center_z + offset_z, name_atoms[i_atom - 1], i_atom])
+                coords.append([dx * ix * 2 + offset_x, ybase + offset_y, center_z, name_atoms[i_atom - 1], i_atom])
                 i_atom += 1
-                coords.append([dx * (ix * 2 + 1) + offset_x, ybase + dy + offset_y, center_z + offset_z, name_atoms[i_atom - 1], i_atom])
+                coords.append([dx * (ix * 2 + 1) + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom - 1], i_atom])
                 i_atom += 1
-            coords.append([dx * n_x * 2 + offset_x, ybase + offset_y, center_z + offset_z, name_atoms[i_atom - 1], i_atom])
+            coords.append([dx * n_x * 2 + offset_x, ybase + offset_y, center_z, name_atoms[i_atom - 1], i_atom])
             i_atom += 1
 
         self.carbon_coords = coords
