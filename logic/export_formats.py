@@ -1,4 +1,3 @@
-import gi
 from gi.repository import Gtk, GLib
 
 def formatGRO(atom_gro):
@@ -65,8 +64,29 @@ def writeGRO(filename, plates):
 
         print("File exported to " + filename)
 
-def writeXYZ():
-    pass
+def writeXYZ(filename, plates):
+    symbol_dict = {
+        "CE": "C", "CO": "C",
+        "OE": "O", "OO": "O",
+        "HO": "H"
+    }
+    with open(filename, 'w') as f:
+        all_atoms = []
+        for plate in plates:
+            all_atoms += plate.get_carbon_coords() + plate.get_oxide_coords()
+
+        f.write(f"{len(all_atoms)}\n")
+        f.write("Graphene structure exported in XYZ format.\n")
+
+        checkBounds(plates)
+
+        for atom in all_atoms:
+            x, y, z, name = atom[:4]
+            symbol = symbol_dict.get(name[:2],"C")
+            f.write(f"{symbol} {x*10:.6f} {y*10:.6f} {z*10:.6f}\n")
+
+        print("File exported to " + filename)
+
 
 def writePDB():
     pass
