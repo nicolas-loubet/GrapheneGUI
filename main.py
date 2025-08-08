@@ -3,7 +3,7 @@ import os
 import numpy as np
 import random
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk, GLib
+from gi.repository import Gtk, Gdk, GLib, GdkPixbuf
 import math
 from logic.graphene import Graphene, generatePatterns
 from logic.renderer import Renderer
@@ -20,6 +20,8 @@ class GrapheneApp:
         self.builder.connect_signals(self)
 
         self.window = self.builder.get_object("main_window")
+        self.window.set_icon_from_file("ui/img/icon.png")
+
         self.drawing_area = self.builder.get_object("drawing_area")
         self.ruler_x = self.builder.get_object("ruler_x")
         self.ruler_y = self.builder.get_object("ruler_y")
@@ -27,6 +29,7 @@ class GrapheneApp:
         self.btn_create = self.builder.get_object("btn_create")
         self.btn_import = self.builder.get_object("btn_import")
         self.btn_export = self.builder.get_object("btn_export")
+        self.btn_export.set_sensitive(False)
         self.cb_plates = self.builder.get_object("cb_plates")
         self.spin_random = self.builder.get_object("spin_random")
         self.entry_selection = self.builder.get_object("entry_selection")
@@ -91,6 +94,12 @@ class GrapheneApp:
             self.space_box_css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
 
+        self.background_pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+            "ui/img/background.svg", width=800, height=800, preserve_aspect_ratio=True
+        )
+        self.drawing_area.connect("draw", self.on_drawing_area_draw)
+
+
         self.window.connect("destroy", Gtk.main_quit)
         self.window.show_all()
 
@@ -117,6 +126,7 @@ class GrapheneApp:
             self.cb_plates.set_active(0)
         else:
             self.cb_plates.set_active(-1)
+            self.btn_export.set_sensitive(False)
         
         self.drawing_area.queue_draw()
         print(f"Plate {index+1} deleted")
@@ -200,6 +210,26 @@ class GrapheneApp:
             print(f"{len(list_remove_ox)} atom{("s" if len(list_remove_ox) != 1 else "")} removed")
 
         return True
+    
+    def on_drawing_area_draw(self, widget, cr):
+        context = widget.get_style_context()
+        Gtk.render_background(context, cr, 0, 0, widget.get_allocated_width(), widget.get_allocated_height())
+
+        active_index = self.cb_plates.get_active()
+
+        if active_index == -1 or not self.plates or not self.plates[active_index].get_number_atoms():
+            allocation = widget.get_allocation()
+            width, height = allocation.width, allocation.height
+
+            scaled_pixbuf = self.background_pixbuf.scale_simple(width, height, GdkPixbuf.InterpType.BILINEAR)
+
+            Gdk.cairo_set_source_pixbuf(cr, scaled_pixbuf, 0, 0)
+            cr.paint()
+            return False
+        else:
+            self.renderer.on_draw_drawing_area(widget, cr)
+            return False
+
 
 
     # # # # # # # # # # # # # # #
@@ -330,6 +360,7 @@ class GrapheneApp:
             self.cb_plates.set_active(len(self.plates) - 1)
 
         self.drawing_area.queue_draw()
+        self.btn_export.set_sensitive(True)
 
         css = b"""
         #space_box_ruler_y {
