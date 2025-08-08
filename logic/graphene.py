@@ -76,6 +76,7 @@ class Graphene:
             oxidized_carbons.append(self.get_nearest_carbon(ox[0], ox[1]))
 
         for carbon in list_carbons:
+            if carbon in oxidized_carbons: continue
             rand = random.random()*100
             x1, y1, z1 = carbon[:3]
 
@@ -91,9 +92,10 @@ class Graphene:
 
             else:
                 adjacent = self.carbons_adjacent(carbon)
+                random.shuffle(adjacent)
                 found = False
                 for adj in adjacent:
-                    if adj in oxidized_carbons or adj in list_carbons:
+                    if adj in oxidized_carbons:
                         continue
                     x2, y2, z2 = adj[:3]
                     x_mid = (x1 + x2) / 2
@@ -108,7 +110,7 @@ class Graphene:
                     break
 
                 if not found:
-                    print(f"No adjacent carbon available for OE near {carbon[3]}, added OH instead")
+                    #print(f"No adjacent carbon available for OE near {carbon[3]}, added OH instead")
                     i_atom += 1
                     self.add_oxide(x1, y1, z1+z_dir*0.149, "OO", i_atom)
                     i_atom += 1
@@ -143,6 +145,13 @@ class Graphene:
                 min_dist= d
                 nearest_carbon= carbon
         return nearest_carbon
+
+    def get_nearest_carbons_to_oxide(self, ox):
+        output= []
+        for carbon in self.carbon_coords:
+            if self.distance_2D(ox[0],ox[1],carbon[0],carbon[1]) < 0.1:
+                output.append(carbon)
+        return output
 
     def is_position_occupied(self, x, y, z, threshold=0.1):
         for ox in self.get_oxide_coords():

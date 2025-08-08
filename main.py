@@ -145,7 +145,7 @@ class GrapheneApp:
             i_atom += 1
             plate.add_oxide(h_x, o_y, h_z, "HO", i_atom)
             self.drawing_area.queue_draw()
-            print(f"Added OH at ({o_x*10:.2f}, {o_y*10:.2f}, {o_z*10:.2f}) and H at ({o_x:.3f}, {o_y:.3f}, {h_z:.3f})")
+            print(f"Added O at ({o_x*10:.2f}, {o_y*10:.2f}, {o_z*10:.2f}) and H at ({o_x:.3f}, {o_y:.3f}, {h_z:.3f})")
         else:
             print("Position already occupied by an oxide")
 
@@ -220,61 +220,43 @@ class GrapheneApp:
         self.dialog_prob.show_all()
 
     def on_spin_random_value_changed(self, spin):
-        if self.cb_plates.get_active() == -1 or not spin.get_value():
-            return
-        fraction_oxidation= spin.get_value()/100
-        plate= self.plates[self.cb_plates.get_active()]
-        all_carbons= plate.get_carbon_coords().copy()
-        number_oxidations_desired= int(fraction_oxidation * len(all_carbons))
-        
-        oxides_without_H= []
-        for ox in plate.get_oxide_coords():
-            if ox[3].startswith("O"):
-                oxides_without_H.append(ox)
-        number_oxidations_done= len(oxides_without_H)
-        
-        if number_oxidations_done > number_oxidations_desired:
-            remove_oxides= random.sample(oxides_without_H, number_oxidations_done - number_oxidations_desired)
-            for ox in remove_oxides:
-                plate.remove_atom_oxide(ox)
-            print(f"Removed {number_oxidations_done - number_oxidations_desired} oxides")
-        else:
-            for oxide_already_present in oxides_without_H:
-                all_carbons.remove(plate.get_nearest_carbon(*oxide_already_present[:2]))
-            oxide_new= random.sample(all_carbons, number_oxidations_desired - number_oxidations_done)
-            plate.add_oxydation_to_list_of_carbon(oxide_new, self.z_mode, self.last_prob_oh, self.last_prob_o)
-            print(f"Added {number_oxidations_desired - number_oxidations_done} new oxides")
-
-        self.drawing_area.queue_draw()
-        plate.recheck_ox_indexes()
+        self.put_oxides(self.entry_selection.get_text())
 
     def on_entry_selection_changed(self, entry):
-        expression = entry.get_text()
-        self.spin_random.set_sensitive(not expression)
+        self.put_oxides(entry.get_text())
+
+    def put_oxides(self, expr):
         if self.cb_plates.get_active() == -1:
             return
-        plate = self.plates[self.cb_plates.get_active()]
+        fraction_oxidation= self.spin_random.get_value()/100
+        plate= self.plates[self.cb_plates.get_active()]
         plate.remove_oxides()
-        expression = entry.get_text()
-        if not expression:
-            return
-        try:
-            def evaluate_condition(x, y, z, i_atom, expr):
-                expr = expr.replace('and', ' and ').replace('or', ' or ').replace('not', ' not ')
-                return eval(expr, {'x': x, 'y': y, 'z': z, 'index': i_atom, 'and': lambda a, b: a and b, 'or': lambda a, b: a or b, 'not': lambda x: not x})
+        
+        if not expr: expr= ""
 
-            list_carbons = []
+        def evaluate_condition(x, y, z, i_atom, expr):
+            if expr == "": return True
+            expr = expr.replace('and', ' and ').replace('or', ' or ').replace('not', ' not ')
+            return eval(expr, {'x': x, 'y': y, 'z': z, 'index': i_atom, 'and': lambda a, b: a and b, 'or': lambda a, b: a or b, 'not': lambda x: not x})
+
+        try:
+            list_carbons_in_expression = []
             for coord in plate.get_carbon_coords():
                 x, y, z, _, i_atom = coord
                 x, y, z = x * 10, y * 10, z * 10
-                if evaluate_condition(x, y, z, i_atom, expression):
-                    list_carbons.append(coord)
-            plate.add_oxydation_to_list_of_carbon(list_carbons, self.z_mode, self.last_prob_oh, self.last_prob_o)
+                if evaluate_condition(x, y, z, i_atom, expr):
+                    list_carbons_in_expression.append(coord)
+            
+            number_oxidations_desired= int(len(list_carbons_in_expression)*fraction_oxidation)
+            
+            oxide_new= random.sample(list_carbons_in_expression, min(number_oxidations_desired, len(list_carbons_in_expression)))
+            plate.add_oxydation_to_list_of_carbon(oxide_new, self.z_mode, self.last_prob_oh, self.last_prob_o)
+            print(f"Finished with {len(oxide_new)} new oxides"+" "*40, end="\r")
 
-            self.drawing_area.queue_draw()
-            print(" "*60, end="\r")
         except Exception as e:
             print("Not valid expression, exc=", e, end="\r")
+
+        self.drawing_area.queue_draw()
 
     def on_btn_oh_clicked(self, button):
         self.active_oxide_mode = "OH" if self.active_oxide_mode != "OH" else None
