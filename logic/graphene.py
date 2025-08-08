@@ -43,7 +43,6 @@ class Graphene:
         self.carbon_coords = coords
         self.oxide_coords = []
 
-
     def add_carbon(self, x, y, z, atom_name, atom_index):
         self.carbon_coords.append([x, y, z, atom_name, atom_index])
 

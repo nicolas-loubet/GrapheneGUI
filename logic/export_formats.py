@@ -35,17 +35,11 @@ def checkBounds(plates):
             max_coords[1] = max(max_coords[1], y)
             max_coords[2] = max(max_coords[2], z)
 
-    for plate in plates:
-        atoms= plate.get_carbon_coords() + plate.get_oxide_coords()
-        for i_coord in range(len(atoms)):
-            for xyz in range(3):
-                atoms[i_coord][xyz] -= min_coords[xyz]
-
     max_coords[0] -= min_coords[0]
     max_coords[1] -= min_coords[1]
     max_coords[2] -= min_coords[2]
 
-    return max_coords
+    return min_coords, max_coords
 
 def writeGRO(filename, plates):
     with open(filename, 'w') as f:
@@ -53,12 +47,12 @@ def writeGRO(filename, plates):
         total_atoms = sum(len(plate.get_carbon_coords()) + len(plate.get_oxide_coords()) for plate in plates)
         f.write(f"{total_atoms}\n")
 
-        bounds= checkBounds(plates)
+        min_coords,bounds= checkBounds(plates)
         for i_plate,plate in enumerate(plates):
             atoms= plate.get_carbon_coords() + plate.get_oxide_coords()
             for coord in atoms:
                 x,y,z,name,i_atom= coord
-                f.write(formatGRO((i_plate + 1, "GR"+str(i_plate+1), name, i_atom, x, y, z)))
+                f.write(formatGRO((i_plate + 1, "GR"+str(i_plate+1), name, i_atom, x-min_coords[0], y-min_coords[1], z-min_coords[2])))
 
         f.write(f"{bounds[0]:10.5f}{bounds[1]:10.5f}{bounds[2]:10.5f}\n")
 
@@ -78,12 +72,12 @@ def writeXYZ(filename, plates):
         f.write(f"{len(all_atoms)}\n")
         f.write("Graphene structure exported in XYZ format.\n")
 
-        checkBounds(plates)
+        min_coords,bounds= checkBounds(plates)
 
         for atom in all_atoms:
             x, y, z, name = atom[:4]
             symbol = symbol_dict.get(name[:2],"C")
-            f.write(f"{symbol} {x*10:.6f} {y*10:.6f} {z*10:.6f}\n")
+            f.write(f"{symbol} {(x-min_coords[0])*10:.6f} {(y-min_coords[1])*10:.6f} {(z-min_coords[2])*10:.6f}\n")
 
         print("File exported to " + filename)
 

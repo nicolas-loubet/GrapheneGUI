@@ -390,7 +390,6 @@ class GrapheneApp:
                 if response != Gtk.ResponseType.YES:
                     return
                 
-            plate_save_previous = self.plates
             if filename.endswith(".gro"):
                 writeGRO(filename, self.plates)
             elif filename.endswith(".pdb"):
@@ -413,7 +412,6 @@ class GrapheneApp:
                 dialog.destroy()
                 return
 
-            self.plates = plate_save_previous
         self.dialog_export.hide()
 
     def on_btn_export_cancel_clicked(self, button):
