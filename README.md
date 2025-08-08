@@ -31,15 +31,44 @@ You need a Linux system with the following installed:
 - Python ≥ 3.6
 - GTK+ 3 (via PyGObject)
 - NumPy
+- System dependencies: python3-gi, python3-gi-cairo, gir1.2-gtk-3.0
 
-Install dependencies via:
+Install system dependencies via:
 
 ```bash
 sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-3.0 python3-numpy
 ```
 
-### Running the program
-Clone the repository and run:
+### Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/nicolas-loubet/GrapheneGUI.git
+cd GrapheneGUI/
+```
+
+2. Install the package using pip:
+
+```bash
+pip install .
+```
+
+Alternatively, install directly from GitHub:
+
+```bash
+pip install git+https://github.com/nicolas-loubet/GrapheneGUI.git
+```
+
+### Running the Program
+
+After installation, run the program using:
+
+```bash
+graphene-gui
+```
+
+Or, if you prefer to run without installing, just download the repository and use:
 
 ```bash
 python3 main.py
@@ -64,6 +93,7 @@ python3 main.py
 
 5. Export the system using the Export dialog and select .gro, .pdb, .xyz, or .top.
 
+
 ## 📁 File Formats
 - .gro: Atom positions and box for GROMACS.
 
@@ -72,6 +102,7 @@ python3 main.py
 - .xyz: Simple atomic format for visualization.
 
 - .top: GROMACS-compatible topology with atoms, bonds, pairs, angles, and dihedrals.
+
 
 ## ⚙️ Internals
 - Coordinates are stored in nanometers, presented in Å.
@@ -84,12 +115,15 @@ python3 main.py
   - OE, OO → Oxygen
   - HO → Hydrogen
 
+
 ## 📜 License
 This project is licensed under the GNU General Public License (GPL).
+
 
 ## 👤 Author
 Nicolás Alfredo Loubet
 Email: nicolas.loubet@uns.edu.ar
+
 
 ## 📸 Screenshots
 
@@ -105,7 +139,6 @@ Email: nicolas.loubet@uns.edu.ar
 
 
 ## 📦 Future ideas
-- Instalation method
 - LAMMPS export support
 - Windows compatibility
 
