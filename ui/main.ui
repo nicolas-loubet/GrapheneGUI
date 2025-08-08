@@ -504,7 +504,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="btn_oh">
+                  <object class="GtkToggleButton" id="btn_oh">
                     <property name="label" translatable="yes">Add OH</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -518,7 +518,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="btn_o">
+                  <object class="GtkToggleButton" id="btn_o">
                     <property name="label" translatable="yes">Add O</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -532,7 +532,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="btn_remove_ox">
+                  <object class="GtkToggleButton" id="btn_remove_ox">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">True</property>

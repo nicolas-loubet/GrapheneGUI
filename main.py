@@ -288,20 +288,31 @@ class GrapheneApp:
 
         self.drawing_area.queue_draw()
 
-    def on_btn_oh_clicked(self, button):
-        self.active_oxide_mode = "OH" if self.active_oxide_mode != "OH" else None
+    def set_oxide_mode(self, mode):
+        self.active_oxide_mode = mode
         self.first_carbon = None
-        print(f"OH mode {'activated' if self.active_oxide_mode == 'OH' else 'deactivated'}")
+
+        self.btn_oh.set_active(mode == "OH")
+        self.btn_o.set_active(mode == "O")
+        self.btn_remove_ox.set_active(mode == "Remove")
+
+    def on_btn_oh_clicked(self, button):
+        if button.get_active():
+            self.set_oxide_mode("OH")
+        else:
+            self.set_oxide_mode(None)
 
     def on_btn_o_clicked(self, button):
-        self.active_oxide_mode = "O" if self.active_oxide_mode != "O" else None
-        self.first_carbon = None
-        print(f"O mode {'activated' if self.active_oxide_mode == 'O' else 'deactivated'}")
+        if button.get_active():
+            self.set_oxide_mode("O")
+        else:
+            self.set_oxide_mode(None)
 
     def on_btn_remove_ox_clicked(self, button):
-        self.active_oxide_mode = "Remove" if self.active_oxide_mode != "Remove" else None
-        self.first_carbon = None
-        print(f"Remove mode {'activated' if self.active_oxide_mode == 'Remove' else 'deactivated'}")
+        if button.get_active():
+            self.set_oxide_mode("Remove")
+        else:
+            self.set_oxide_mode(None)
 
     def on_radio_toggled(self, button):
         if self.radio_z_plus.get_active():
