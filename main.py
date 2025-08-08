@@ -1,6 +1,5 @@
 import gi
 import os
-import numpy as np
 import random
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GLib, GdkPixbuf
@@ -8,6 +7,7 @@ import math
 from logic.graphene import Graphene, generatePatterns
 from logic.renderer import Renderer
 from logic.export_formats import writeGRO, writeXYZ, writeTOP, writePDB
+from logic.import_formats import readGRO, readXYZ, readPDB
 
 class GrapheneApp:
     def __init__(self):
@@ -281,7 +281,7 @@ class GrapheneApp:
             
             oxide_new= random.sample(list_carbons_in_expression, min(number_oxidations_desired, len(list_carbons_in_expression)))
             plate.add_oxydation_to_list_of_carbon(oxide_new, self.z_mode, self.last_prob_oh)
-            print(f"Finished with {len(oxide_new)} new oxides"+" "*40, end="\r")
+            print(f"Finished with {len(oxide_new)} new oxides")
 
         except Exception as e:
             print("Not valid expression, exc=", e, end="\r")
@@ -361,7 +361,7 @@ class GrapheneApp:
             dialog.destroy()
             return
 
-        plate = Graphene(n_x, n_y, center_x_nm, center_y_nm, center_z_nm, factor)
+        plate = Graphene.create_from_params(n_x, n_y, center_x_nm, center_y_nm, center_z_nm, factor)
         self.plates.append(plate)
 
         self.cb_plates.append_text(f"Plate {len(self.plates)}")
@@ -392,7 +392,55 @@ class GrapheneApp:
     # # # # # # # # # # # # # # #
     
     def on_btn_import_ok_clicked(self, button):
+        filename = self.dialog_import.get_filename()
+        if not filename:
+            dialog = Gtk.MessageDialog(
+                transient_for=self.dialog_import,
+                flags=0,
+                message_type=Gtk.MessageType.ERROR,
+                buttons=Gtk.ButtonsType.OK,
+                text="No file selected",
+            )
+            dialog.run()
+            dialog.destroy()
+            return
+
+        ext = os.path.splitext(filename)[1].lower()
+        try:
+            if ext == ".gro":
+                new_plates = readGRO(filename)
+            elif ext == ".xyz":
+                new_plates = readXYZ(filename)
+            elif ext == ".pdb":
+                new_plates = readPDB(filename)
+            else:
+                raise ValueError(f"Not supported file extension: {ext}")
+        except Exception as e:
+            dialog = Gtk.MessageDialog(
+                transient_for=self.dialog_import,
+                flags=0,
+                message_type=Gtk.MessageType.ERROR,
+                buttons=Gtk.ButtonsType.OK,
+                text="Error reading file",
+            )
+            dialog.format_secondary_text(str(e))
+            dialog.run()
+            dialog.destroy()
+            return
+
+        for plate in new_plates:
+            self.plates.append(plate)
+            idx = len(self.plates)
+            self.cb_plates.append_text(f"Plate {idx}")
+            print(f"Importing coords: Plate {idx}")
+
+        if new_plates:
+            self.cb_plates.set_active(len(self.plates)-1)
+            self.btn_export.set_sensitive(True)
+            self.drawing_area.queue_draw()
+
         self.dialog_import.hide()
+        print(f"{len(new_plates)} plate(s) imported from {filename}")
 
     def on_btn_import_cancel_clicked(self, button):
         self.dialog_import.hide()
@@ -410,7 +458,7 @@ class GrapheneApp:
                 flags=0,
                 message_type=Gtk.MessageType.ERROR,
                 buttons=Gtk.ButtonsType.OK,
-                text="No filename",
+                text="No file selected",
             )
             dialog.run()
             dialog.destroy()

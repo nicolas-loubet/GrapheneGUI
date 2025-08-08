@@ -6,7 +6,12 @@ class Graphene:
         self.carbon_coords = carbon_coords if carbon_coords is not None else []
         self.oxide_coords = oxide_coords if oxide_coords is not None else []
 
-    def __init__(self, n_x, n_y, center_x=0, center_y=0, center_z=0, factor=1):
+    @classmethod
+    def create_from_coords(cls, carbon_coords, oxide_coords):
+        return cls(carbon_coords, oxide_coords)
+
+    @classmethod
+    def create_from_params(cls, n_x, n_y, center_x, center_y, center_z, factor):
         dx = 0.1225 * factor
         dy = 0.071 * factor
         name_atoms = generatePatterns()
@@ -40,8 +45,7 @@ class Graphene:
             coords.append([dx * n_x * 2 + offset_x, ybase + offset_y, center_z, name_atoms[i_atom - 1], i_atom])
             i_atom += 1
 
-        self.carbon_coords = coords
-        self.oxide_coords = []
+        return cls(coords, [])
 
     def add_carbon(self, x, y, z, atom_name, atom_index):
         self.carbon_coords.append([x, y, z, atom_name, atom_index])
