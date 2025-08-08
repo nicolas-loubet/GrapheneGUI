@@ -8,4 +8,6 @@ __pycache__/
 .vscode/
 *.xyz
 *.gro
+*.pdb
+*.top
 *.glade

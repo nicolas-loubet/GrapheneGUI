@@ -45,10 +45,10 @@ class Graphene:
 
 
     def add_carbon(self, x, y, z, atom_name, atom_index):
-        self.carbon_coords.append((x, y, z, atom_name, atom_index))
+        self.carbon_coords.append([x, y, z, atom_name, atom_index])
 
     def add_oxide(self, x, y, z, oxide_type, atom_index):
-        self.oxide_coords.append((x, y, z, oxide_type, atom_index))
+        self.oxide_coords.append([x, y, z, oxide_type, atom_index])
 
     def get_carbon_coords(self):
         return self.carbon_coords
@@ -67,7 +67,7 @@ class Graphene:
     def remove_atom_oxide(self, ox):
         self.oxide_coords.remove(ox)
     
-    def add_oxydation_to_list_of_carbon(self, list_carbons, z_mode, prob_oh, prob_o):
+    def add_oxydation_to_list_of_carbon(self, list_carbons, z_mode, prob_oh):
         i_atom = self.get_number_atoms()
         
         oxidized_carbons = []
@@ -80,8 +80,7 @@ class Graphene:
             rand = random.random()*100
             x1, y1, z1 = carbon[:3]
 
-            if z_mode == 2: z_mode= random.choice([0,1])
-            z_dir = 1 if z_mode == 0 else -1
+            z_dir = 1 if z_mode == 0 else -1 if z_mode == 1 else random.choice([-1,1])
 
             if rand <= prob_oh:
                 i_atom += 1

@@ -250,7 +250,7 @@ class GrapheneApp:
             number_oxidations_desired= int(len(list_carbons_in_expression)*fraction_oxidation)
             
             oxide_new= random.sample(list_carbons_in_expression, min(number_oxidations_desired, len(list_carbons_in_expression)))
-            plate.add_oxydation_to_list_of_carbon(oxide_new, self.z_mode, self.last_prob_oh, self.last_prob_o)
+            plate.add_oxydation_to_list_of_carbon(oxide_new, self.z_mode, self.last_prob_oh)
             print(f"Finished with {len(oxide_new)} new oxides"+" "*40, end="\r")
 
         except Exception as e:
@@ -275,11 +275,11 @@ class GrapheneApp:
 
     def on_radio_toggled(self, button):
         if self.radio_z_plus.get_active():
-            self.z_mode = 0  # z+
+            self.z_mode = 0
         elif self.radio_z_minus.get_active():
-            self.z_mode = 1  # z-
+            self.z_mode = 1
         else:
-            self.z_mode = 2  # z±
+            self.z_mode = 2
 
 
     # # # # # # # # # # # # # # #
@@ -390,6 +390,7 @@ class GrapheneApp:
                 if response != Gtk.ResponseType.YES:
                     return
                 
+            plate_save_previous = self.plates
             if filename.endswith(".gro"):
                 writeGRO(filename, self.plates)
             elif filename.endswith(".pdb"):
@@ -411,6 +412,8 @@ class GrapheneApp:
                 dialog.run()
                 dialog.destroy()
                 return
+
+            self.plates = plate_save_previous
         self.dialog_export.hide()
 
     def on_btn_export_cancel_clicked(self, button):
