@@ -1,6 +1,7 @@
 import gi
 import os
 import random
+import threading
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GLib, GdkPixbuf
 import math
@@ -67,9 +68,25 @@ class GrapheneApp:
         self.dialog_import = self.builder.get_object("dialog_import")
         self.btn_import_ok = self.builder.get_object("btn_import_ok")
         self.btn_import_cancel = self.builder.get_object("btn_import_cancel")
+        
+        self.dialog_import.connect("file-activated", self.on_btn_import_ok_clicked)
+
         self.dialog_export = self.builder.get_object("dialog_export")
         self.btn_export_ok = self.builder.get_object("btn_export_ok")
         self.btn_export_cancel = self.builder.get_object("btn_export_cancel")
+
+        self.dialog_export.connect("file-activated", self.on_btn_export_ok_clicked)
+        def find_entry(widget):
+            if isinstance(widget, Gtk.Entry):
+                return widget
+            for child in widget.get_children():
+                result = find_entry(child)
+                if result:
+                    return result
+            return None
+        entry = find_entry(self.dialog_export)
+        if entry:
+            entry.connect("activate", self.on_btn_export_ok_clicked)
 
         self.dialog_duplicate = self.builder.get_object("dialog_duplicate")
         self.duplicate_label = self.builder.get_object("duplicate_label")
@@ -545,14 +562,21 @@ class GrapheneApp:
             elif filename.endswith(".top"):
                 factor = self.spin_scale.get_value()/100.0
                 dialog = Gtk.MessageDialog(
-                    transient_for=None,
+                    transient_for=self.dialog_export,
                     flags=0,
                     message_type=Gtk.MessageType.INFO,
                     buttons=Gtk.ButtonsType.CANCEL,
                     text="Exporting topology..."
                 )
                 dialog.show_all()
-                GLib.idle_add(lambda dialog, filename, plates, factor, duplicates: (writeTOP(filename, plates, factor, duplicates), dialog.destroy()))
+                
+                def export_top_and_close():
+                    writeTOP(filename, self.plates, factor, self.plates_corresponding_to_duplicates)
+                    GLib.idle_add(dialog.destroy)
+                
+                thread = threading.Thread(target=export_top_and_close)
+                thread.daemon = True
+                thread.start()
             else:
                 dialog = Gtk.MessageDialog(
                     transient_for=self.dialog_export,
