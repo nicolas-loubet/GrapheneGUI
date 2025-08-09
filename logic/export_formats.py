@@ -81,9 +81,35 @@ def writeXYZ(filename, plates):
 
         print("File exported to " + filename)
 
-
-def writePDB():
-    pass
+def writePDB(filename, plates):
+    symbol_dict = {"C": "C", "CO": "C", "CE": "C", "OO": "O", "HO": "H", "OE": "O"}
+    
+    with open(filename, 'w') as f:
+        f.write("REMARK Graphene structure generated with Graphene GUI\n")
+        
+        all_atoms = []
+        for plate in plates:
+            all_atoms += plate.get_carbon_coords() + plate.get_oxide_coords()
+        
+        min_coords, bounds = checkBounds(plates)
+        
+        f.write(f"CRYST1{bounds[0]*10:9.3f}{bounds[1]*10:9.3f}{bounds[2]*10:9.3f}  90.00  90.00  90.00 P 1           1\n")
+        
+        for i_plate, plate in enumerate(plates):
+            atoms = plate.get_carbon_coords() + plate.get_oxide_coords()
+            residue_name = f"GR{i_plate+1}"
+            for i_atom, atom in enumerate(atoms, 1):
+                x, y, z, name, atom_index = atom
+                x_ang = (x - min_coords[0]) * 10
+                y_ang = (y - min_coords[1]) * 10
+                z_ang = (z - min_coords[2]) * 10
+                element = symbol_dict.get(name, "C")
+                f.write(f"ATOM  {i_atom:5d} {name:<4} {residue_name:3} X{i_plate+1:4d}    "
+                        f"{x_ang:8.3f}{y_ang:8.3f}{z_ang:8.3f}  0.00  0.00      SHT {element:>2}\n")
+        
+        f.write("END\n")
+    
+    print("File exported to " + filename)
 
 def writeTOP(filename, plates, factor, duplicate_list):
     top= ["; Topology created with Graphene-GUI\n\n",

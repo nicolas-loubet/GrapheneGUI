@@ -2,7 +2,7 @@
 
 **Graphene GUI** is a GTK-based graphical interface for creating and functionalizing graphene and graphene oxide sheets. It allows fast construction, modification, and export of graphene structures for use in molecular simulations.
 
-### Version: 0.3
+### Version: 0.4
 
 ## 🧪 Purpose
 
@@ -141,5 +141,4 @@ Email: nicolas.loubet@uns.edu.ar
 ## 📦 Future ideas
 - LAMMPS export support
 - Windows compatibility
-- PDB format is lacking
 
