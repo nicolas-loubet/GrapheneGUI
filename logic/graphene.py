@@ -47,6 +47,14 @@ class Graphene:
 
         return cls(coords, [])
 
+    def duplicate(self, translations):
+        carbons,oxides= [],[]
+        for c in self.carbon_coords:
+            carbons.append([c[0]+translations[0],c[1]+translations[1],c[2]+translations[2],c[3],c[4]])
+        for o in self.oxide_coords:
+            oxides.append([o[0]+translations[0],o[1]+translations[1],o[2]+translations[2],o[3],o[4]])
+        return Graphene.create_from_coords(carbons,oxides)
+
     def add_carbon(self, x, y, z, atom_name, atom_index):
         self.carbon_coords.append([x, y, z, atom_name, atom_index])
 
@@ -205,6 +213,14 @@ class Graphene:
     
     def distance_3D(self, x1, y1, z1, x2, y2, z2):
         return np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2)
+
+    def get_geometric_center(self):
+        min_coors, max_coords= [float("inf"), float("inf"), float("inf")], [float("-inf"), float("-inf"), float("-inf")]
+        for carbon in self.carbon_coords:
+            min_coors= [min(min_coors[i], carbon[i]) for i in range(3)]
+            max_coords= [max(max_coords[i], carbon[i]) for i in range(3)]
+        return [(min_coors[i] + max_coords[i])*.5 for i in range(3)]
+
 
 def generatePatterns(initial_character="C"):
     result = []

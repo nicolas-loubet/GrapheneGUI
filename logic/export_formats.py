@@ -85,61 +85,51 @@ def writeXYZ(filename, plates):
 def writePDB():
     pass
 
-def writeTOP(filename, plates, factor=1.0):
-    dialog = Gtk.MessageDialog(
-        transient_for=None,
-        flags=0,
-        message_type=Gtk.MessageType.INFO,
-        buttons=Gtk.ButtonsType.CANCEL,
-        text="Exporting topology..."
-    )
-    dialog.show_all()
+def writeTOP(filename, plates, factor, duplicate_list):
+    top= ["; Topology created with Graphene-GUI\n\n",
+        "[ defaults ]\n",
+        "; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ\n",
+        "1               2               yes             0.5     0.8333\n\n",
+        "[ atomtypes ]\n",
+        ";name   bond_type     mass     charge   ptype   sigma         epsilon\n",
+        " ca       ca         12.01000  0.00000   A     3.39967e-01   3.59824e-01\n",
+        " c        c          12.01000  0.18000   A     3.39967e-01   3.59824e-01\n",
+        " os       os         15.99940 -0.36000   A     3.16600e-01   6.49775e-01\n",
+        " oh       oh         15.99940 -0.57000   A     3.16600e-01   6.49775e-01\n",
+        " ho       ho          1.00800  0.39000   A     0.00000e+00   0.00000e+00\n\n"]
+    
+    molecules_count= ""
 
-    def do_work():
-        top= ["; Topology created with Graphene-GUI\n\n",
-            "[ defaults ]\n",
-            "; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ\n",
-            "1               2               yes             0.5     0.8333\n\n",
-            "[ atomtypes ]\n",
-            ";name   bond_type     mass     charge   ptype   sigma         epsilon\n",
-            " ca       ca         12.01000  0.00000   A     3.39967e-01   3.59824e-01\n",
-            " c        c          12.01000  0.18000   A     3.39967e-01   3.59824e-01\n",
-            " os       os         15.99940 -0.36000   A     3.16600e-01   6.49775e-01\n",
-            " oh       oh         15.99940 -0.57000   A     3.16600e-01   6.49775e-01\n",
-            " ho       ho          1.00800  0.39000   A     0.00000e+00   0.00000e+00\n\n"]
-        
-        molecules_count= ""
+    for i_plate,plate in enumerate(plates):
+        if i_plate+1 in duplicate_list[0]: continue
 
-        for i_plate,plate in enumerate(plates):
-            name_molecule= f"GR{i_plate+1}"
-            n_atoms= len(plate.get_carbon_coords()) + len(plate.get_oxide_coords())
+        name_molecule= f"GR{i_plate+1}"
+        n_atoms= len(plate.get_carbon_coords()) + len(plate.get_oxide_coords())
 
-            top.append("[ moleculetype ]\n;name            nrexcl\n "+name_molecule.ljust(5)+"            3\n")
-            top.append("\n[ atoms ]\n")
-            top.append(write_atoms_top(plate, i_plate+1))
+        top.append("[ moleculetype ]\n;name            nrexcl\n "+name_molecule.ljust(5)+"            3\n")
+        top.append("\n[ atoms ]\n")
+        top.append(write_atoms_top(plate, i_plate+1))
 
-            bonds= get_bonds_top(plate, factor)
-            if(len(bonds) > 0):
-                top.append("\n[ bonds ]\n")
-                top.append(write_bonds_top(bonds,"   1    1.4140e-01    2.8937e+05"))
-                top.append("\n[ pairs ]\n")
-                pairs,angles,dihedrals= get_pairs_angles_dihedrals(bonds,n_atoms)
-                top.append(write_pairs_top(pairs))
-                top.append("\n[ angles ]\n")
-                top.append(write_angles_top(angles,plate))
-                top.append("\n[ dihedrals ]\n")
-                top.append(write_dihedrals_top(dihedrals))
-                top.append(write_posres_top(plate))
+        bonds= get_bonds_top(plate, factor)
+        if(len(bonds) > 0):
+            top.append("\n[ bonds ]\n")
+            top.append(write_bonds_top(bonds,"   1    1.4140e-01    2.8937e+05"))
+            top.append("\n[ pairs ]\n")
+            pairs,angles,dihedrals= get_pairs_angles_dihedrals(bonds,n_atoms)
+            top.append(write_pairs_top(pairs))
+            top.append("\n[ angles ]\n")
+            top.append(write_angles_top(angles,plate))
+            top.append("\n[ dihedrals ]\n")
+            top.append(write_dihedrals_top(dihedrals))
+            top.append(write_posres_top(plate))
 
-            molecules_count += " "+name_molecule.ljust(6)+"           1\n"
+        repetitions= duplicate_list[1].count(i_plate+1) + 1
+        molecules_count += " "+name_molecule.ljust(6)+f"       {repetitions:>5}\n"
 
-        top.append("\n\n[ system ]\nGraphene-GUI\n\n[ molecules ]\n; Compound        nmols\n"+molecules_count)
+    top.append("\n\n[ system ]\nGraphene-GUI\n\n[ molecules ]\n; Compound        nmols\n"+molecules_count)
 
-        with open(filename, 'w') as f:
-            f.writelines(top)
-        dialog.destroy()
-
-    GLib.idle_add(do_work)
+    with open(filename, 'w') as f:
+        f.writelines(top)
     print("File exported to " + filename)
 
 def write_atoms_top(plate, i_molec):
