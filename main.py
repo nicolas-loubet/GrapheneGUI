@@ -485,8 +485,15 @@ class GrapheneApp:
 
         if new_plates:
             self.cb_plates.set_active(len(self.plates)-1)
-            self.btn_export.set_sensitive(True)
+            self.buttons_that_depend_of_having_a_plate(True)
             self.drawing_area.queue_draw()
+
+            css = b"""
+            #space_box_ruler_y {
+                background-color: white;
+            }
+            """
+            self.space_box_css_provider.load_from_data(css)
 
         self.dialog_import.hide()
         print(f"{len(new_plates)} plate(s) imported from {filename}")
