@@ -3,12 +3,13 @@ import numpy as np
 from gi.repository import Gtk, Gdk, GLib
 
 class Renderer:
-    def __init__(self, drawing_area, ruler_x, ruler_y, plates, cb_plates):
+    def __init__(self, drawing_area, ruler_x, ruler_y, plates, cb_plates, is_dark_mode_func):
         self.drawing_area = drawing_area
         self.ruler_x = ruler_x
         self.ruler_y = ruler_y
         self.plates = plates
         self.cb_plates = cb_plates
+        self.is_dark_mode_func = is_dark_mode_func
         self.scale = 1.0
         self.center_x = 0.0
         self.center_y = 0.0
@@ -106,13 +107,19 @@ class Renderer:
         cr.scale(self.scale, self.scale)
         cr.translate(width / (2 * self.scale) - self.center_x, height / (2 * self.scale) - self.center_y)
 
-        cr.set_source_rgb(1, 1, 1)
+        if self.is_dark_mode_func():
+            cr.set_source_rgb(0.118, 0.118, 0.118)
+        else:
+            cr.set_source_rgb(1, 1, 1)
         cr.paint()
 
         plate_index = self.cb_plates.get_active()
         plate = self.plates[plate_index]
 
-        cr.set_source_rgb(0, 0, 0)
+        if self.is_dark_mode_func():
+            cr.set_source_rgb(0, 1, 1)
+        else:
+            cr.set_source_rgb(0, 0, 0)
         for coord in plate.get_carbon_coords():
             x = coord[0]
             y = coord[1]
@@ -125,7 +132,10 @@ class Renderer:
             elif oxide_type == "OE":
                 cr.set_source_rgb(0, 0, 1)
             elif oxide_type == "HO":
-                cr.set_source_rgb(.6, .6, .6)
+                if self.is_dark_mode_func():
+                    cr.set_source_rgb(0.8, 0.8, 0.8)
+                else:
+                    cr.set_source_rgb(0.6, 0.6, 0.6)
             cr.arc(x, y, 0.025, 0, 2 * math.pi)
             cr.fill()
 
@@ -145,13 +155,19 @@ class Renderer:
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
 
-        cr.set_source_rgb(1, 1, 1)
+        if self.is_dark_mode_func():
+            cr.set_source_rgb(0.118, 0.118, 0.118)
+        else:
+            cr.set_source_rgb(1, 1, 1)
         cr.paint()
 
         pixel_x_min = (self.min_x - self.center_x) * self.scale + width / 2
         pixel_x_max = (self.max_x - self.center_x) * self.scale + width / 2
 
-        cr.set_source_rgb(0, 0, 0)
+        if self.is_dark_mode_func():
+            cr.set_source_rgb(1, 1, 1)
+        else:
+            cr.set_source_rgb(0, 0, 0)
         cr.set_line_width(2.0)
         cr.move_to(pixel_x_min, 3*height / 4)
         cr.line_to(pixel_x_max, 3*height / 4)
@@ -168,7 +184,6 @@ class Renderer:
                 cr.move_to(pixel_x-5, height / 2)
                 cr.show_text(str(x))
 
-
     def on_draw_ruler_y(self, widget, cr):
         if not self.plates or self.cb_plates.get_active() == -1:
             return
@@ -176,13 +191,19 @@ class Renderer:
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
 
-        cr.set_source_rgb(1, 1, 1)
+        if self.is_dark_mode_func():
+            cr.set_source_rgb(0.118, 0.118, 0.118)
+        else:
+            cr.set_source_rgb(1, 1, 1)
         cr.paint()
 
         pixel_y_min = (self.min_y - self.center_y) * self.scale + height / 2
         pixel_y_max = (self.max_y - self.center_y) * self.scale + height / 2
 
-        cr.set_source_rgb(0, 0, 0)
+        if self.is_dark_mode_func():
+            cr.set_source_rgb(1, 1, 1)
+        else:
+            cr.set_source_rgb(0, 0, 0)
         cr.set_line_width(2.0)
         cr.move_to(3*width / 4, pixel_y_min)
         cr.line_to(3*width / 4, pixel_y_max)

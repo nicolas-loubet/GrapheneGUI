@@ -33,6 +33,7 @@ class GrapheneApp:
         self.btn_delete = self.builder.get_object("btn_delete")
         self.btn_import = self.builder.get_object("btn_import")
         self.btn_export = self.builder.get_object("btn_export")
+        self.btn_dark_light_mode = self.builder.get_object("btn_dark_light_mode")
         self.cb_plates = self.builder.get_object("cb_plates")
         self.spin_random = self.builder.get_object("spin_random")
         self.entry_selection = self.builder.get_object("entry_selection")
@@ -101,11 +102,30 @@ class GrapheneApp:
         self.last_prob_oh = 66
         self.last_prob_o = 34
 
+        self.is_dark_mode = False
+        self.css_provider = Gtk.CssProvider()
+        self.drawing_area.get_style_context().add_provider(
+            self.css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+        self.ruler_x.get_style_context().add_provider(
+            self.css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+        self.ruler_y.get_style_context().add_provider(
+            self.css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+        self.space_box_css_provider = Gtk.CssProvider()
+        self.space_box_ruler_y.get_style_context().add_provider(
+            self.space_box_css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+        self.load_css()
+        self.ruler_x.connect("draw", self.on_ruler_draw)
+        self.ruler_y.connect("draw", self.on_ruler_draw)
+
         self.buttons_that_depend_of_having_a_plate(False)
 
         self.plates = []
         self.plates_corresponding_to_duplicates = [[],[]]
-        self.renderer = Renderer(self.drawing_area, self.ruler_x, self.ruler_y, self.plates, self.cb_plates)
+        self.renderer = Renderer(self.drawing_area, self.ruler_x, self.ruler_y, self.plates, self.cb_plates, lambda: self.is_dark_mode)
 
         self.drawing_area.set_events(Gdk.EventMask.BUTTON_PRESS_MASK)
         self.drawing_area.connect("button-press-event", self.on_drawing_area_clicked)
@@ -113,26 +133,11 @@ class GrapheneApp:
         self.active_oxide_mode = None
         self.first_carbon = None
 
-        css_provider = Gtk.CssProvider()
-        css_provider.load_from_path("ui/styles.css")
-        Gtk.StyleContext.add_provider_for_screen(
-            Gdk.Screen.get_default(),
-            css_provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
-
-        self.space_box_css_provider = Gtk.CssProvider()
-        self.space_box_ruler_y.get_style_context().add_provider(
-            self.space_box_css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
-
         self.background_pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
             "ui/img/background.svg", width=800, height=800, preserve_aspect_ratio=True
         )
         self.drawing_area.connect("draw", self.on_drawing_area_draw)
 
-
-        self.window.connect("destroy", Gtk.main_quit)
         self.window.show_all()
 
     def buttons_that_depend_of_having_a_plate(self, active):
@@ -196,6 +201,68 @@ class GrapheneApp:
     def on_btn_export_clicked(self, button):
         self.dialog_export.show_all()
 
+    def load_css(self):
+        css = b"""
+        #drawing_area {
+            background-color: %s;
+        }
+        #ruler_x {
+            background-color: %s;
+        }
+        #ruler_y {
+            background-color: %s;
+        }
+        #space_box_ruler_y {
+            background-color: %s;
+        }
+        #spin_width, #spin_height, #spin_center_x, #spin_center_y, #spin_center_z,
+        #spin_prob_oh, #spin_prob_o, #spin_random, #spin_duplicate_x, #spin_duplicate_y, #spin_duplicate_z {
+            background-color: %s;
+            color: %s;
+        }
+        #btn_create_ok, #btn_export_ok, #btn_import_ok, #btn_prob_ok {
+            background-color: %s;
+            color: %s;
+        }
+        #btn_create_cancel, #btn_export_cancel, #btn_import_cancel, #btn_prob_cancel {
+            background-color: %s;
+            color: %s;
+        }
+        #btn_create, #btn_duplicate, #btn_delete, #btn_import, #btn_export,
+        #btn_reduce, #btn_change_prob, #btn_oh, #btn_o, #btn_remove_ox, #btn_dark_light_mode {
+            background-color: %s;
+            color: %s;
+        }
+        #entry_selection {
+            background-color: %s;
+            color: %s;
+        }
+        """ % (
+            b"#1e1e1e" if self.is_dark_mode else b"white",
+            b"#1e1e1e" if self.is_dark_mode else b"white",
+            b"#1e1e1e" if self.is_dark_mode else b"white",
+            b"#1e1e1e" if self.is_dark_mode else b"white",
+            b"#2a2a2a" if self.is_dark_mode else b"#f5f5f5",
+            b"white" if self.is_dark_mode else b"black",
+            b"#2e7d32" if self.is_dark_mode else b"lightgreen",
+            b"white" if self.is_dark_mode else b"black",
+            b"#d32f2f" if self.is_dark_mode else b"lightcoral",
+            b"white" if self.is_dark_mode else b"black",
+            b"#424242" if self.is_dark_mode else b"#e0e0e0",
+            b"white" if self.is_dark_mode else b"black",
+            b"#2a2a2a" if self.is_dark_mode else b"#f5f5f5",
+            b"white" if self.is_dark_mode else b"black",
+        )
+        self.css_provider.load_from_data(css)
+        self.space_box_css_provider.load_from_data(css)
+
+    def on_btn_dark_light_mode_clicked(self, button):
+        self.is_dark_mode = not self.is_dark_mode
+        self.load_css()
+        self.drawing_area.queue_draw()
+        self.ruler_x.queue_draw()
+        self.ruler_y.queue_draw()
+        print(f"Switched to {'dark' if self.is_dark_mode else 'light'} mode")
 
     # # # # # # # # # # # # # # #
     # Main window: middle panel #
@@ -271,6 +338,14 @@ class GrapheneApp:
 
         return True
     
+    def on_ruler_draw(self, widget, cr):
+        if self.is_dark_mode:
+            cr.set_source_rgb(0.118, 0.118, 0.118)
+        else:
+            cr.set_source_rgb(1, 1, 1)
+        cr.paint()
+        return False
+
     def on_drawing_area_draw(self, widget, cr):
         context = widget.get_style_context()
         Gtk.render_background(context, cr, 0, 0, widget.get_allocated_width(), widget.get_allocated_height())
@@ -439,13 +514,6 @@ class GrapheneApp:
         self.drawing_area.queue_draw()
         self.buttons_that_depend_of_having_a_plate(True)
 
-        css = b"""
-        #space_box_ruler_y {
-            background-color: white;
-        }
-        """
-        self.space_box_css_provider.load_from_data(css)
-
         self.dialog_create.hide()
         print(f"Coords drawn: Plate {len(self.plates)}")
 
@@ -506,13 +574,6 @@ class GrapheneApp:
             self.cb_plates.set_active(len(self.plates)-1)
             self.buttons_that_depend_of_having_a_plate(True)
             self.drawing_area.queue_draw()
-
-            css = b"""
-            #space_box_ruler_y {
-                background-color: white;
-            }
-            """
-            self.space_box_css_provider.load_from_data(css)
 
         self.dialog_import.hide()
         print(f"{len(new_plates)} plate(s) imported from {filename}")

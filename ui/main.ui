@@ -12,6 +12,7 @@
     <property name="title" translatable="yes">Graphene GUI</property>
     <property name="default-width">800</property>
     <property name="default-height">800</property>
+    <signal name="destroy" handler="on_main_window_destroy" swapped="no"/>
     <child>
       <object class="GtkBox">
         <property name="visible">True</property>
@@ -201,6 +202,34 @@
                 <property name="expand">False</property>
                 <property name="fill">True</property>
                 <property name="position">5</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="btn_dark_light_mode">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+                <signal name="clicked" handler="on_btn_dark_light_mode_clicked" swapped="no"/>
+                <child>
+                  <object class="GtkBox">
+                    <property name="orientation">horizontal</property>
+                    <child>
+                      <object class="GtkImage">
+                        <property name="file">ui/img/svg/dark_light_mode.svg</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="label" translatable="yes">Change color mode</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">6</property>
               </packing>
             </child>
           </object>
