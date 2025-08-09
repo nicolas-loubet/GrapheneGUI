@@ -19,7 +19,7 @@ class Graphene:
         i_atom = 1
 
         width = n_x * 2 * dx
-        height = n_y * 6 * dy
+        height = ((n_y-1) * 6 + 4) * dy
         center_x_geom = width / 2
         center_y_geom = height / 2
 

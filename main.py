@@ -408,7 +408,7 @@ class GrapheneApp:
         center_z_nm = center_z / 10
 
         n_x = math.floor(width_nm / (2 * 0.1225 * factor))
-        n_y = math.floor(height_nm / (6 * 0.071 * factor))
+        n_y = math.floor(height_nm / (6 * 0.071 * factor))+1
 
         max_atoms = len(generatePatterns())
         max_n_x_n_y = max_atoms // (2 * (2 * n_x + 1)) if n_x > 0 else 0
