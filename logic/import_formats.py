@@ -105,3 +105,57 @@ def readPDB(filename):
     
     print("File read from " + filename)
     return plates
+
+def readMOL2(filename):
+    with open(filename, 'r') as f:
+        plates = []
+        carbons, oxides = [], []
+        current_molec = 0
+        current_section = None
+        
+        atom_type_map = {"C.ar": "C", "C.3": "CO", "O.3": "OO", "H": "HO", "O.2": "OE"}
+        
+        for line in f:
+            line = line.strip()
+            if line.startswith("@<TRIPOS>"):
+                current_section = line[9:]
+                continue
+            
+            if current_section == "ATOM":
+                parts = line.split()
+                if len(parts) < 9:
+                    continue
+                atom_id = int(parts[0])
+                atom_name = parts[1]
+                x = float(parts[2]) / 10.0
+                y = float(parts[3]) / 10.0
+                z = float(parts[4]) / 10.0
+                mol2_type = parts[5]
+                residue_num = int(parts[6])
+                residue_name = parts[7]
+                
+                internal_type = atom_type_map.get(mol2_type, "C")
+                if mol2_type == "C.3":
+                    internal_type = "CO"
+                
+                if residue_num > current_molec:
+                    if carbons or oxides:
+                        plate = Graphene.create_from_coords(carbons, oxides)
+                        plates.append(plate)
+                        carbons, oxides = [], []
+                    current_molec = residue_num
+                
+                if internal_type.startswith("C"):
+                    carbons.append([x, y, z, internal_type, atom_id])
+                else:
+                    oxides.append([x, y, z, internal_type, atom_id])
+        
+        if carbons or oxides:
+            plate = Graphene.create_from_coords(carbons, oxides)
+            plates.append(plate)
+        
+        for plate in plates:
+            change_name_carbons_oxidized(plate)
+    
+    print("File read from " + filename)
+    return plates

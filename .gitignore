@@ -10,4 +10,5 @@ __pycache__/
 *.gro
 *.pdb
 *.top
+*.mol2
 *.glade

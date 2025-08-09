@@ -7,8 +7,8 @@ from gi.repository import Gtk, Gdk, GLib, GdkPixbuf
 import math
 from logic.graphene import Graphene, generatePatterns
 from logic.renderer import Renderer
-from logic.export_formats import writeGRO, writeXYZ, writeTOP, writePDB
-from logic.import_formats import readGRO, readXYZ, readPDB
+from logic.export_formats import writeGRO, writeXYZ, writeTOP, writePDB, writeMOL2
+from logic.import_formats import readGRO, readXYZ, readPDB, readMOL2
 
 class GrapheneApp:
     def __init__(self):
@@ -477,6 +477,8 @@ class GrapheneApp:
                 new_plates = readGRO(filename)
             elif ext == ".xyz":
                 new_plates = readXYZ(filename)
+            elif ext == ".mol2":
+                new_plates = readMOL2(filename)
             elif ext == ".pdb":
                 new_plates = readPDB(filename)
             else:
@@ -559,6 +561,8 @@ class GrapheneApp:
                 writePDB(filename, self.plates)
             elif filename.endswith(".xyz"):
                 writeXYZ(filename, self.plates)
+            elif filename.endswith(".mol2"):
+                writeMOL2(filename, self.plates)
             elif filename.endswith(".top"):
                 factor = self.spin_scale.get_value()/100.0
                 dialog = Gtk.MessageDialog(

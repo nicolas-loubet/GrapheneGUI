@@ -111,6 +111,77 @@ def writePDB(filename, plates):
     
     print("File exported to " + filename)
 
+def writeMOL2(filename, plates, factor=1.0):
+    atom_type_dict = {"C": "C.ar", "CO": "C.3", "CE": "C.3", "OO": "O.3", "HO": "H", "OE": "O.2"}
+    
+    with open(filename, 'w') as f:
+        total_atoms = sum(len(plate.get_carbon_coords()) + len(plate.get_oxide_coords()) for plate in plates)
+        bonds = []
+        for i_plate, plate in enumerate(plates):
+            plate_bonds = get_bonds_top(plate, factor)
+            for bond in plate_bonds:
+                offset = sum(len(p.get_carbon_coords()) + len(p.get_oxide_coords()) for p in plates[:i_plate])
+                bonds.append([bond[0] + offset, bond[1] + offset])
+        
+        total_residues = len(plates)
+        
+        f.write("@<TRIPOS>MOLECULE\n")
+        f.write("GrapheneGUI\n")
+        f.write(f"{total_atoms:>6} {len(bonds):>6} {total_residues:>6}    0    0\n")
+        f.write("SMALL\nNO_CHARGES\n\n")
+        f.write("File created by GrapheneGUI\n")
+        
+        f.write("@<TRIPOS>ATOM\n")
+        min_coords, _ = checkBounds(plates)
+        global_atom_id = 1
+        for i_plate, plate in enumerate(plates):
+            residue_name = f"GRA{i_plate+1}"
+            atoms = plate.get_carbon_coords() + plate.get_oxide_coords()
+            for atom in atoms:
+                x, y, z, name, _ = atom
+                x_ang = (x - min_coords[0]) * 10
+                y_ang = (y - min_coords[1]) * 10
+                z_ang = (z - min_coords[2]) * 10
+                mol2_type = atom_type_dict.get(name, "C.ar")
+                f.write(f"{global_atom_id:>7} {name:<8} {x_ang:>8.4f} {y_ang:>8.4f} {z_ang:>8.4f} "
+                        f"{mol2_type:<8} {i_plate+1:>3} {residue_name:<8} 0.0000\n")
+                global_atom_id += 1
+        
+        f.write("@<TRIPOS>BOND\n")
+        for i, bond in enumerate(bonds, 1):
+            ai, aj = bond
+            plate_idx_ai = 0
+            plate_idx_aj = 0
+            atom_count = 0
+            for i_plate, plate in enumerate(plates):
+                plate_atoms = len(plate.get_carbon_coords()) + len(plate.get_oxide_coords())
+                if ai - 1 < atom_count + plate_atoms:
+                    plate_idx_ai = i_plate
+                    local_idx_ai = (ai - 1) - atom_count
+                    break
+                atom_count += plate_atoms
+            atom_count = 0
+            for i_plate, plate in enumerate(plates):
+                plate_atoms = len(plate.get_carbon_coords()) + len(plate.get_oxide_coords())
+                if aj - 1 < atom_count + plate_atoms:
+                    plate_idx_aj = i_plate
+                    local_idx_aj = (aj - 1) - atom_count
+                    break
+                atom_count += plate_atoms
+            atom_ai = (plates[plate_idx_ai].get_carbon_coords() + plates[plate_idx_ai].get_oxide_coords())[local_idx_ai]
+            atom_aj = (plates[plate_idx_aj].get_carbon_coords() + plates[plate_idx_aj].get_oxide_coords())[local_idx_aj]
+            bond_type = "ar" if atom_ai[3].startswith("C") and atom_aj[3].startswith("C") else "1"
+            f.write(f"{i:>6} {ai:>4} {aj:>4} {bond_type}\n")
+        
+        f.write("@<TRIPOS>SUBSTRUCTURE\n")
+        global_atom_id = 1
+        for i_plate, plate in enumerate(plates):
+            residue_name = f"GRA{i_plate+1}"
+            f.write(f"{i_plate+1:>6} {residue_name:<8} {global_atom_id:>4} RESIDUE           1 X     GRA     2 ROOT\n")
+            global_atom_id += len(plate.get_carbon_coords()) + len(plate.get_oxide_coords())
+    
+    print("File exported to " + filename)
+
 def writeTOP(filename, plates, factor, duplicate_list):
     top= ["; Topology created with Graphene-GUI\n\n",
         "[ defaults ]\n",

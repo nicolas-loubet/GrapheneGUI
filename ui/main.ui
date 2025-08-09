@@ -191,7 +191,7 @@
                     </child>
                     <child>
                       <object class="GtkLabel">
-                        <property name="label" translatable="yes">Export (.gro .xyz .pdb .top)</property>
+                        <property name="label" translatable="yes">Export (.gro .xyz .pdb .mol2 .top)</property>
                       </object>
                     </child>
                   </object>
