@@ -12,3 +12,4 @@ __pycache__/
 *.top
 *.mol2
 *.glade
+notas/

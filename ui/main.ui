@@ -1,704 +1,481 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.40.0 -->
-<interface>
-  <requires lib="gtk+" version="3.24"/>
-  <object class="GtkAdjustment" id="spin_random_adj">
-    <property name="upper">100</property>
-    <property name="step-increment">5</property>
-    <property name="page-increment">10</property>
-  </object>
-  <object class="GtkWindow" id="main_window">
-    <property name="can-focus">False</property>
-    <property name="title" translatable="yes">Graphene GUI</property>
-    <property name="default-width">800</property>
-    <property name="default-height">800</property>
-    <signal name="destroy" handler="on_main_window_destroy" swapped="no"/>
-    <child>
-      <object class="GtkBox">
-        <property name="visible">True</property>
-        <property name="can-focus">False</property>
-        <property name="orientation">vertical</property>
-        <property name="spacing">5</property>
-        <child>
-          <object class="GtkBox">
-            <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="margin-start">10</property>
-            <property name="margin-end">10</property>
-            <property name="margin-top">5</property>
-            <property name="margin-bottom">5</property>
-            <property name="spacing">20</property>
-            <child>
-              <object class="GtkButton" id="btn_create">
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
-                <signal name="clicked" handler="on_btn_create_clicked" swapped="no"/>
-                <child>
-                  <object class="GtkBox">
-                    <property name="orientation">horizontal</property>
-                    <child>
-                      <object class="GtkImage">
-                        <property name="file">ui/img/svg/create.svg</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">Create Graphene</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="margin-end">4</property>
-                    <property name="label" translatable="yes">Plates:</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkComboBoxText" id="cb_plates">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <signal name="changed" handler="on_cb_plates_changed" swapped="no"/>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="btn_duplicate">
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
-                <signal name="clicked" handler="on_btn_duplicate_clicked" swapped="no"/>
-                <child>
-                  <object class="GtkBox">
-                    <property name="orientation">horizontal</property>
-                    <child>
-                      <object class="GtkImage">
-                        <property name="file">ui/img/svg/duplicate.svg</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">Duplicate plate</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="btn_delete">
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
-                <signal name="clicked" handler="on_btn_delete_clicked" swapped="no"/>
-                <child>
-                  <object class="GtkBox">
-                    <property name="orientation">horizontal</property>
-                    <child>
-                      <object class="GtkImage">
-                        <property name="file">ui/img/svg/delete.svg</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">Delete</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">3</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="btn_import">
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
-                <signal name="clicked" handler="on_btn_import_clicked" swapped="no"/>
-                <child>
-                  <object class="GtkBox">
-                    <property name="orientation">horizontal</property>
-                    <child>
-                      <object class="GtkImage">
-                        <property name="file">ui/img/svg/import.svg</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">Import</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">4</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="btn_export">
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
-                <signal name="clicked" handler="on_btn_export_clicked" swapped="no"/>
-                <child>
-                  <object class="GtkBox">
-                    <property name="orientation">horizontal</property>
-                    <child>
-                      <object class="GtkImage">
-                        <property name="file">ui/img/svg/export.svg</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">Export (.gro .xyz .pdb .mol2 .top)</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">5</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="btn_dark_light_mode">
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
-                <signal name="clicked" handler="on_btn_dark_light_mode_clicked" swapped="no"/>
-                <child>
-                  <object class="GtkBox">
-                    <property name="orientation">horizontal</property>
-                    <child>
-                      <object class="GtkImage">
-                        <property name="file">ui/img/svg/dark_light_mode.svg</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">Change color mode</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">6</property>
-              </packing>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">0</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkBox">
-            <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="orientation">vertical</property>
-            <child>
-              <object class="GtkBox" id="space_box_ruler_y">
-                <property name="name">space_box_ruler_y</property>
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <child>
-                  <object class="GtkBox">
-                    <property name="name">spacer_top_left</property>
-                    <property name="width-request">50</property>
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <child>
-                      <placeholder/>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkDrawingArea" id="ruler_x">
-                    <property name="name">ruler_x</property>
-                    <property name="height-request">50</property>
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                  </object>
-                  <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <child>
-                  <object class="GtkDrawingArea" id="ruler_y">
-                    <property name="name">ruler_y</property>
-                    <property name="width-request">50</property>
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkDrawingArea" id="drawing_area">
-                    <property name="name">drawing_area</property>
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="has-tooltip">True</property>
-                    <property name="hexpand">True</property>
-                    <property name="vexpand">True</property>
-                  </object>
-                  <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
-            <property name="position">1</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkBox">
-            <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="margin-start">5</property>
-            <property name="margin-end">5</property>
-            <property name="margin-top">5</property>
-            <property name="margin-bottom">5</property>
-            <property name="spacing">5</property>
-            <child>
-              <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="spacing">5</property>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">Oxidation:</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkButton" id="btn_reduce">
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">True</property>
-                    <signal name="clicked" handler="on_btn_reduce_clicked" swapped="no"/>
-                    <child>
-                      <object class="GtkBox">
-                        <property name="orientation">horizontal</property>
-                        <child>
-                          <object class="GtkImage">
-                            <property name="file">ui/img/svg/reduce.svg</property>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkLabel">
-                            <property name="label" translatable="yes">Reduce all</property>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkButton" id="btn_change_prob">
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">True</property>
-                    <signal name="clicked" handler="on_btn_change_prob_clicked" swapped="no"/>
-                    <child>
-                      <object class="GtkBox">
-                        <property name="orientation">horizontal</property>
-                        <child>
-                          <object class="GtkImage">
-                            <property name="file">ui/img/svg/prob.svg</property>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkLabel">
-                            <property name="label" translatable="yes">Change Probability</property>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">2</property>
-                  </packing>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkSeparator">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="spacing">5</property>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">Random:</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkSpinButton" id="spin_random">
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="max-length">3</property>
-                    <property name="width-chars">3</property>
-                    <property name="text" translatable="yes">0</property>
-                    <property name="input-purpose">number</property>
-                    <property name="adjustment">spin_random_adj</property>
-                    <property name="numeric">True</property>
-                    <signal name="value-changed" handler="on_spin_random_value_changed" swapped="no"/>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">%</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">2</property>
-                  </packing>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkSeparator">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">3</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="spacing">5</property>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">VMD Selection:</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkEntry" id="entry_selection">
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <signal name="changed" handler="on_entry_selection_changed" swapped="no"/>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">4</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkSeparator">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">5</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="spacing">5</property>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">Manual:</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkToggleButton" id="btn_oh">
-                    <property name="label" translatable="yes">Add OH</property>
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">True</property>
-                    <signal name="clicked" handler="on_btn_oh_clicked" swapped="no"/>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkToggleButton" id="btn_o">
-                    <property name="label" translatable="yes">Add O</property>
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">True</property>
-                    <signal name="clicked" handler="on_btn_o_clicked" swapped="no"/>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">2</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkToggleButton" id="btn_remove_ox">
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">True</property>
-                    <signal name="clicked" handler="on_btn_remove_ox_clicked" swapped="no"/>
-                    <child>
-                      <object class="GtkBox">
-                        <property name="orientation">horizontal</property>
-                        <child>
-                          <object class="GtkImage">
-                            <property name="file">ui/img/svg/remove_one.svg</property>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkLabel">
-                            <property name="label" translatable="yes">Remove Ox</property>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">3</property>
-                  </packing>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">6</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkSeparator">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">7</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="spacing">5</property>
-                <child>
-                  <object class="GtkRadioButton" id="radio_random">
-                    <property name="label" translatable="yes">z±</property>
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">False</property>
-                    <property name="active">True</property>
-                    <property name="draw-indicator">False</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkRadioButton" id="radio_z_plus">
-                    <property name="label" translatable="yes">z+</property>
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">False</property>
-                    <property name="draw-indicator">False</property>
-                    <property name="group">radio_random</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkRadioButton" id="radio_z_minus">
-                    <property name="label" translatable="yes">z-</property>
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">False</property>
-                    <property name="draw-indicator">False</property>
-                    <property name="group">radio_random</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">2</property>
-                  </packing>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">8</property>
-              </packing>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">2</property>
-          </packing>
-        </child>
-      </object>
-    </child>
-  </object>
-</interface>
+<ui version="4.0">
+  <class>MainWindow</class>
+  <widget class="QMainWindow" name="MainWindow">
+    <property name="geometry">
+      <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>1000</width>
+        <height>700</height>
+      </rect>
+    </property>
+    <property name="windowTitle">
+      <string>Graphene GUI</string>
+    </property>
+    <widget class="QWidget" name="centralwidget">
+      <layout class="QVBoxLayout" name="verticalLayout_1">
+        
+        <!-- Top toolbar -->
+        <item>
+          <widget class="QToolBar" name="topToolBar">
+            <property name="iconSize">
+              <size>
+                <width>48</width>
+                <height>40</height>
+              </size>
+            </property>
+            <widget class="QPushButton" name="btnCreate">
+              <property name="minimumSize">
+                <size>
+                  <width>100</width>
+                  <height>40</height>
+                </size>
+              </property>
+              <property name="text">
+                <string>Create</string>
+              </property>
+              <property name="icon">
+                <iconset>
+                  <normaloff>ui/img/svg/create.svg</normaloff>
+                </iconset>
+              </property>
+              <property name="iconSize">
+                <size>
+                  <width>25</width>
+                  <height>25</height>
+                </size>
+              </property>
+            </widget>
+            <widget class="QComboBox" name="comboDrawings">
+              <property name="minimumSize">
+                <size>
+                  <width>150</width>
+                  <height>40</height>
+                </size>
+              </property>
+              <property name="enabled">
+                <bool>false</bool>
+              </property>
+            </widget>
+            <widget class="QPushButton" name="btnDuplicate">
+              <property name="minimumSize">
+                <size>
+                  <width>100</width>
+                  <height>40</height>
+                </size>
+              </property>
+              <property name="text">
+                <string>Duplicate</string>
+              </property>
+              <property name="icon">
+                <iconset>
+                  <normaloff>ui/img/svg/duplicate.svg</normaloff>
+                </iconset>
+              </property>
+              <property name="iconSize">
+                <size>
+                  <width>25</width>
+                  <height>25</height>
+                </size>
+              </property>
+            </widget>
+            <widget class="QPushButton" name="btnDelete">
+              <property name="minimumSize">
+                <size>
+                  <width>100</width>
+                  <height>40</height>
+                </size>
+              </property>
+              <property name="text">
+                <string>Delete</string>
+              </property>
+              <property name="icon">
+                <iconset>
+                  <normaloff>ui/img/svg/delete.svg</normaloff>
+                </iconset>
+              </property>
+              <property name="iconSize">
+                <size>
+                  <width>25</width>
+                  <height>25</height>
+                </size>
+              </property>
+            </widget>
+            <widget class="QPushButton" name="btnImport">
+              <property name="minimumSize">
+                <size>
+                  <width>100</width>
+                  <height>40</height>
+                </size>
+              </property>
+              <property name="text">
+                <string>Import</string>
+              </property>
+              <property name="icon">
+                <iconset>
+                  <normaloff>ui/img/svg/import.svg</normaloff>
+                </iconset>
+              </property>
+              <property name="iconSize">
+                <size>
+                  <width>25</width>
+                  <height>25</height>
+                </size>
+              </property>
+            </widget>
+            <widget class="QPushButton" name="btnExport">
+              <property name="minimumSize">
+                <size>
+                  <width>100</width>
+                  <height>40</height>
+                </size>
+              </property>
+              <property name="text">
+                <string>Export</string>
+              </property>
+              <property name="icon">
+                <iconset>
+                  <normaloff>ui/img/svg/export.svg</normaloff>
+                </iconset>
+              </property>
+              <property name="iconSize">
+                <size>
+                  <width>25</width>
+                  <height>25</height>
+                </size>
+              </property>
+            </widget>
+            <widget class="QPushButton" name="btnTheme">
+              <property name="minimumSize">
+                <size>
+                  <width>100</width>
+                  <height>40</height>
+                </size>
+              </property>
+              <property name="text">
+                <string>Light/Dark</string>
+              </property>
+              <property name="icon">
+                <iconset>
+                  <normaloff>ui/img/svg/dark_light_mode.svg</normaloff>
+                </iconset>
+              </property>
+              <property name="iconSize">
+                <size>
+                  <width>25</width>
+                  <height>25</height>
+                </size>
+              </property>
+            </widget>
+          </widget>
+        </item>
+
+        <!-- Central area with rulers and drawing -->
+        <item>
+          <widget class="QWidget" name="drawingArea">
+            <layout class="QGridLayout" name="gridLayoutCentral">
+              <property name="spacing">
+                <number>0</number>
+              </property>
+              <item row="0" column="0">
+                <spacer name="cornerSpacer">
+                  <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeType">
+                    <enum>QSizePolicy::Fixed</enum>
+                  </property>
+                  <property name="sizeHint">
+                    <size>
+                      <width>40</width>
+                      <height>40</height>
+                    </size>
+                  </property>
+                </spacer>
+              </item>
+              <item row="0" column="1">
+                <widget class="QWidget" name="topRuler">
+                  <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                    </sizepolicy>
+                  </property>
+                  <property name="minimumSize">
+                    <size>
+                      <width>0</width>
+                      <height>40</height>
+                    </size>
+                  </property>
+                  <property name="styleSheet">
+                    <string notr="true">background-color: #f0f0f0; border: 1px solid #ccc;</string>
+                  </property>
+                </widget>
+              </item>
+              <item row="1" column="0">
+                <widget class="QWidget" name="leftRuler">
+                  <property name="sizePolicy">
+                    <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                    </sizepolicy>
+                  </property>
+                  <property name="minimumSize">
+                    <size>
+                      <width>40</width>
+                      <height>0</height>
+                    </size>
+                  </property>
+                  <property name="styleSheet">
+                    <string notr="true">background-color: #f0f0f0; border: 1px solid #ccc;</string>
+                  </property>
+                </widget>
+              </item>
+              <item row="1" column="1">
+                <widget class="QGraphicsView" name="graphicsView">
+                  <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                    </sizepolicy>
+                  </property>
+                </widget>
+              </item>
+            </layout>
+          </widget>
+        </item>
+
+        <!-- Bottom bar -->
+        <item>
+          <widget class="QWidget" name="bottomBar">
+            <layout class="QHBoxLayout" name="hLayoutBottom">
+              <item>
+                <widget class="QLabel" name="labelOxidation">
+                  <property name="text">
+                    <string>Oxidation:</string>
+                  </property>
+                </widget>
+              </item>
+              <item>
+                <widget class="QPushButton" name="btnReduceAll">
+                  <property name="text">
+                    <string>Reduce All</string>
+                  </property>
+                  <property name="icon">
+                    <iconset>
+                      <normaloff>ui/img/svg/reduce.svg</normaloff>
+                    </iconset>
+                  </property>
+                  <property name="minimumSize">
+                    <size>
+                      <width>100</width>
+                      <height>40</height>
+                    </size>
+                  </property>
+                  <property name="iconSize">
+                    <size>
+                      <width>25</width>
+                      <height>25</height>
+                    </size>
+                  </property>
+                </widget>
+              </item>
+              <item>
+                <widget class="QPushButton" name="btnChangeProb">
+                  <property name="text">
+                    <string>Change Prob.</string>
+                  </property>
+                  <property name="icon">
+                    <iconset>
+                      <normaloff>ui/img/svg/prob.svg</normaloff>
+                    </iconset>
+                  </property>
+                  <property name="minimumSize">
+                    <size>
+                      <width>130</width>
+                      <height>40</height>
+                    </size>
+                  </property>
+                  <property name="iconSize">
+                    <size>
+                      <width>25</width>
+                      <height>25</height>
+                    </size>
+                  </property>
+                </widget>
+              </item>
+              <item>
+                <widget class="Line" name="line1">
+                  <property name="orientation">
+                    <enum>Qt::Vertical</enum>
+                  </property>
+                </widget>
+              </item>
+              <item>
+                <widget class="QLabel" name="labelRandom">
+                  <property name="text">
+                    <string>Random</string>
+                  </property>
+                </widget>
+              </item>
+              <item>
+                <widget class="QSpinBox" name="spinRandom">
+                  <property name="minimumSize">
+                    <size>
+                      <width>60</width>
+                      <height>40</height>
+                    </size>
+                  </property>
+                  <property name="minimum">
+                    <number>0</number>
+                  </property>
+                  <property name="maximum">
+                    <number>100</number>
+                  </property>
+                  <property name="singleStep">
+                    <number>5</number>
+                  </property>
+                  <property name="suffix">
+                    <string>%</string>
+                  </property>
+                </widget>
+              </item>
+              <item>
+                <widget class="Line" name="line2">
+                  <property name="orientation">
+                    <enum>Qt::Vertical</enum>
+                  </property>
+                </widget>
+              </item>
+              <item>
+                <widget class="QLabel" name="labelVMD">
+                  <property name="text">
+                    <string>VMD Selection:</string>
+                  </property>
+                </widget>
+              </item>
+              <item>
+                <widget class="QLineEdit" name="entryVMD">
+                  <property name="minimumSize">
+                    <size>
+                      <width>120</width>
+                      <height>40</height>
+                    </size>
+                  </property>
+                </widget>
+              </item>
+              <item>
+                <widget class="Line" name="line3">
+                  <property name="orientation">
+                    <enum>Qt::Vertical</enum>
+                  </property>
+                </widget>
+              </item>
+              <item>
+                <widget class="QLabel" name="labelManual">
+                  <property name="text">
+                    <string>Manual</string>
+                  </property>
+                </widget>
+              </item>
+              <item>
+                <widget class="QPushButton" name="btnAddOH">
+                  <property name="text">
+                    <string>Add OH</string>
+                  </property>
+                  <property name="minimumSize">
+                    <size>
+                      <width>60</width>
+                      <height>40</height>
+                    </size>
+                  </property>
+                </widget>
+              </item>
+              <item>
+                <widget class="QPushButton" name="btnAddO">
+                  <property name="text">
+                    <string>Add O</string>
+                  </property>
+                  <property name="minimumSize">
+                    <size>
+                      <width>60</width>
+                      <height>40</height>
+                    </size>
+                  </property>
+                </widget>
+              </item>
+              <item>
+                <widget class="QPushButton" name="btnRemoveOx">
+                  <property name="text">
+                    <string>Remove Ox.</string>
+                  </property>
+                  <property name="icon">
+                    <iconset>
+                      <normaloff>ui/img/svg/remove_one.svg</normaloff>
+                    </iconset>
+                  </property>
+                  <property name="minimumSize">
+                    <size>
+                      <width>110</width>
+                      <height>40</height>
+                    </size>
+                  </property>
+                  <property name="iconSize">
+                    <size>
+                      <width>25</width>
+                      <height>25</height>
+                    </size>
+                  </property>
+                </widget>
+              </item>
+              <item>
+                <widget class="Line" name="line4">
+                  <property name="orientation">
+                    <enum>Qt::Vertical</enum>
+                  </property>
+                </widget>
+              </item>
+              <item>
+                <widget class="QLabel" name="labelWhere">
+                  <property name="text">
+                    <string>Where:</string>
+                  </property>
+                </widget>
+              </item>
+              <item>
+                <widget class="QWidget" name="radioGroupWhere">
+                  <layout class="QHBoxLayout" name="hLayoutWhere">
+                    <item>
+                      <widget class="QRadioButton" name="radioZpm">
+                        <property name="text">
+                          <string>z±</string>
+                        </property>
+                      </widget>
+                    </item>
+                    <item>
+                      <widget class="QRadioButton" name="radioZp">
+                        <property name="text">
+                          <string>z+</string>
+                        </property>
+                      </widget>
+                    </item>
+                    <item>
+                      <widget class="QRadioButton" name="radioZm">
+                        <property name="text">
+                          <string>z-</string>
+                        </property>
+                      </widget>
+                    </item>
+                  </layout>
+                </widget>
+              </item>
+            </layout>
+          </widget>
+        </item>
+      </layout>
+    </widget>
+  </widget>
+  <resources/>
+  <connections/>
+</ui>
