@@ -1,4 +1,4 @@
-from gi.repository import Gtk, GLib
+from logic.graphene import Graphene
 
 def formatGRO(atom_gro):
     i_molec, n_molec, atom_type, i_atom, x, y, z = atom_gro
