@@ -2,24 +2,27 @@ import os
 import random
 import threading
 import math
+from pathlib import Path
+from logic.other_dialogs import CreateDialog, DuplicateDialog
 from logic.graphene import Graphene, generatePatterns
 from logic.renderer import Renderer
 from logic.export_formats import writeGRO, writeXYZ, writeTOP, writePDB, writeMOL2
 from logic.import_formats import readGRO, readXYZ, readPDB, readMOL2
-from PySide6.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QGraphicsScene, QGraphicsView, QGraphicsPixmapItem
-from PySide6.QtCore import Qt, Slot, QRectF, QPointF
-from PySide6.QtGui import QColor, QPen, QBrush, QPainter, QPixmap, QImage
-from PySide6.QtUiTools import QUiLoader
+from PySide6.QtWidgets import (QMainWindow, QFileDialog, QMessageBox,
+    QGraphicsScene, QGraphicsPixmapItem, QWidget, QDialog)
+from PySide6.QtCore import Qt, Slot
+from PySide6.QtGui import QPixmap, QPainter, QPaintEvent
+from ui.main_ui import Ui_MainWindow
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.loadUi("main.ui", self)
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
         
-        # Conectar señales
-        self.setup_connections()
+        self.scene = QGraphicsScene()
+        self.ui.graphicsView.setScene(self.scene)
         
-        # Inicializar variables de estado
         self.is_dark_mode = False
         self.active_oxide_mode = None
         self.first_carbon = None
@@ -27,135 +30,283 @@ class MainWindow(QMainWindow):
         self.last_prob_oh = 50
         self.last_prob_o = 50
         self.plates = []
-        self.plates_corresponding_to_duplicates = [[], []]  # [indices_duplicados, indices_base]
+        self.plates_corresponding_to_duplicates = [[], []]  # [duplicates, bases]
         
-        # Configurar renderizador
-        self.renderer = Renderer()
-        self.scene = QGraphicsScene()
-        self.graphicsView.setScene(self.scene)
-        
-        # Configurar modo inicial
-        self.buttons_that_depend_of_having_a_plate(False)
-        self.radioZpm.setChecked(True)
+        # Subclasificar rulers para manejar pintura en paintEvent
+        is_dark_mode_func = lambda: self.is_dark_mode
 
+        # Reemplaza los placeholders del .ui manteniendo parent, geometry y objectName
+        def replace_placeholder_with_custom(placeholder_name, cls):
+            placeholder = getattr(self.ui, placeholder_name)
+            parent = placeholder.parent()
+            geom = placeholder.geometry()
+            obj_name = placeholder.objectName()
+
+            # Esconder y eliminar el placeholder original (libera el espacio en la UI)
+            placeholder.hide()
+            placeholder.deleteLater()
+
+            # Crear nuevo widget en el mismo lugar
+            new_w = cls(is_dark_mode_func, parent)
+            new_w.setObjectName(obj_name)
+            new_w.setGeometry(geom)
+            new_w.show()
+
+            # Asignarlo a self.ui para mantener la compatibilidad en el resto del código
+            setattr(self.ui, placeholder_name, new_w)
+            return new_w
+        
+        
         self.renderer = Renderer(
-            drawing_area=self.graphicsView,
-            ruler_x=self.topRuler,
-            ruler_y=self.leftRuler,
+            drawing_area=self.ui.graphicsView,
+            ruler_x=self.ui.topRuler,
+            ruler_y=self.ui.leftRuler,
             plates=self.plates,
-            cb_plates=self.comboDrawings,
-            is_dark_mode_func=lambda: self.is_dark_mode
+            cb_plates=self.ui.comboDrawings,
+            is_dark_mode_func=is_dark_mode_func
         )
-    
-    def loadUi(self, ui_file, parent):
-        loader = QUiLoader()
-        ui = loader.load(ui_file, parent)
-        parent.setCentralWidget(ui)
+        
+        self.buttons_that_depend_of_having_a_plate(False)
+        self.ui.radioZpm.setChecked(True)
+        
+        self.setup_connections()
 
     def setup_connections(self):
-        # Conectar señales de botones
-        self.btnCreate.clicked.connect(self.on_btn_create_clicked)
-        self.comboDrawings.currentIndexChanged.connect(self.on_cb_plates_changed)
-        self.btnDuplicate.clicked.connect(self.on_btn_duplicate_clicked)
-        self.btnDelete.clicked.connect(self.on_btn_delete_clicked)
-        self.btnImport.clicked.connect(self.on_btn_import_clicked)
-        self.btnExport.clicked.connect(self.on_btn_export_clicked)
-        self.btnTheme.clicked.connect(self.on_btn_dark_light_mode_clicked)
-        self.btnReduceAll.clicked.connect(self.on_btn_reduce_clicked)
-        self.btnChangeProb.clicked.connect(self.on_btn_change_prob_clicked)
-        self.spinRandom.valueChanged.connect(self.on_spin_random_value_changed)
-        self.entryVMD.textChanged.connect(self.on_entry_selection_changed)
-        self.btnAddOH.clicked.connect(self.on_btn_oh_clicked)
-        self.btnAddO.clicked.connect(self.on_btn_o_clicked)
-        self.btnRemoveOx.clicked.connect(self.on_btn_remove_ox_clicked)
+        self.ui.btnCreate.clicked.connect(self.handle_btn_create_clicked)
+        self.ui.comboDrawings.currentIndexChanged.connect(self.handle_cb_plates_changed)
+        self.ui.btnDuplicate.clicked.connect(self.handle_btn_duplicate_clicked)
+        self.ui.btnDelete.clicked.connect(self.handle_btn_delete_clicked)
+        self.ui.btnImport.clicked.connect(self.handle_btn_import_clicked)
+        self.ui.btnExport.clicked.connect(self.handle_btn_export_clicked)
+        self.ui.btnTheme.clicked.connect(self.handle_btn_dark_light_mode_clicked)
+        self.ui.btnReduceAll.clicked.connect(self.handle_btn_reduce_clicked)
+        self.ui.btnChangeProb.clicked.connect(self.handle_btn_change_prob_clicked)
+        self.ui.spinRandom.valueChanged.connect(self.handle_spin_random_value_changed)
+        self.ui.entryVMD.textChanged.connect(self.handle_entry_selection_changed)
+        self.ui.btnAddOH.clicked.connect(self.handle_btn_oh_clicked)
+        self.ui.btnAddO.clicked.connect(self.handle_btn_o_clicked)
+        self.ui.btnRemoveOx.clicked.connect(self.handle_btn_remove_ox_clicked)
         
-        # Conectar señales de radio buttons
-        self.radioZp.toggled.connect(lambda: self.on_radio_toggled(self.radioZp))
-        self.radioZm.toggled.connect(lambda: self.on_radio_toggled(self.radioZm))
-        self.radioZpm.toggled.connect(lambda: self.on_radio_toggled(self.radioZpm))
+        self.ui.radioZp.toggled.connect(lambda: self.handle_radio_toggled(self.ui.radioZp))
+        self.ui.radioZm.toggled.connect(lambda: self.handle_radio_toggled(self.ui.radioZm))
+        self.ui.radioZpm.toggled.connect(lambda: self.handle_radio_toggled(self.ui.radioZpm))
         
-        # Conectar evento de cierre
-        self.destroyed.connect(self.on_main_window_destroy)
-        
-        # Conectar evento de clic en el área de dibujo
-        self.scene.mousePressEvent = self.on_drawing_area_clicked
+        self.destroyed.connect(self.handle_main_window_destroy)
+        self.scene.mousePressEvent = self.handle_drawing_area_clicked
 
     # ================================
-    # Funciones de gestión de estado
+    # State functions
     # ================================
     def buttons_that_depend_of_having_a_plate(self, active):
-        self.btnDuplicate.setEnabled(active)
-        self.btnDelete.setEnabled(active)
-        self.btnExport.setEnabled(active)
-        self.btnReduceAll.setEnabled(active)
-        self.btnChangeProb.setEnabled(active)
-        self.spinRandom.setEnabled(active)
-        self.entryVMD.setEnabled(active)
-        self.btnAddOH.setEnabled(active)
-        self.btnAddO.setEnabled(active)
-        self.btnRemoveOx.setEnabled(active)
-        self.radioZpm.setEnabled(active)
-        self.radioZp.setEnabled(active)
-        self.radioZm.setEnabled(active)
+        self.ui.btnDuplicate.setEnabled(active)
+        self.ui.btnDelete.setEnabled(active)
+        self.ui.btnExport.setEnabled(active)
+        self.ui.btnReduceAll.setEnabled(active)
+        self.ui.btnChangeProb.setEnabled(active)
+        self.ui.spinRandom.setEnabled(active)
+        self.ui.entryVMD.setEnabled(active)
+        self.ui.btnAddOH.setEnabled(active)
+        self.ui.btnAddO.setEnabled(active)
+        self.ui.btnRemoveOx.setEnabled(active)
+        self.ui.radioZpm.setEnabled(active)
+        self.ui.radioZp.setEnabled(active)
+        self.ui.radioZm.setEnabled(active)
 
-    def on_main_window_destroy(self):
+    def handle_main_window_destroy(self):
         print("Exiting...")
         print("Thanks for using Graphene-GUI")
         print("Please cite: No cite yet, stay in touch!")
 
     # ================================
-    # Panel superior
+    # Top panel
     # ================================
     @Slot()
-    def on_btn_create_clicked(self):
-        self.dialog_create.show()
+    def handle_btn_create_clicked(self):
+        dialog = CreateDialog(self)
+        if dialog.exec() != QDialog.Accepted: return
+
+        try:
+            width = dialog.spin_width.value()
+            height = dialog.spin_height.value()
+            center_x = dialog.spin_center_x.value()
+            center_y = dialog.spin_center_y.value()
+            center_z = dialog.spin_center_z.value()
+            factor = dialog.spin_scale.value()/100.0
+
+            width_nm = width / 10
+            height_nm = height / 10
+            center_x_nm = center_x / 10
+            center_y_nm = center_y / 10
+            center_z_nm = center_z / 10
+
+            n_x = math.floor(width_nm / (2 * 0.1225 * factor))
+            n_y = math.floor(height_nm / (6 * 0.071 * factor))+1
+
+            max_atoms = len(generatePatterns())
+            max_n_x_n_y = max_atoms // (2 * (2 * n_x + 1)) if n_x > 0 else 0
+            if n_y > max_n_x_n_y:
+                QMessageBox.critical(
+                    self, 
+                    "Too large", 
+                    f"The number of atoms is too large ({max_atoms}). Reduce the width or height."
+                )
+                return
+
+            plate = Graphene.create_from_params(n_x, n_y, center_x_nm, center_y_nm, center_z_nm, factor)
+            self.plates.append(plate)
+
+            self.ui.comboDrawings.addItem(f"Plate {len(self.plates)}")
+            self.ui.comboDrawings.setCurrentIndex(len(self.plates) - 1)
+
+            self.update_drawing_area()
+            self.buttons_that_depend_of_having_a_plate(True)
+            print(f"Coords drawn: Plate {len(self.plates)}")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
 
     @Slot(int)
-    def on_cb_plates_changed(self, index):
+    def handle_cb_plates_changed(self, index):
         self.update_drawing_area()
 
     @Slot()
-    def on_btn_duplicate_clicked(self):
-        self.dialog_duplicate.show()
+    def handle_btn_duplicate_clicked(self):
+        dialog = DuplicateDialog(self)
+        if dialog.exec() != QDialog.Accepted: return
+
+        try:
+            index_base = self.ui.comboDrawings.currentIndex()+1
+        
+            plate = self.plates[self.ui.comboDrawings.currentIndex()]
+            translation = [
+                dialog.spin_duplicate_x.value(),
+                dialog.spin_duplicate_y.value(),
+                dialog.spin_duplicate_z.value()
+            ]
+            for i in range(3): 
+                translation[i] *= .1  # Change to nm
+            
+            if dialog.radio_btn_absolute_pos.isChecked():  # Corregido: dialog en lugar de self
+                plate_actual_center = plate.get_geometric_center()
+                for i in range(3):
+                    translation[i] -= plate_actual_center[i]
+
+            self.plates.append(plate.duplicate(translation))
+
+            while(index_base in self.plates_corresponding_to_duplicates[0]):
+                index_in_list = self.plates_corresponding_to_duplicates[0].index(index_base)
+                index_base = self.plates_corresponding_to_duplicates[1][index_in_list]
+            
+            self.plates_corresponding_to_duplicates[0].append(len(self.plates))
+            self.plates_corresponding_to_duplicates[1].append(index_base)
+
+            self.ui.comboDrawings.addItem(f"Plate {len(self.plates)}")
+            print(f"Duplicate added: Plate {len(self.plates)}")
+            self.ui.comboDrawings.setCurrentIndex(len(self.plates)-1)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
 
     @Slot()
-    def on_btn_delete_clicked(self):
-        index = self.comboDrawings.currentIndex()
+    def handle_btn_delete_clicked(self):
+        index = self.ui.comboDrawings.currentIndex()
         if index < 0: return
 
         self.manage_duplicates_for_deletion(index+1, True)
 
         self.plates.pop(index)
-        self.comboDrawings.clear()
+        self.ui.comboDrawings.clear()
         for i in range(len(self.plates)):
-            self.comboDrawings.addItem(f"Plate {i + 1}")
+            self.ui.comboDrawings.addItem(f"Plate {i + 1}")
         
         if self.plates:
-            self.comboDrawings.setCurrentIndex(0)
+            self.ui.comboDrawings.setCurrentIndex(0)
         else:
-            self.comboDrawings.setCurrentIndex(-1)
+            self.ui.comboDrawings.setCurrentIndex(-1)
             self.buttons_that_depend_of_having_a_plate(False)
-            self.spinRandom.setValue(0)
-            self.entryVMD.setText("")
+            self.ui.spinRandom.setValue(0)
+            self.ui.entryVMD.setText("")
 
         self.update_drawing_area()
         print(f"Plate {index+1} deleted")
 
     @Slot()
-    def on_btn_import_clicked(self):
-        file_name, _ = QFileDialog.getOpenFileName(
-            self, "Import File", "", 
-            "All Supported Files (*.gro *.xyz *.mol2 *.pdb);;"
-            "GRO Files (*.gro);;XYZ Files (*.xyz);;"
-            "MOL2 Files (*.mol2);;PDB Files (*.pdb)"
-        )
+    def handle_btn_import_clicked(self):
+        dialog = ImportDialog(self)
+        if dialog.exec() != QDialog.Accepted: return
         
-        if file_name:
-            self.import_file(file_name)
+        file_name = dialog.fileDialog.selectedFiles()[0]
+        ext = os.path.splitext(file_name)[1].lower()
+        try:
+            if ext == ".gro":
+                new_plates = readGRO(file_name)
+            elif ext == ".xyz":
+                new_plates = readXYZ(file_name)
+            elif ext == ".mol2":
+                new_plates = readMOL2(file_name)
+            elif ext == ".pdb":
+                new_plates = readPDB(file_name)
+            else:
+                raise ValueValue(f"Not supported file extension: {ext}")
+                
+            for plate in new_plates:
+                self.plates.append(plate)
+                idx = len(self.plates)
+                self.ui.comboDrawings.addItem(f"Plate {idx}")
+                print(f"Importing coords: Plate {idx}")
+
+            if new_plates:
+                self.ui.comboDrawings.setCurrentIndex(len(self.plates)-1)
+                self.buttons_that_depend_of_having_a_plate(True)
+                self.update_drawing_area()
+
+            print(f"{len(new_plates)} plate(s) imported from {file_name}")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error reading file", str(e))
+            return
 
     @Slot()
-    def on_btn_export_clicked(self):
-        self.dialog_export.show()
+    def handle_btn_export_clicked(self):
+        dialog = ExportDialog(self)
+        if dialog.exec() != QDialog.Accepted: return
+        
+        file_name, selected_filter = QFileDialog.getSaveFileName(
+            self, 
+            "Export File", 
+            "", 
+            "GRO Files (*.gro);;PDB Files (*.pdb);;XYZ Files (*.xyz);;MOL2 Files (*.mol2);;TOP Files (*.top)"
+        )
+        
+        if not file_name: return
+        if '.' not in file_name: file_name += ".gro"
+
+        if os.path.exists(file_name):
+            reply = QMessageBox.question(
+                self,
+                "File exists",
+                f"Do you want to overwrite {file_name}?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply != QMessageBox.Yes:
+                return
+
+        if file_name.endswith(".gro"):
+            writeGRO(file_name, self.plates)
+        elif file_name.endswith(".pdb"):
+            writePDB(file_name, self.plates)
+        elif file_name.endswith(".xyz"):
+            writeXYZ(file_name, self.plates)
+        elif file_name.endswith(".mol2"):
+            writeMOL2(file_name, self.plates)
+        elif file_name.endswith(".top"):
+            factor = dialog.spin_scale.value()/100.0  # Corregido: dialog en lugar de self (asumiendo que está en ExportDialog)
+            QMessageBox.information(self, "Exporting topology", "Exporting topology...")
+            
+            def export_top_and_close():
+                writeTOP(file_name, self.plates, factor, self.plates_corresponding_to_duplicates)
+                QMessageBox.information(self, "Export Complete", "Topology export completed")
+            
+            threading.Thread(target=export_top_and_close, daemon=True).start()
 
     def load_css(self):
         bg_color = "#1e1e1e" if self.is_dark_mode else "white"
@@ -190,16 +341,19 @@ class MainWindow(QMainWindow):
             }}
         """
         self.setStyleSheet(style)
+        # Actualiza rulers para disparar paintEvent
+        self.ui.topRuler.update()
+        self.ui.leftRuler.update()
 
     @Slot()
-    def on_btn_dark_light_mode_clicked(self):
+    def handle_btn_dark_light_mode_clicked(self):
         self.is_dark_mode = not self.is_dark_mode
         self.load_css()
         self.update_drawing_area()
         print(f"Switched to {'dark' if self.is_dark_mode else 'light'} mode")
 
     # ================================
-    # Área de dibujo
+    # Drawing area, central panel
     # ================================
     def clicked_carbon_add_OH(self, plate, carbon, z_sign, i_atom):
         cx, cy, cz = carbon[:3]
@@ -237,17 +391,17 @@ class MainWindow(QMainWindow):
             print("Second carbon is not adjacent to the first")
         self.first_carbon = None
 
-    def on_drawing_area_clicked(self, event):
-        if self.comboDrawings.currentIndex() == -1 or not self.active_oxide_mode:
+    def handle_drawing_area_clicked(self, event):
+        if self.ui.comboDrawings.currentIndex() == -1 or not self.active_oxide_mode:
             return
 
-        self.manage_duplicates_for_deletion(self.comboDrawings.currentIndex()+1, False)
+        self.manage_duplicates_for_deletion(self.ui.comboDrawings.currentIndex()+1, False)
 
-        plate = self.plates[self.comboDrawings.currentIndex()]
+        plate = self.plates[self.ui.comboDrawings.currentIndex()]
         pos = event.scenePos()
         x, y = pos.x(), pos.y()
 
-        # Convertir coordenadas de píxeles a nm
+        # Convert pixels to nm
         x_nm, y_nm = self.renderer.pixel_to_nm(x, y)
 
         carbon = plate.get_nearest_carbon(x_nm, y_nm)
@@ -273,63 +427,66 @@ class MainWindow(QMainWindow):
             plate.recheck_ox_indexes()
             print(f"{len(list_remove_ox)} atom{'s' if len(list_remove_ox) != 1 else ''} removed")
 
-        def update_drawing_area(self):
-            self.scene.clear()
-            active_index = self.comboDrawings.currentIndex()
+    def update_drawing_area(self):
+        self.scene.clear()
+        active_index = self.ui.comboDrawings.currentIndex()
 
-            if active_index == -1 or not self.plates or not self.plates[active_index].get_number_atoms():
-                # Dibujar fondo si no hay placas
-                pixmap = QPixmap("ui/img/background.png")
-                if not pixmap.isNull():
-                    pixmap_item = QGraphicsPixmapItem(pixmap.scaled(
-                        self.graphicsView.width(), 
-                        self.graphicsView.height(),
-                        Qt.KeepAspectRatio
-                    ))
-                    self.scene.addItem(pixmap_item)
-            else:
-                # Renderizar la placa actual
-                img = self.renderer.render_plate(self.plates[active_index], self.is_dark_mode)
-                pixmap = QPixmap.fromImage(img)
-                self.scene.addPixmap(pixmap)
+        if active_index == -1 or not self.plates or not self.plates[active_index].get_number_atoms():
+            # Dibujar fondo si no hay placas
+            pixmap = QPixmap("ui/img/background.png")
+            if not pixmap.isNull():
+                pixmap_item = QGraphicsPixmapItem(pixmap.scaled(
+                    self.ui.graphicsView.width(), 
+                    self.ui.graphicsView.height(),
+                    Qt.KeepAspectRatio
+                ))
+                self.scene.addItem(pixmap_item)
+        else:
+            # Renderizar la placa actual
+            img = self.renderer.render_plate(self.plates[active_index], self.is_dark_mode)
+            pixmap = QPixmap.fromImage(img)
+            self.scene.addPixmap(pixmap)
 
     # ================================
-    # Panel inferior
+    # Lower panel
     # ================================
     @Slot()
-    def on_btn_reduce_clicked(self):
-        if self.comboDrawings.currentIndex() == -1:
+    def handle_btn_reduce_clicked(self):
+        if self.ui.comboDrawings.currentIndex() == -1:
             return
-        self.manage_duplicates_for_deletion(self.comboDrawings.currentIndex()+1, False)
+        self.manage_duplicates_for_deletion(self.ui.comboDrawings.currentIndex()+1, False)
 
-        plate = self.plates[self.comboDrawings.currentIndex()]
+        plate = self.plates[self.ui.comboDrawings.currentIndex()]
         plate.remove_oxides()
         self.update_drawing_area()
-        self.spinRandom.setValue(0)
-        self.entryVMD.setText("")
+        self.ui.spinRandom.setValue(0)
+        self.ui.entryVMD.setText("")
         print("Oxides removed")
 
     @Slot()
-    def on_btn_change_prob_clicked(self):
-        self.last_prob_oh = self.spin_prob_oh.value()
-        self.last_prob_o = self.spin_prob_o.value()
-        self.dialog_prob.show()
+    def handle_btn_change_prob_clicked(self):
+        dialog = ProbDialog(self)
+        dialog.spin_prob_oh.setValue(self.last_prob_oh)
+        dialog.spin_prob_o.setValue(self.last_prob_o)
+        if dialog.exec() == QDialog.Accepted:
+            self.last_prob_oh = dialog.spin_prob_oh.value()
+            self.last_prob_o = dialog.spin_prob_o.value()
 
     @Slot(int)
-    def on_spin_random_value_changed(self, value):
-        self.put_oxides(self.entryVMD.text())
+    def handle_spin_random_value_changed(self, value):
+        self.put_oxides(self.ui.entryVMD.text())
 
     @Slot(str)
-    def on_entry_selection_changed(self, text):
+    def handle_entry_selection_changed(self, text):
         self.put_oxides(text)
 
     def put_oxides(self, expr):
-        if self.comboDrawings.currentIndex() == -1:
+        if self.ui.comboDrawings.currentIndex() == -1:
             return
-        self.manage_duplicates_for_deletion(self.comboDrawings.currentIndex()+1, False)
+        self.manage_duplicates_for_deletion(self.ui.comboDrawings.currentIndex()+1, False)
 
-        fraction_oxidation = self.spinRandom.value()/100
-        plate = self.plates[self.comboDrawings.currentIndex()]
+        fraction_oxidation = self.ui.spinRandom.value()/100
+        plate = self.plates[self.ui.comboDrawings.currentIndex()]
         plate.remove_oxides()
         
         if not expr: 
@@ -367,222 +524,50 @@ class MainWindow(QMainWindow):
         self.active_oxide_mode = mode
         self.first_carbon = None
 
-        self.btnAddOH.setChecked(mode == "OH")
-        self.btnAddO.setChecked(mode == "O")
-        self.btnRemoveOx.setChecked(mode == "Remove")
+        self.ui.btnAddOH.setChecked(mode == "OH")
+        self.ui.btnAddO.setChecked(mode == "O")
+        self.ui.btnRemoveOx.setChecked(mode == "Remove")
 
     @Slot()
-    def on_btn_oh_clicked(self):
-        if self.btnAddOH.isChecked():
+    def handle_btn_oh_clicked(self):
+        if self.ui.btnAddOH.isChecked():
             self.set_oxide_mode("OH")
         else:
             self.set_oxide_mode(None)
 
     @Slot()
-    def on_btn_o_clicked(self):
-        if self.btnAddO.isChecked():
+    def handle_btn_o_clicked(self):
+        if self.ui.btnAddO.isChecked():
             self.set_oxide_mode("O")
         else:
             self.set_oxide_mode(None)
 
     @Slot()
-    def on_btn_remove_ox_clicked(self):
-        if self.btnRemoveOx.isChecked():
+    def handle_btn_remove_ox_clicked(self):
+        if self.ui.btnRemoveOx.isChecked():
             self.set_oxide_mode("Remove")
         else:
             self.set_oxide_mode(None)
 
-    def on_radio_toggled(self, radio_button):
-        if radio_button == self.radioZp and radio_button.isChecked():
+    def handle_radio_toggled(self, radio_button):
+        if radio_button == self.ui.radioZp and radio_button.isChecked():
             self.z_mode = 0
-        elif radio_button == self.radioZm and radio_button.isChecked():
+        elif radio_button == self.ui.radioZm and radio_button.isChecked():
             self.z_mode = 1
-        elif radio_button == self.radioZpm and radio_button.isChecked():
+        elif radio_button == self.ui.radioZpm and radio_button.isChecked():
             self.z_mode = 2
 
     # ================================
-    # Diálogos
+    # Other methods
     # ================================
-    @Slot()
-    def on_btn_create_ok_clicked(self):
-        width = self.spin_width.value()
-        height = self.spin_height.value()
-        center_x = self.spin_center_x.value()
-        center_y = self.spin_center_y.value()
-        center_z = self.spin_center_z.value()
-        factor = self.spin_scale.value()/100.0
-
-        width_nm = width / 10
-        height_nm = height / 10
-        center_x_nm = center_x / 10
-        center_y_nm = center_y / 10
-        center_z_nm = center_z / 10
-
-        n_x = math.floor(width_nm / (2 * 0.1225 * factor))
-        n_y = math.floor(height_nm / (6 * 0.071 * factor))+1
-
-        max_atoms = len(generatePatterns())
-        max_n_x_n_y = max_atoms // (2 * (2 * n_x + 1)) if n_x > 0 else 0
-        if n_y > max_n_x_n_y:
-            QMessageBox.critical(
-                self, 
-                "Too large", 
-                f"The number of atoms is too large ({max_atoms}). Reduce the width or height."
-            )
-            return
-
-        plate = Graphene.create_from_params(n_x, n_y, center_x_nm, center_y_nm, center_z_nm, factor)
-        self.plates.append(plate)
-
-        self.comboDrawings.addItem(f"Plate {len(self.plates)}")
-        self.comboDrawings.setCurrentIndex(len(self.plates) - 1)
-
-        self.update_drawing_area()
-        self.buttons_that_depend_of_having_a_plate(True)
-        print(f"Coords drawn: Plate {len(self.plates)}")
-
-    @Slot()
-    def on_btn_create_cancel_clicked(self):
-        self.dialog_create.hide()
-
-    def import_file(self, filename):
-        ext = os.path.splitext(filename)[1].lower()
-        try:
-            if ext == ".gro":
-                new_plates = readGRO(filename)
-            elif ext == ".xyz":
-                new_plates = readXYZ(filename)
-            elif ext == ".mol2":
-                new_plates = readMOL2(filename)
-            elif ext == ".pdb":
-                new_plates = readPDB(filename)
-            else:
-                raise ValueError(f"Not supported file extension: {ext}")
-        except Exception as e:
-            QMessageBox.critical(self, "Error reading file", str(e))
-            return
-
-        for plate in new_plates:
-            self.plates.append(plate)
-            idx = len(self.plates)
-            self.comboDrawings.addItem(f"Plate {idx}")
-            print(f"Importing coords: Plate {idx}")
-
-        if new_plates:
-            self.comboDrawings.setCurrentIndex(len(self.plates)-1)
-            self.buttons_that_depend_of_having_a_plate(True)
-            self.update_drawing_area()
-
-        print(f"{len(new_plates)} plate(s) imported from {filename}")
-
-    @Slot()
-    def on_btn_import_cancel_clicked(self):
-        self.dialog_import.hide()
-
-    @Slot()
-    def on_btn_export_ok_clicked(self):
-        file_name, selected_filter = QFileDialog.getSaveFileName(
-            self, 
-            "Export File", 
-            "", 
-            "GRO Files (*.gro);;PDB Files (*.pdb);;XYZ Files (*.xyz);;MOL2 Files (*.mol2);;TOP Files (*.top)"
-        )
-        
-        if not file_name:
-            return
-
-        if '.' not in file_name:
-            file_name += ".gro"
-
-        if os.path.exists(file_name):
-            reply = QMessageBox.question(
-                self,
-                "File exists",
-                f"Do you want to overwrite {file_name}?",
-                QMessageBox.Yes | QMessageBox.No
-            )
-            if reply != QMessageBox.Yes:
-                return
-
-        if file_name.endswith(".gro"):
-            writeGRO(file_name, self.plates)
-        elif file_name.endswith(".pdb"):
-            writePDB(file_name, self.plates)
-        elif file_name.endswith(".xyz"):
-            writeXYZ(file_name, self.plates)
-        elif file_name.endswith(".mol2"):
-            writeMOL2(file_name, self.plates)
-        elif file_name.endswith(".top"):
-            factor = self.spin_scale.value()/100.0
-            QMessageBox.information(self, "Exporting topology", "Exporting topology...")
-            
-            def export_top_and_close():
-                writeTOP(file_name, self.plates, factor, self.plates_corresponding_to_duplicates)
-                QMessageBox.information(self, "Export Complete", "Topology export completed")
-            
-            threading.Thread(target=export_top_and_close, daemon=True).start()
-
-        self.dialog_export.hide()
-
-    @Slot()
-    def on_btn_export_cancel_clicked(self):
-        self.dialog_export.hide()
 
     @Slot(float)
-    def on_spin_prob_oh_changed(self, value):
+    def handle_spin_prob_oh_changed(self, value):
         self.spin_prob_o.setValue(100 - value)
 
     @Slot(float)
-    def on_spin_prob_o_changed(self, value):
+    def handle_spin_prob_o_changed(self, value):
         self.spin_prob_oh.setValue(100 - value)
-
-    @Slot()
-    def on_btn_prob_ok_clicked(self):
-        self.last_prob_oh = self.spin_prob_oh.value()
-        self.last_prob_o = self.spin_prob_o.value()
-        self.dialog_prob.hide()
-
-    @Slot()
-    def on_btn_prob_cancel_clicked(self):
-        self.spin_prob_oh.setValue(self.last_prob_oh)
-        self.spin_prob_o.setValue(self.last_prob_o)
-        self.dialog_prob.hide()
-
-    @Slot()
-    def on_btn_duplicate_ok_clicked(self):
-        index_base = self.comboDrawings.currentIndex()+1
-        
-        plate = self.plates[self.comboDrawings.currentIndex()]
-        translation = [
-            self.spin_duplicate_x.value(),
-            self.spin_duplicate_y.value(),
-            self.spin_duplicate_z.value()
-        ]
-        for i in range(3): 
-            translation[i] *= .1  # Change to nm
-        
-        if self.radio_btn_absolute_pos.isChecked():
-            plate_actual_center = plate.get_geometric_center()
-            for i in range(3):
-                translation[i] -= plate_actual_center[i]
-
-        self.plates.append(plate.duplicate(translation))
-
-        while(index_base in self.plates_corresponding_to_duplicates[0]):
-            index_in_list = self.plates_corresponding_to_duplicates[0].index(index_base)
-            index_base = self.plates_corresponding_to_duplicates[1][index_in_list]
-        
-        self.plates_corresponding_to_duplicates[0].append(len(self.plates))
-        self.plates_corresponding_to_duplicates[1].append(index_base)
-
-        self.comboDrawings.addItem(f"Plate {len(self.plates)}")
-        print(f"Duplicate added: Plate {len(self.plates)}")
-        self.comboDrawings.setCurrentIndex(len(self.plates)-1)
-        self.dialog_duplicate.hide()
-
-    @Slot()
-    def on_btn_duplicate_cancel_clicked(self):
-        self.dialog_duplicate.hide()
 
     def manage_duplicates_for_deletion(self, index, index_would_be_removed):
         if index in self.plates_corresponding_to_duplicates[0]:

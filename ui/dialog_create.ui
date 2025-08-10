@@ -1,376 +1,254 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.40.0 -->
-<interface>
-  <requires lib="gtk+" version="3.24"/>
-  <object class="GtkAdjustment" id="spin_width_adj">
-    <property name="lower">1.0</property>
-    <property name="upper">1000.0</property>
-    <property name="value">50.0</property>
-    <property name="step-increment">0.1</property>
-    <property name="page-increment">10.0</property>
-  </object>
-  <object class="GtkAdjustment" id="spin_height_adj">
-    <property name="lower">1.0</property>
-    <property name="upper">1000.0</property>
-    <property name="value">50.0</property>
-    <property name="step-increment">0.1</property>
-    <property name="page-increment">10.0</property>
-  </object>
-  <object class="GtkAdjustment" id="spin_x_adj">
-    <property name="lower">0.0</property>
-    <property name="upper">1000.0</property>
-    <property name="value">0.0</property>
-    <property name="step-increment">1.0</property>
-    <property name="page-increment">20.0</property>
-  </object>
-  <object class="GtkAdjustment" id="spin_y_adj">
-    <property name="lower">0.0</property>
-    <property name="upper">1000.0</property>
-    <property name="value">0.0</property>
-    <property name="step-increment">1.0</property>
-    <property name="page-increment">20.0</property>
-  </object>
-  <object class="GtkAdjustment" id="spin_z_adj">
-    <property name="lower">0.0</property>
-    <property name="upper">1000.0</property>
-    <property name="value">0.0</property>
-    <property name="step-increment">1.0</property>
-    <property name="page-increment">20.0</property>
-  </object>
-  <object class="GtkAdjustment" id="spin_scale_adj">
-    <property name="lower">1.0</property>
-    <property name="upper">1000.0</property>
-    <property name="value">100.0</property>
-    <property name="step-increment">10.0</property>
-    <property name="page-increment">100.0</property>
-  </object>
-
-  <object class="GtkDialog" id="dialog_create">
-    <property name="title" translatable="yes">Create Graphene</property>
-    <property name="transient-for">main_window</property>
-    <property name="can-focus">False</property>
-    <property name="resizable">False</property>
-    <property name="modal">True</property>
-    <property name="window-position">center-on-parent</property>
-    <property name="destroy-with-parent">True</property>
-    <property name="type-hint">dialog</property>
-    <property name="skip-taskbar-hint">True</property>
-    <property name="deletable">False</property>
-    <property name="name">dialog_create</property>
-    <child internal-child="vbox">
-      <object class="GtkBox">
-        <property name="visible">True</property>
-        <property name="can-focus">False</property>
-        <property name="orientation">vertical</property>
-        <property name="spacing">10</property>
-        <child>
-          <object class="GtkBox">
-            <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="margin-start">10</property>
-            <property name="margin-end">10</property>
-            <property name="margin-top">10</property>
-            <property name="margin-bottom">10</property>
-            <property name="orientation">vertical</property>
-            <property name="spacing">10</property>
-            <child>
-              <object class="GtkGrid">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="row-spacing">10</property>
-                <property name="column-spacing">10</property>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">Width (Å):</property>
-                    <property name="halign">start</property>
-                  </object>
-                  <packing>
-                    <property name="left-attach">0</property>
-                    <property name="top-attach">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkSpinButton" id="spin_width">
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="max-width-chars">5</property>
-                    <property name="placeholder-text" translatable="yes">Width (Å)</property>
-                    <property name="adjustment">spin_width_adj</property>
-                    <property name="value">50.0</property>
-                    <property name="digits">2</property>
-                    <property name="name">spin_width</property>
-                  </object>
-                  <packing>
-                    <property name="left-attach">1</property>
-                    <property name="top-attach">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">Height (Å):</property>
-                    <property name="halign">start</property>
-                  </object>
-                  <packing>
-                    <property name="left-attach">0</property>
-                    <property name="top-attach">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkSpinButton" id="spin_height">
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="max-width-chars">5</property>
-                    <property name="placeholder-text" translatable="yes">Height (Å)</property>
-                    <property name="adjustment">spin_height_adj</property>
-                    <property name="value">50.0</property>
-                    <property name="digits">2</property>
-                    <property name="name">spin_height</property>
-                  </object>
-                  <packing>
-                    <property name="left-attach">1</property>
-                    <property name="top-attach">1</property>
-                  </packing>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="orientation">vertical</property>
-                <property name="spacing">10</property>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">Center at:</property>
-                    <property name="halign">start</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkGrid">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="row-spacing">10</property>
-                    <property name="column-spacing">10</property>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">x:</property>
-                        <property name="halign">start</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">0</property>
-                        <property name="top-attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkSpinButton" id="spin_center_x">
-                        <property name="visible">True</property>
-                        <property name="can-focus">True</property>
-                        <property name="max-width-chars">5</property>
-                        <property name="placeholder-text" translatable="yes">x</property>
-                        <property name="adjustment">spin_x_adj</property>
-                        <property name="value">0.0</property>
-                        <property name="digits">2</property>
-                        <property name="name">spin_center_x</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">1</property>
-                        <property name="top-attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">y:</property>
-                        <property name="halign">start</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">2</property>
-                        <property name="top-attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkSpinButton" id="spin_center_y">
-                        <property name="visible">True</property>
-                        <property name="can-focus">True</property>
-                        <property name="max-width-chars">5</property>
-                        <property name="placeholder-text" translatable="yes">y</property>
-                        <property name="adjustment">spin_y_adj</property>
-                        <property name="value">0.0</property>
-                        <property name="digits">2</property>
-                        <property name="name">spin_center_y</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">3</property>
-                        <property name="top-attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">z:</property>
-                        <property name="halign">start</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">4</property>
-                        <property name="top-attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkSpinButton" id="spin_center_z">
-                        <property name="visible">True</property>
-                        <property name="can-focus">True</property>
-                        <property name="max-width-chars">5</property>
-                        <property name="placeholder-text" translatable="yes">z</property>
-                        <property name="adjustment">spin_z_adj</property>
-                        <property name="value">0.0</property>
-                        <property name="digits">2</property>
-                        <property name="name">spin_center_z</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">5</property>
-                        <property name="top-attach">0</property>
-                      </packing>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkBox">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="margin-start">10</property>
-                    <property name="margin-end">10</property>
-                    <property name="margin-top">10</property>
-                    <property name="margin-bottom">10</property>
-                    <property name="orientation">horizontal</property>
-                    <property name="spacing">10</property>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">Scale factor:</property>
-                        <property name="halign">start</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkSpinButton" id="spin_scale">
-                        <property name="visible">True</property>
-                        <property name="can-focus">True</property>
-                        <property name="max-width-chars">5</property>
-                        <property name="placeholder-text" translatable="yes">Width (Å)</property>
-                        <property name="adjustment">spin_scale_adj</property>
-                        <property name="value">100.0</property>
-                        <property name="digits">2</property>
-                        <property name="name">spin_scale</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">%</property>
-                        <property name="halign">start</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">2</property>
-                      </packing>
-                    </child>
-                  </object>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">0</property>
-          </packing>
-        </child>
-        <child internal-child="action_area">
-          <object class="GtkButtonBox">
-            <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="layout-style">end</property>
-            <property name="spacing">10</property>
-            <child>
-              <object class="GtkButton" id="btn_create_ok">
-                <property name="label" translatable="yes">OK</property>
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
-                <property name="name">btn_create_ok</property>
-                <signal name="clicked" handler="on_btn_create_ok_clicked"/>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="btn_create_cancel">
-                <property name="label" translatable="yes">Cancel</property>
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
-                <property name="name">btn_create_cancel</property>
-                <signal name="clicked" handler="on_btn_create_cancel_clicked"/>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">False</property>
-            <property name="position">1</property>
-          </packing>
-        </child>
-      </object>
-    </child>
-  </object>
-</interface>
+<ui version="4.0">
+  <class>DialogCreate</class>
+  <widget class="QDialog" name="dialog_create">
+    <property name="windowTitle">
+      <string>Create Graphene</string>
+    </property>
+    <property name="modal">
+      <bool>true</bool>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+        <widget class="QWidget" name="widget" native="true">
+          <layout class="QVBoxLayout" name="verticalLayout_2">
+            <item>
+              <layout class="QGridLayout" name="gridLayout">
+                <item row="0" column="0">
+                  <widget class="QLabel" name="label">
+                    <property name="text">
+                      <string>Width (Å):</string>
+                    </property>
+                  </widget>
+                </item>
+                <item row="0" column="1">
+                  <widget class="QDoubleSpinBox" name="spin_width">
+                    <property name="minimum">
+                      <double>1.000000000000000</double>
+                    </property>
+                    <property name="maximum">
+                      <double>1000.000000000000000</double>
+                    </property>
+                    <property name="value">
+                      <double>50.000000000000000</double>
+                    </property>
+                    <property name="decimals">
+                      <number>2</number>
+                    </property>
+                    <property name="singleStep">
+                      <double>0.100000000000000</double>
+                    </property>
+                  </widget>
+                </item>
+                <item row="1" column="0">
+                  <widget class="QLabel" name="label_2">
+                    <property name="text">
+                      <string>Height (Å):</string>
+                    </property>
+                  </widget>
+                </item>
+                <item row="1" column="1">
+                  <widget class="QDoubleSpinBox" name="spin_height">
+                    <property name="minimum">
+                      <double>1.000000000000000</double>
+                    </property>
+                    <property name="maximum">
+                      <double>1000.000000000000000</double>
+                    </property>
+                    <property name="value">
+                      <double>50.000000000000000</double>
+                    </property>
+                    <property name="decimals">
+                      <number>2</number>
+                    </property>
+                    <property name="singleStep">
+                      <double>0.100000000000000</double>
+                    </property>
+                  </widget>
+                </item>
+              </layout>
+            </item>
+            <item>
+              <layout class="QVBoxLayout" name="verticalLayout_3">
+                <item>
+                  <widget class="QLabel" name="label_3">
+                    <property name="text">
+                      <string>Center at:</string>
+                    </property>
+                  </widget>
+                </item>
+                <item>
+                  <layout class="QGridLayout" name="gridLayout_2">
+                    <item row="0" column="0">
+                      <widget class="QLabel" name="label_4">
+                        <property name="text">
+                          <string>x:</string>
+                        </property>
+                      </widget>
+                    </item>
+                    <item row="0" column="1">
+                      <widget class="QDoubleSpinBox" name="spin_center_x">
+                        <property name="minimum">
+                          <double>0.000000000000000</double>
+                        </property>
+                        <property name="maximum">
+                          <double>1000.000000000000000</double>
+                        </property>
+                        <property name="value">
+                          <double>0.000000000000000</double>
+                        </property>
+                        <property name="decimals">
+                          <number>2</number>
+                        </property>
+                        <property name="singleStep">
+                          <double>1.000000000000000</double>
+                        </property>
+                      </widget>
+                    </item>
+                    <item row="0" column="2">
+                      <widget class="QLabel" name="label_5">
+                        <property name="text">
+                          <string>y:</string>
+                        </property>
+                      </widget>
+                    </item>
+                    <item row="0" column="3">
+                      <widget class="QDoubleSpinBox" name="spin_center_y">
+                        <property name="minimum">
+                          <double>0.000000000000000</double>
+                        </property>
+                        <property name="maximum">
+                          <double>1000.000000000000000</double>
+                        </property>
+                        <property name="value">
+                          <double>0.000000000000000</double>
+                        </property>
+                        <property name="decimals">
+                          <number>2</number>
+                        </property>
+                        <property name="singleStep">
+                          <double>1.000000000000000</double>
+                        </property>
+                      </widget>
+                    </item>
+                    <item row="0" column="4">
+                      <widget class="QLabel" name="label_6">
+                        <property name="text">
+                          <string>z:</string>
+                        </property>
+                      </widget>
+                    </item>
+                    <item row="0" column="5">
+                      <widget class="QDoubleSpinBox" name="spin_center_z">
+                        <property name="minimum">
+                          <double>0.000000000000000</double>
+                        </property>
+                        <property name="maximum">
+                          <double>1000.000000000000000</double>
+                        </property>
+                        <property name="value">
+                          <double>0.000000000000000</double>
+                        </property>
+                        <property name="decimals">
+                          <number>2</number>
+                        </property>
+                        <property name="singleStep">
+                          <double>1.000000000000000</double>
+                        </property>
+                      </widget>
+                    </item>
+                  </layout>
+                </item>
+                <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout">
+                    <item>
+                      <widget class="QLabel" name="label_7">
+                        <property name="text">
+                          <string>Scale factor:</string>
+                        </property>
+                      </widget>
+                    </item>
+                    <item>
+                      <widget class="QDoubleSpinBox" name="spin_scale">
+                        <property name="minimum">
+                          <double>1.000000000000000</double>
+                        </property>
+                        <property name="maximum">
+                          <double>1000.000000000000000</double>
+                        </property>
+                        <property name="value">
+                          <double>100.000000000000000</double>
+                        </property>
+                        <property name="decimals">
+                          <number>2</number>
+                        </property>
+                        <property name="singleStep">
+                          <double>10.000000000000000</double>
+                        </property>
+                      </widget>
+                    </item>
+                    <item>
+                      <widget class="QLabel" name="label_8">
+                        <property name="text">
+                          <string>%</string>
+                        </property>
+                      </widget>
+                    </item>
+                  </layout>
+                </item>
+              </layout>
+            </item>
+          </layout>
+        </widget>
+      </item>
+      <item>
+        <widget class="QDialogButtonBox" name="buttonBox">
+          <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="standardButtons">
+            <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+          </property>
+          <property name="centerButtons">
+            <bool>false</bool>
+          </property>
+        </widget>
+      </item>
+    </layout>
+  </widget>
+  <resources/>
+  <connections>
+    <connection>
+      <sender>buttonBox</sender>
+      <signal>accepted()</signal>
+      <receiver>dialog_create</receiver>
+      <slot>accept()</slot>
+      <hints>
+        <hint type="sourcelabel">
+          <x>248</x>
+          <y>254</y>
+        </hint>
+        <hint type="destinationlabel">
+          <x>157</x>
+          <y>274</y>
+        </hint>
+      </hints>
+    </connection>
+    <connection>
+      <sender>buttonBox</sender>
+      <signal>rejected()</signal>
+      <receiver>dialog_create</receiver>
+      <slot>reject()</slot>
+      <hints>
+        <hint type="sourcelabel">
+          <x>316</x>
+          <y>260</y>
+        </hint>
+        <hint type="destinationlabel">
+          <x>286</x>
+          <y>274</y>
+        </hint>
+      </hints>
+    </connection>
+  </connections>
+</ui>

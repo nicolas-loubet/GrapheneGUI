@@ -1,70 +1,78 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.40.0 -->
-<interface>
-  <requires lib="gtk+" version="3.24"/>
-  <object class="GtkFileChooserDialog" id="dialog_export">
-    <property name="title" translatable="yes">Export Graphene File</property>
-    <property name="transient-for">main_window</property>
-    <property name="can-focus">False</property>
-    <property name="resizable">True</property>
-    <property name="modal">True</property>
-    <property name="window-position">center-on-parent</property>
-    <property name="destroy-with-parent">True</property>
-    <property name="type-hint">dialog</property>
-    <property name="skip-taskbar-hint">True</property>
-    <property name="deletable">False</property>
-    <property name="action">save</property>
-    <property name="create-folders">True</property>
-    <property name="name">dialog_export</property>
-    <child internal-child="vbox">
-      <object class="GtkBox">
-        <property name="visible">True</property>
-        <property name="can-focus">False</property>
-        <property name="orientation">vertical</property>
-        <child internal-child="action_area">
-          <object class="GtkButtonBox">
-            <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="layout-style">end</property>
-            <property name="spacing">10</property>
-            <child>
-              <object class="GtkButton" id="btn_export_ok">
-                <property name="label" translatable="yes">Save</property>
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
-                <property name="name">btn_export_ok</property>
-                <signal name="clicked" handler="on_btn_export_ok_clicked"/>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="btn_export_cancel">
-                <property name="label" translatable="yes">Cancel</property>
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
-                <property name="name">btn_export_cancel</property>
-                <signal name="clicked" handler="on_btn_export_cancel_clicked"/>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">False</property>
-            <property name="position">1</property>
-          </packing>
-        </child>
-      </object>
-    </child>
-  </object>
-</interface>
+<ui version="4.0">
+  <class>DialogExport</class>
+  <widget class="QDialog" name="dialog_export">
+    <property name="windowTitle">
+      <string>Export Graphene File</string>
+    </property>
+    <property name="modal">
+      <bool>true</bool>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+        <widget class="QWidget" name="fileChooserWidget" native="true">
+          <layout class="QVBoxLayout" name="verticalLayout_2">
+            <item>
+              <widget class="QFileDialog" name="fileDialog">
+                <property name="acceptMode">
+                  <enum>QFileDialog::AcceptSave</enum>
+                </property>
+                <property name="fileMode">
+                  <enum>QFileDialog::AnyFile</enum>
+                </property>
+                <property name="options">
+                  <set>QFileDialog::DontConfirmOverwrite|QFileDialog::DontUseNativeDialog</set>
+                </property>
+              </widget>
+            </item>
+          </layout>
+        </widget>
+      </item>
+      <item>
+        <widget class="QDialogButtonBox" name="buttonBox">
+          <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="standardButtons">
+            <set>QDialogButtonBox::Cancel|QDialogButtonBox::Save</set>
+          </property>
+        </widget>
+      </item>
+    </layout>
+  </widget>
+  <resources/>
+  <connections>
+    <connection>
+      <sender>buttonBox</sender>
+      <signal>accepted()</signal>
+      <receiver>dialog_export</receiver>
+      <slot>accept()</slot>
+      <hints>
+        <hint type="sourcelabel">
+          <x>248</x>
+          <y>254</y>
+        </hint>
+        <hint type="destinationlabel">
+          <x>157</x>
+          <y>274</y>
+        </hint>
+      </hints>
+    </connection>
+    <connection>
+      <sender>buttonBox</sender>
+      <signal>rejected()</signal>
+      <receiver>dialog_export</receiver>
+      <slot>reject()</slot>
+      <hints>
+        <hint type="sourcelabel">
+          <x>316</x>
+          <y>260</y>
+        </hint>
+        <hint type="destinationlabel">
+          <x>286</x>
+          <y>274</y>
+        </hint>
+      </hints>
+    </connection>
+  </connections>
+</ui>

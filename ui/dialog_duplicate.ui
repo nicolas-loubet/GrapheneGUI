@@ -1,270 +1,175 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.40.0 -->
-<interface>
-  <requires lib="gtk+" version="3.24"/>
-  <object class="GtkAdjustment" id="spin_x_adj">
-    <property name="upper">1000</property>
-    <property name="lower">-1000</property>
-    <property name="value">0.0</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">20</property>
-  </object>
-  <object class="GtkAdjustment" id="spin_y_adj">
-    <property name="upper">1000</property>
-    <property name="lower">-1000</property>
-    <property name="value">0.0</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">20</property>
-  </object>
-  <object class="GtkAdjustment" id="spin_z_adj">
-    <property name="upper">1000</property>
-    <property name="lower">-1000</property>
-    <property name="value">0.0</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">20</property>
-  </object>
-  <object class="GtkDialog" id="dialog_duplicate">
-    <property name="title" translatable="yes">Duplicate Plate</property>
-    <property name="transient-for">main_window</property>
-    <property name="can-focus">False</property>
-    <property name="resizable">False</property>
-    <property name="modal">True</property>
-    <property name="window-position">center-on-parent</property>
-    <property name="destroy-with-parent">True</property>
-    <property name="type-hint">dialog</property>
-    <property name="skip-taskbar-hint">True</property>
-    <property name="deletable">False</property>
-    <property name="name">dialog_create</property>
-    <child internal-child="vbox">
-      <object class="GtkBox">
-        <property name="visible">True</property>
-        <property name="can-focus">False</property>
-        <property name="orientation">vertical</property>
-        <property name="spacing">10</property>
-        <child internal-child="action_area">
-          <object class="GtkButtonBox">
-            <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="layout-style">end</property>
-            <child>
-              <object class="GtkButton" id="btn_duplicate_ok">
-                <property name="label" translatable="yes">OK</property>
-                <property name="name">btn_duplicate_ok</property>
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
-                <signal name="clicked" handler="on_btn_duplicate_ok_clicked" swapped="no"/>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="btn_duplicate_cancel">
-                <property name="label" translatable="yes">Cancel</property>
-                <property name="name">btn_duplicate_cancel</property>
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
-                <signal name="clicked" handler="on_btn_duplicate_cancel_clicked" swapped="no"/>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">False</property>
-            <property name="position">1</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkBox">
-            <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="margin-start">10</property>
-            <property name="margin-end">10</property>
-            <property name="margin-top">10</property>
-            <property name="margin-bottom">10</property>
-            <property name="orientation">vertical</property>
-            <property name="spacing">10</property>
-            <child>
-              <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="orientation">vertical</property>
-                <property name="spacing">10</property>
-                <child>
-                  <object class="GtkLabel" id="duplicate_label">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="halign">start</property>
-                    <property name="label" translatable="yes">Creating a duplicate:</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkBox">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <child>
-                      <object class="GtkRadioButton" id="radio_btn_relative_coords">
-                        <property name="label" translatable="yes">Use relative coordinates to original position</property>
-                        <property name="visible">True</property>
-                        <property name="can-focus">True</property>
-                        <property name="receives-default">False</property>
-                        <property name="active">True</property>
-                        <property name="draw-indicator">True</property>
-                        <property name="group">radio_btn_absolute_pos</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkRadioButton" id="radio_btn_absolute_pos">
-                        <property name="label" translatable="yes">Use absolute positions, center</property>
-                        <property name="visible">True</property>
-                        <property name="can-focus">True</property>
-                        <property name="receives-default">False</property>
-                        <property name="active">True</property>
-                        <property name="draw-indicator">True</property>
-                        <property name="group">radio_btn_relative_coords</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">1</property>
-                      </packing>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <!-- n-columns=6 n-rows=1 -->
-                  <object class="GtkGrid">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="row-spacing">10</property>
-                    <property name="column-spacing">10</property>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="halign">start</property>
-                        <property name="label" translatable="yes">x:</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">0</property>
-                        <property name="top-attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkSpinButton" id="spin_duplicate_x">
-                        <property name="name">spin_center_x</property>
-                        <property name="visible">True</property>
-                        <property name="can-focus">True</property>
-                        <property name="max-width-chars">5</property>
-                        <property name="placeholder-text" translatable="yes">x</property>
-                        <property name="adjustment">spin_x_adj</property>
-                        <property name="digits">2</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">1</property>
-                        <property name="top-attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="halign">start</property>
-                        <property name="label" translatable="yes">y:</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">2</property>
-                        <property name="top-attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkSpinButton" id="spin_duplicate_y">
-                        <property name="name">spin_center_y</property>
-                        <property name="visible">True</property>
-                        <property name="can-focus">True</property>
-                        <property name="max-width-chars">5</property>
-                        <property name="placeholder-text" translatable="yes">y</property>
-                        <property name="adjustment">spin_y_adj</property>
-                        <property name="digits">2</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">3</property>
-                        <property name="top-attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="halign">start</property>
-                        <property name="label" translatable="yes">z:</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">4</property>
-                        <property name="top-attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkSpinButton" id="spin_duplicate_z">
-                        <property name="name">spin_center_z</property>
-                        <property name="visible">True</property>
-                        <property name="can-focus">True</property>
-                        <property name="max-width-chars">5</property>
-                        <property name="placeholder-text" translatable="yes">z</property>
-                        <property name="adjustment">spin_z_adj</property>
-                        <property name="digits">2</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">5</property>
-                        <property name="top-attach">0</property>
-                      </packing>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">2</property>
-                  </packing>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">0</property>
-          </packing>
-        </child>
-      </object>
-    </child>
-  </object>
-</interface>
+<ui version="4.0">
+  <class>DialogDuplicate</class>
+  <widget class="QDialog" name="dialog_duplicate">
+    <property name="windowTitle">
+      <string>Duplicate Plate</string>
+    </property>
+    <property name="modal">
+      <bool>true</bool>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+        <widget class="QWidget" name="widget" native="true">
+          <layout class="QVBoxLayout" name="verticalLayout_2">
+            <item>
+              <widget class="QLabel" name="duplicate_label">
+                <property name="text">
+                  <string>Creating a duplicate:</string>
+                </property>
+              </widget>
+            </item>
+            <item>
+              <layout class="QVBoxLayout" name="verticalLayout_3">
+                <item>
+                  <widget class="QRadioButton" name="radio_btn_relative_coords">
+                    <property name="text">
+                      <string>Use relative coordinates to original position</string>
+                    </property>
+                    <property name="checked">
+                      <bool>true</bool>
+                    </property>
+                  </widget>
+                </item>
+                <item>
+                  <widget class="QRadioButton" name="radio_btn_absolute_pos">
+                    <property name="text">
+                      <string>Use absolute positions, center</string>
+                    </property>
+                  </widget>
+                </item>
+              </layout>
+            </item>
+            <item>
+              <layout class="QGridLayout" name="gridLayout">
+                <item row="0" column="0">
+                  <widget class="QLabel" name="label">
+                    <property name="text">
+                      <string>x:</string>
+                    </property>
+                  </widget>
+                </item>
+                <item row="0" column="1">
+                  <widget class="QDoubleSpinBox" name="spin_duplicate_x">
+                    <property name="minimum">
+                      <double>-1000.000000000000000</double>
+                    </property>
+                    <property name="maximum">
+                      <double>1000.000000000000000</double>
+                    </property>
+                    <property name="value">
+                      <double>0.000000000000000</double>
+                    </property>
+                    <property name="decimals">
+                      <number>2</number>
+                    </property>
+                    <property name="singleStep">
+                      <double>1.000000000000000</double>
+                    </property>
+                  </widget>
+                </item>
+                <item row="0" column="2">
+                  <widget class="QLabel" name="label_2">
+                    <property name="text">
+                      <string>y:</string>
+                    </property>
+                  </widget>
+                </item>
+                <item row="0" column="3">
+                  <widget class="QDoubleSpinBox" name="spin_duplicate_y">
+                    <property name="minimum">
+                      <double>-1000.000000000000000</double>
+                    </property>
+                    <property name="maximum">
+                      <double>1000.000000000000000</double>
+                    </property>
+                    <property name="value">
+                      <double>0.000000000000000</double>
+                    </property>
+                    <property name="decimals">
+                      <number>2</number>
+                    </property>
+                    <property name="singleStep">
+                      <double>1.000000000000000</double>
+                    </property>
+                  </widget>
+                </item>
+                <item row="0" column="4">
+                  <widget class="QLabel" name="label_3">
+                    <property name="text">
+                      <string>z:</string>
+                    </property>
+                  </widget>
+                </item>
+                <item row="0" column="5">
+                  <widget class="QDoubleSpinBox" name="spin_duplicate_z">
+                    <property name="minimum">
+                      <double>-1000.000000000000000</double>
+                    </property>
+                    <property name="maximum">
+                      <double>1000.000000000000000</double>
+                    </property>
+                    <property name="value">
+                      <double>0.000000000000000</double>
+                    </property>
+                    <property name="decimals">
+                      <number>2</number>
+                    </property>
+                    <property name="singleStep">
+                      <double>1.000000000000000</double>
+                    </property>
+                  </widget>
+                </item>
+              </layout>
+            </item>
+          </layout>
+        </widget>
+      </item>
+      <item>
+        <widget class="QDialogButtonBox" name="buttonBox">
+          <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="standardButtons">
+            <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+          </property>
+        </widget>
+      </item>
+    </layout>
+  </widget>
+  <resources/>
+  <connections>
+    <connection>
+      <sender>buttonBox</sender>
+      <signal>accepted()</signal>
+      <receiver>dialog_duplicate</receiver>
+      <slot>accept()</slot>
+      <hints>
+        <hint type="sourcelabel">
+          <x>248</x>
+          <y>254</y>
+        </hint>
+        <hint type="destinationlabel">
+          <x>157</x>
+          <y>274</y>
+        </hint>
+      </hints>
+    </connection>
+    <connection>
+      <sender>buttonBox</sender>
+      <signal>rejected()</signal>
+      <receiver>dialog_duplicate</receiver>
+      <slot>reject()</slot>
+      <hints>
+        <hint type="sourcelabel">
+          <x>316</x>
+          <y>260</y>
+        </hint>
+        <hint type="destinationlabel">
+          <x>286</x>
+          <y>274</y>
+        </hint>
+      </hints>
+    </connection>
+  </connections>
+</ui>
