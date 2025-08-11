@@ -17,7 +17,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "graphene-gui=__main__:main"
+            "graphene-gui=graphenegui.__main__:main"
         ]
     },
     classifiers=[

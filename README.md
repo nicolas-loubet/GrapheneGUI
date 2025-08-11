@@ -91,9 +91,7 @@ You have some safe alternatives. I recommend creating a virtual environment.
 This is the most flexible option and works everywhere.
 
 ```bash
-python3 -m venv graphene-gui-env
-source graphene-gui-env/bin/activate
-pip install git+https://github.com/nicolas-loubet/GrapheneGUI.git
+python3 -m venv graphene-gui-env && source graphene-gui-env/bin/activate && pip install git+https://github.com/nicolas-loubet/GrapheneGUI.git
 ```
 
 Then you just run it with
