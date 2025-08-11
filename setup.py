@@ -15,6 +15,11 @@ setup(
         "PySide6>=6.0.0",
         "numpy>=1.19.0",
     ],
+    entry_points={
+        "console_scripts": [
+            "graphene-gui=__main__:main"
+        ]
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",

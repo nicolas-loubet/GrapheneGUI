@@ -29,9 +29,10 @@ The program's goal is to facilitate and accelerate the creation of customized gr
 - [PySide6](https://pypi.org/project/PySide6/)
 - NumPy
 
-### Installation
+## Installation on Linux
 
-#### Linux
+### Option 1: Using pip (recommended if possible)
+
 
 1. Clone the repository:
 
@@ -41,9 +42,13 @@ git clone https://github.com/nicolas-loubet/GrapheneGUI.git && cd GrapheneGUI/
 
 2. Install requirements:
 
+Make sure you have Python 3.8+ installed.
+
 ```bash
 pip install -r requirements.txt
 ```
+
+> **Note:** If you find an error at this point, try option 2.
 
 3. Install the package using pip:
 
@@ -69,6 +74,36 @@ And run with:
 python3 main.py
 ```
 
+### Option 2: If you get the "externally-managed-environment" error
+
+On modern Linux distributions (Ubuntu 23.04+, Debian 12+, etc.), the system Python is externally managed according to PEP 668.
+This means pip cannot install packages system-wide to avoid breaking the OS.
+
+If you see an error like:
+
+```bash
+error: externally-managed-environment
+× This environment is externally managed
+```
+
+You have some safe alternatives. I recommend creating a virtual environment.
+
+This is the most flexible option and works everywhere.
+
+```bash
+python3 -m venv graphene-gui-env
+source graphene-gui-env/bin/activate
+pip install git+https://github.com/nicolas-loubet/GrapheneGUI.git
+```
+
+Then you just run it with
+
+```bash
+graphene-gui
+```
+
+### Option 3: Manual running
+
 Also, you can just download the repository and run it:
 
 ```bash
@@ -76,10 +111,10 @@ python3 main.py
 ```
 
 
-#### Windows
-Install Python 3 from python.org.
+## Installation on Windows
+Install Python 3 from [python.org](https://www.python.org/downloads/).
 
-Open PowerShell or CMD in the project directory.
+Open PowerShell or CMD in the project directory (or use cd to navigate to it).
 
 Install dependencies:
 
@@ -94,23 +129,23 @@ python main.py
 ```
 
 ## 🧭 Typical Workflow
-1. Create a graphene plate via the Create dialog.
+1. Create a graphene plate via the `Create` button (+ sign).
 
 2. Apply oxidation:
 
-   - Use expressions like x > 10 and z < 5 to target specific atoms.
+   - Use expressions like "x > 10 and y < 5" or equivalent to target specific atoms.
 
    - Control oxidation type (OH or O) and percentage.
 
 3. Edit manually:
 
-   - Add OH or O groups using the respective modes.
+   - Add `OH` or `O` groups using the respective modes.
 
    - Remove existing oxide groups.
 
 4. Add more plates if needed.
 
-5. Export the system using the Export dialog and select .gro, .pdb, .xyz, .mol2, or .top.
+5. Export the system using the `Export` dialog and select .gro, .pdb, .xyz, .mol2, or .top.
 
 
 ## 📁 File Formats
@@ -132,7 +167,8 @@ python main.py
   - +Z, -Z, or random.
 
 - Atoms are classified with codes:
-  - CE, CO → Carbon
+  - C → Carbon sp2
+  - CE, CO → Carbon sp3
   - OE, OO → Oxygen
   - HO → Hydrogen
 
@@ -143,6 +179,7 @@ This project is licensed under the GNU General Public License (GPL).
 
 ## 👤 Author
 Nicolás Alfredo Loubet
+
 Email: nicolas.loubet@uns.edu.ar
 
 
@@ -161,3 +198,5 @@ Email: nicolas.loubet@uns.edu.ar
 
 ## 📦 Future ideas
 - LAMMPS export support
+- AMBER names compatibility
+- Auto add H in the borders
