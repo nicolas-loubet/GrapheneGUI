@@ -2,16 +2,15 @@ import os
 import random
 import threading
 import math
-from pathlib import Path
-from logic.other_dialogs import CreateDialog, DuplicateDialog
+from logic.other_dialogs import CreateDialog, DuplicateDialog, ExportDialog, ImportDialog, ProbDialog
 from logic.graphene import Graphene, generatePatterns
 from logic.renderer import Renderer
 from logic.export_formats import writeGRO, writeXYZ, writeTOP, writePDB, writeMOL2
 from logic.import_formats import readGRO, readXYZ, readPDB, readMOL2
 from PySide6.QtWidgets import (QMainWindow, QFileDialog, QMessageBox,
-    QGraphicsScene, QGraphicsPixmapItem, QWidget, QDialog)
-from PySide6.QtCore import Qt, Slot
-from PySide6.QtGui import QPixmap, QPainter, QPaintEvent
+    QGraphicsScene, QGraphicsPixmapItem, QDialog)
+from PySide6.QtCore import Qt, Slot, QEvent
+from PySide6.QtGui import QPixmap
 from ui.main_ui import Ui_MainWindow
 
 class MainWindow(QMainWindow):
@@ -23,7 +22,7 @@ class MainWindow(QMainWindow):
         self.scene = QGraphicsScene()
         self.ui.graphicsView.setScene(self.scene)
         
-        self.is_dark_mode = False
+        self.is_dark_mode = True
         self.active_oxide_mode = None
         self.first_carbon = None
         self.z_mode = 2  # 0: z+, 1: z-, 2: z±
@@ -32,30 +31,10 @@ class MainWindow(QMainWindow):
         self.plates = []
         self.plates_corresponding_to_duplicates = [[], []]  # [duplicates, bases]
         
-        # Subclasificar rulers para manejar pintura en paintEvent
         is_dark_mode_func = lambda: self.is_dark_mode
 
-        # Reemplaza los placeholders del .ui manteniendo parent, geometry y objectName
-        def replace_placeholder_with_custom(placeholder_name, cls):
-            placeholder = getattr(self.ui, placeholder_name)
-            parent = placeholder.parent()
-            geom = placeholder.geometry()
-            obj_name = placeholder.objectName()
-
-            # Esconder y eliminar el placeholder original (libera el espacio en la UI)
-            placeholder.hide()
-            placeholder.deleteLater()
-
-            # Crear nuevo widget en el mismo lugar
-            new_w = cls(is_dark_mode_func, parent)
-            new_w.setObjectName(obj_name)
-            new_w.setGeometry(geom)
-            new_w.show()
-
-            # Asignarlo a self.ui para mantener la compatibilidad en el resto del código
-            setattr(self.ui, placeholder_name, new_w)
-            return new_w
-        
+        self.ui.topRuler.setStyleSheet("background-color: #3d3d3d;")
+        self.ui.leftRuler.setStyleSheet("background-color: #3d3d3d;")
         
         self.renderer = Renderer(
             drawing_area=self.ui.graphicsView,
@@ -68,7 +47,7 @@ class MainWindow(QMainWindow):
         
         self.buttons_that_depend_of_having_a_plate(False)
         self.ui.radioZpm.setChecked(True)
-        
+
         self.setup_connections()
 
     def setup_connections(self):
@@ -91,8 +70,21 @@ class MainWindow(QMainWindow):
         self.ui.radioZm.toggled.connect(lambda: self.handle_radio_toggled(self.ui.radioZm))
         self.ui.radioZpm.toggled.connect(lambda: self.handle_radio_toggled(self.ui.radioZpm))
         
+        self.ui.graphicsView.viewport().installEventFilter(self)
+
         self.destroyed.connect(self.handle_main_window_destroy)
         self.scene.mousePressEvent = self.handle_drawing_area_clicked
+
+    # ================================
+    # Overrides
+    # ================================
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.update_drawing_area()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.update_drawing_area()
 
     # ================================
     # State functions
@@ -116,6 +108,12 @@ class MainWindow(QMainWindow):
         print("Exiting...")
         print("Thanks for using Graphene-GUI")
         print("Please cite: No cite yet, stay in touch!")
+    
+    def eventFilter(self, source, event):
+        if(source is self.ui.graphicsView.viewport() and event.type() == QEvent.Resize):
+            self.update_drawing_area()
+        return super().eventFilter(source, event)
+
 
     # ================================
     # Top panel
@@ -186,7 +184,7 @@ class MainWindow(QMainWindow):
             for i in range(3): 
                 translation[i] *= .1  # Change to nm
             
-            if dialog.radio_btn_absolute_pos.isChecked():  # Corregido: dialog en lugar de self
+            if dialog.radio_btn_absolute_pos.isChecked():
                 plate_actual_center = plate.get_geometric_center()
                 for i in range(3):
                     translation[i] -= plate_actual_center[i]
@@ -246,7 +244,7 @@ class MainWindow(QMainWindow):
             elif ext == ".pdb":
                 new_plates = readPDB(file_name)
             else:
-                raise ValueValue(f"Not supported file extension: {ext}")
+                raise ValueError(f"Not supported file extension: {ext}")
                 
             for plate in new_plates:
                 self.plates.append(plate)
@@ -270,7 +268,7 @@ class MainWindow(QMainWindow):
         dialog = ExportDialog(self)
         if dialog.exec() != QDialog.Accepted: return
         
-        file_name, selected_filter = QFileDialog.getSaveFileName(
+        file_name, _ = QFileDialog.getSaveFileName(
             self, 
             "Export File", 
             "", 
@@ -299,7 +297,7 @@ class MainWindow(QMainWindow):
         elif file_name.endswith(".mol2"):
             writeMOL2(file_name, self.plates)
         elif file_name.endswith(".top"):
-            factor = dialog.spin_scale.value()/100.0  # Corregido: dialog en lugar de self (asumiendo que está en ExportDialog)
+            factor = self.spin_scale.value()/100.0
             QMessageBox.information(self, "Exporting topology", "Exporting topology...")
             
             def export_top_and_close():
@@ -308,49 +306,13 @@ class MainWindow(QMainWindow):
             
             threading.Thread(target=export_top_and_close, daemon=True).start()
 
-    def load_css(self):
-        bg_color = "#1e1e1e" if self.is_dark_mode else "white"
-        widget_bg = "#2a2a2a" if self.is_dark_mode else "#f5f5f5"
-        text_color = "white" if self.is_dark_mode else "black"
-        ok_btn = "#2e7d32" if self.is_dark_mode else "lightgreen"
-        cancel_btn = "#d32f2f" if self.is_dark_mode else "lightcoral"
-        btn_bg = "#424242" if self.is_dark_mode else "#e0e0e0"
-
-        style = f"""
-            QGraphicsView {{
-                background-color: {bg_color};
-            }}
-            #topRuler, #leftRuler {{
-                background-color: {bg_color};
-            }}
-            QSpinBox, QLineEdit {{
-                background-color: {widget_bg};
-                color: {text_color};
-            }}
-            QPushButton#btn_create_ok, #btn_export_ok, #btn_import_ok, #btn_prob_ok {{
-                background-color: {ok_btn};
-                color: {text_color};
-            }}
-            QPushButton#btn_create_cancel, #btn_export_cancel, #btn_import_cancel, #btn_prob_cancel {{
-                background-color: {cancel_btn};
-                color: {text_color};
-            }}
-            QPushButton {{
-                background-color: {btn_bg};
-                color: {text_color};
-            }}
-        """
-        self.setStyleSheet(style)
-        # Actualiza rulers para disparar paintEvent
-        self.ui.topRuler.update()
-        self.ui.leftRuler.update()
-
     @Slot()
     def handle_btn_dark_light_mode_clicked(self):
         self.is_dark_mode = not self.is_dark_mode
         self.load_css()
         self.update_drawing_area()
         print(f"Switched to {'dark' if self.is_dark_mode else 'light'} mode")
+
 
     # ================================
     # Drawing area, central panel
@@ -428,24 +390,37 @@ class MainWindow(QMainWindow):
             print(f"{len(list_remove_ox)} atom{'s' if len(list_remove_ox) != 1 else ''} removed")
 
     def update_drawing_area(self):
-        self.scene.clear()
         active_index = self.ui.comboDrawings.currentIndex()
-
+        
         if active_index == -1 or not self.plates or not self.plates[active_index].get_number_atoms():
-            # Dibujar fondo si no hay placas
-            pixmap = QPixmap("ui/img/background.png")
+            pixmap = QPixmap("ui/img/background.svg")
             if not pixmap.isNull():
-                pixmap_item = QGraphicsPixmapItem(pixmap.scaled(
-                    self.ui.graphicsView.width(), 
-                    self.ui.graphicsView.height(),
-                    Qt.KeepAspectRatio
-                ))
+                view_width = self.ui.graphicsView.width()
+                view_height = self.ui.graphicsView.height()
+                
+                if view_width > 0 and view_height > 0:
+                    scaled_pixmap = pixmap.scaled(
+                        view_width, 
+                        view_height,
+                        Qt.KeepAspectRatio,
+                        Qt.SmoothTransformation
+                    )
+                    pixmap_item = QGraphicsPixmapItem(scaled_pixmap)
+                else:
+                    pixmap_item = QGraphicsPixmapItem(pixmap)
+                    
+                self.scene.clear()
                 self.scene.addItem(pixmap_item)
+            self.ui.comboDrawings.setEnabled(False)
         else:
-            # Renderizar la placa actual
             img = self.renderer.render_plate(self.plates[active_index], self.is_dark_mode)
+            self.renderer.update_view()
             pixmap = QPixmap.fromImage(img)
             self.scene.addPixmap(pixmap)
+
+            
+        self.ui.comboDrawings.setEnabled(active_index != -1)
+
 
     # ================================
     # Lower panel
@@ -557,17 +532,58 @@ class MainWindow(QMainWindow):
         elif radio_button == self.ui.radioZpm and radio_button.isChecked():
             self.z_mode = 2
 
+
     # ================================
     # Other methods
     # ================================
+    def load_css(self):
+        bg_color = "#3d3d3d" if self.is_dark_mode else "white"
+        widget_bg = "#2a2a2a" if self.is_dark_mode else "#f5f5f5"
+        text_color = "white" if self.is_dark_mode else "black"
+        ok_btn = "#2e7d32" if self.is_dark_mode else "lightgreen"
+        cancel_btn = "#d32f2f" if self.is_dark_mode else "lightcoral"
+        btn_bg = "#424242" if self.is_dark_mode else "#e0e0e0"
 
-    @Slot(float)
-    def handle_spin_prob_oh_changed(self, value):
-        self.spin_prob_o.setValue(100 - value)
+        style = f"""
+            QGraphicsView {{
+                background-color: {bg_color};
+            }}
+            #topRuler, #leftRuler {{
+                background-color: {bg_color};
+            }}
+            QSpinBox, QLineEdit {{
+                background-color: {widget_bg};
+                color: {text_color};
+            }}
+            QPushButton#btn_create_ok, #btn_export_ok, #btn_import_ok, #btn_prob_ok {{
+                background-color: {ok_btn};
+                color: {text_color};
+            }}
+            QPushButton#btn_create_cancel, #btn_export_cancel, #btn_import_cancel, #btn_prob_cancel {{
+                background-color: {cancel_btn};
+                color: {text_color};
+            }}
+            QPushButton {{
+                background-color: {btn_bg};
+                color: {text_color};
+            }}
+        """
+        self.setStyleSheet(style)
+        self.ui.drawingArea.setStyleSheet(f"background-color: {bg_color};")
+        self.ui.topRuler.setStyleSheet(f"background-color: {bg_color};")
+        self.ui.leftRuler.setStyleSheet(f"background-color: {bg_color};")
+        
+        self.ui.comboDrawings.setStyleSheet(f"background-color: {btn_bg};")
 
-    @Slot(float)
-    def handle_spin_prob_o_changed(self, value):
-        self.spin_prob_oh.setValue(100 - value)
+        self.ui.centralwidget.setStyleSheet(f"background-color: {bg_color};")
+        self.ui.topToolBar.setStyleSheet(f"background-color: {bg_color};")
+        self.ui.bottomBar.setStyleSheet(f"background-color: {bg_color};")
+
+        self.ui.labelOxidation.setStyleSheet(f"color: {text_color};")
+        self.ui.labelRandom.setStyleSheet(f"color: {text_color};")
+        self.ui.labelVMD.setStyleSheet(f"color: {text_color};")
+        self.ui.labelManual.setStyleSheet(f"color: {text_color};")
+        self.ui.labelWhere.setStyleSheet(f"color: {text_color};")
 
     def manage_duplicates_for_deletion(self, index, index_would_be_removed):
         if index in self.plates_corresponding_to_duplicates[0]:
