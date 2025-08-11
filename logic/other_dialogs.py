@@ -1,8 +1,6 @@
 from PySide6.QtWidgets import QDialog
 from ui.dialog_create_ui import Ui_DialogCreate
 from ui.dialog_duplicate_ui import Ui_DialogDuplicate
-from ui.dialog_export_ui import Ui_DialogExport
-from ui.dialog_import_ui import Ui_DialogImport
 from ui.dialog_prob_ui import Ui_DialogProb
 
 class CreateDialog(QDialog, Ui_DialogCreate):
@@ -11,16 +9,6 @@ class CreateDialog(QDialog, Ui_DialogCreate):
         self.setupUi(self)
 
 class DuplicateDialog(QDialog, Ui_DialogDuplicate):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setupUi(self)
-
-class ExportDialog(QDialog, Ui_DialogExport):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setupUi(self)
-
-class ImportDialog(QDialog, Ui_DialogImport):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setupUi(self)

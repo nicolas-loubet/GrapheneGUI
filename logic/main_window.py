@@ -2,14 +2,14 @@ import os
 import random
 import threading
 import math
-from logic.other_dialogs import CreateDialog, DuplicateDialog, ExportDialog, ImportDialog, ProbDialog
+from logic.other_dialogs import CreateDialog, DuplicateDialog, ProbDialog
 from logic.graphene import Graphene, generatePatterns
 from logic.renderer import Renderer
 from logic.export_formats import writeGRO, writeXYZ, writeTOP, writePDB, writeMOL2
 from logic.import_formats import readGRO, readXYZ, readPDB, readMOL2
 from PySide6.QtWidgets import (QMainWindow, QFileDialog, QMessageBox,
-    QGraphicsScene, QGraphicsPixmapItem, QDialog)
-from PySide6.QtCore import Qt, Slot, QEvent
+    QGraphicsScene, QDialog)
+from PySide6.QtCore import Slot, QEvent
 from PySide6.QtGui import QPixmap
 from ui.main_ui import Ui_MainWindow
 
@@ -75,6 +75,7 @@ class MainWindow(QMainWindow):
         self.destroyed.connect(self.handle_main_window_destroy)
         self.scene.mousePressEvent = self.handle_drawing_area_clicked
 
+
     # ================================
     # Overrides
     # ================================
@@ -85,6 +86,7 @@ class MainWindow(QMainWindow):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.update_drawing_area()
+
 
     # ================================
     # State functions
@@ -156,6 +158,7 @@ class MainWindow(QMainWindow):
             self.ui.comboDrawings.addItem(f"Plate {len(self.plates)}")
             self.ui.comboDrawings.setCurrentIndex(len(self.plates) - 1)
 
+            self.load_css()
             self.update_drawing_area()
             self.buttons_that_depend_of_having_a_plate(True)
             print(f"Coords drawn: Plate {len(self.plates)}")
@@ -229,23 +232,24 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def handle_btn_import_clicked(self):
-        dialog = ImportDialog(self)
-        if dialog.exec() != QDialog.Accepted: return
-        
-        file_name = dialog.fileDialog.selectedFiles()[0]
+        filters = "GRO Files (*.gro);;XYZ Files (*.xyz);;PDB Files (*.pdb);;MOL2 Files (*.mol2);;All Files (*)"
+        file_name, _ = QFileDialog.getOpenFileName(self, "Import File", "", filters)
+
+        if not file_name: return
+
         ext = os.path.splitext(file_name)[1].lower()
         try:
             if ext == ".gro":
                 new_plates = readGRO(file_name)
             elif ext == ".xyz":
                 new_plates = readXYZ(file_name)
-            elif ext == ".mol2":
-                new_plates = readMOL2(file_name)
             elif ext == ".pdb":
                 new_plates = readPDB(file_name)
+            elif ext == ".mol2":
+                new_plates = readMOL2(file_name)
             else:
                 raise ValueError(f"Not supported file extension: {ext}")
-                
+
             for plate in new_plates:
                 self.plates.append(plate)
                 idx = len(self.plates)
@@ -253,7 +257,7 @@ class MainWindow(QMainWindow):
                 print(f"Importing coords: Plate {idx}")
 
             if new_plates:
-                self.ui.comboDrawings.setCurrentIndex(len(self.plates)-1)
+                self.ui.comboDrawings.setCurrentIndex(len(self.plates) - 1)
                 self.buttons_that_depend_of_having_a_plate(True)
                 self.update_drawing_area()
 
@@ -261,22 +265,34 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             QMessageBox.critical(self, "Error reading file", str(e))
-            return
+
 
     @Slot()
     def handle_btn_export_clicked(self):
-        dialog = ExportDialog(self)
-        if dialog.exec() != QDialog.Accepted: return
-        
-        file_name, _ = QFileDialog.getSaveFileName(
-            self, 
-            "Export File", 
-            "", 
-            "GRO Files (*.gro);;PDB Files (*.pdb);;XYZ Files (*.xyz);;MOL2 Files (*.mol2);;TOP Files (*.top)"
+        filters = (
+            "GRO Files (*.gro);;"
+            "PDB Files (*.pdb);;"
+            "XYZ Files (*.xyz);;"
+            "MOL2 Files (*.mol2);;"
+            "TOP Files (*.top);;"
+            "All Files (*)"
         )
-        
+        file_name, selected_filter = QFileDialog.getSaveFileName(self, "Export File", "", filters)
+
         if not file_name: return
-        if '.' not in file_name: file_name += ".gro"
+
+        ext_map = {
+            "GRO": ".gro",
+            "PDB": ".pdb",
+            "XYZ": ".xyz",
+            "MOL2": ".mol2",
+            "TOP": ".top"
+        }
+        if '.' not in file_name:
+            for key, ext in ext_map.items():
+                if key in selected_filter:
+                    file_name += ext
+                    break
 
         if os.path.exists(file_name):
             reply = QMessageBox.question(
@@ -297,13 +313,13 @@ class MainWindow(QMainWindow):
         elif file_name.endswith(".mol2"):
             writeMOL2(file_name, self.plates)
         elif file_name.endswith(".top"):
-            factor = self.spin_scale.value()/100.0
+            factor = self.spin_scale.value() / 100.0
             QMessageBox.information(self, "Exporting topology", "Exporting topology...")
-            
+
             def export_top_and_close():
                 writeTOP(file_name, self.plates, factor, self.plates_corresponding_to_duplicates)
                 QMessageBox.information(self, "Export Complete", "Topology export completed")
-            
+
             threading.Thread(target=export_top_and_close, daemon=True).start()
 
     @Slot()
@@ -392,33 +408,12 @@ class MainWindow(QMainWindow):
     def update_drawing_area(self):
         active_index = self.ui.comboDrawings.currentIndex()
         
-        if active_index == -1 or not self.plates or not self.plates[active_index].get_number_atoms():
-            pixmap = QPixmap("ui/img/background.svg")
-            if not pixmap.isNull():
-                view_width = self.ui.graphicsView.width()
-                view_height = self.ui.graphicsView.height()
-                
-                if view_width > 0 and view_height > 0:
-                    scaled_pixmap = pixmap.scaled(
-                        view_width, 
-                        view_height,
-                        Qt.KeepAspectRatio,
-                        Qt.SmoothTransformation
-                    )
-                    pixmap_item = QGraphicsPixmapItem(scaled_pixmap)
-                else:
-                    pixmap_item = QGraphicsPixmapItem(pixmap)
-                    
-                self.scene.clear()
-                self.scene.addItem(pixmap_item)
-            self.ui.comboDrawings.setEnabled(False)
-        else:
+        if active_index != -1 and self.plates and self.plates[active_index].get_number_atoms():
             img = self.renderer.render_plate(self.plates[active_index], self.is_dark_mode)
             self.renderer.update_view()
             pixmap = QPixmap.fromImage(img)
             self.scene.addPixmap(pixmap)
 
-            
         self.ui.comboDrawings.setEnabled(active_index != -1)
 
 
