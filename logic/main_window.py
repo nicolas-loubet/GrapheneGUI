@@ -9,7 +9,7 @@ from logic.export_formats import writeGRO, writeXYZ, writeTOP, writePDB, writeMO
 from logic.import_formats import readGRO, readXYZ, readPDB, readMOL2
 from PySide6.QtWidgets import (QMainWindow, QFileDialog, QMessageBox,
     QGraphicsScene, QDialog)
-from PySide6.QtCore import Slot, QEvent
+from PySide6.QtCore import Qt, Slot, QEvent
 from PySide6.QtGui import QPixmap
 from ui.main_ui import Ui_MainWindow
 
@@ -71,6 +71,8 @@ class MainWindow(QMainWindow):
         self.ui.radioZpm.toggled.connect(lambda: self.handle_radio_toggled(self.ui.radioZpm))
         
         self.ui.graphicsView.viewport().installEventFilter(self)
+        self.ui.graphicsView.horizontalScrollBar().setVisible(False)
+        self.ui.graphicsView.verticalScrollBar().setVisible(False)
 
         self.destroyed.connect(self.handle_main_window_destroy)
         self.scene.mousePressEvent = self.handle_drawing_area_clicked
@@ -347,6 +349,7 @@ class MainWindow(QMainWindow):
             plate.add_oxide(h_x, o_y, h_z, "HO", i_atom)
             self.update_drawing_area()
             print(f"Added O at ({o_x*10:.2f}, {o_y*10:.2f}, {o_z*10:.2f}) and H at ({h_x:.3f}, {o_y:.3f}, {h_z:.3f})")
+            print(f"Actual oxidation rate: {(plate.get_oxide_count()/len(plate.get_carbon_coords()))*100:.2f}%")
         else:
             print("Position already occupied by an oxide")
 
@@ -363,6 +366,7 @@ class MainWindow(QMainWindow):
                 plate.add_oxide(o_x, o_y, o_z, "OE", i_atom)
                 self.update_drawing_area()
                 print(f"Added O at ({o_x*10:.2f}, {o_y*10:.2f}, {o_z*10:.2f})")
+                print(f"Actual oxidation rate: {(plate.get_oxide_count()/len(plate.get_carbon_coords()))*100:.2f}%")
             else:
                 print("Position already occupied by an oxide")
         else:
@@ -483,7 +487,7 @@ class MainWindow(QMainWindow):
             
             oxide_new = random.sample(list_carbons_in_expression, min(number_oxidations_desired, len(list_carbons_in_expression)))
             plate.add_oxydation_to_list_of_carbon(oxide_new, self.z_mode, self.last_prob_oh)
-            print(f"Finished with {len(oxide_new)} new oxides")
+            print(f"Finished with {len(oxide_new)} oxides, that is {(plate.get_oxide_count())/len(list_carbons_in_expression)*100:.2f}% of the plate")
 
         except Exception as e:
             print("Not valid expression, exc=", e)

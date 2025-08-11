@@ -67,6 +67,13 @@ class Graphene:
     def get_oxide_coords(self):
         return self.oxide_coords
     
+    def get_oxide_count(self):
+        count= 0
+        for ox in self.oxide_coords:
+            if ox[3] == "HO": continue
+            count+= 1
+        return count
+    
     def get_number_atoms(self):
         return len(self.carbon_coords)+len(self.oxide_coords)
     

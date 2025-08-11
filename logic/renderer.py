@@ -55,8 +55,8 @@ class Renderer:
         return float(p.x()), float(p.y())
 
     def pixel_to_nm(self, x_win, y_win):
-        if not self.plates or self.cb_plates.currentIndex() == -1 or self.scale == 0:
-            return None, None
+        if not self.plates or self.cb_plates.currentIndex() == -1 or self.scale == 0: return None, None
+
         width = float(self.drawing_area.width())
         height = float(self.drawing_area.height())
         x_nm = x_win / self.scale + self.center_x - width / (2.0 * self.scale)
@@ -159,15 +159,15 @@ class Renderer:
         try:
             painter.setRenderHint(QPainter.TextAntialiasing)
             painter.fillRect(self.ruler_x.rect(), self.colors["dark" if self.is_dark_mode_func() else "light"]["bg"])
-            if not self.plates or self.cb_plates.currentIndex() == -1:
-                return
+            if not self.plates or self.cb_plates.currentIndex() == -1: return
+
             width, height = float(self.ruler_x.width()), float(self.ruler_x.height())
             pixel_x_min = (self.min_x - self.center_x) * self.scale + width / 2.0
             pixel_x_max = (self.max_x - self.center_x) * self.scale + width / 2.0
             pen = QPen()
             pen.setWidth(2)
             painter.setPen(pen)
-            painter.drawLine(pixel_x_min, 3.0 * height / 4.0, pixel_x_max, 3.0 * height / 4.0)
+            painter.drawLine(pixel_x_min, 3.7 * height / 4.0, pixel_x_max, 3.7 * height / 4.0)
             font = QFont()
             font.setPointSize(10)
             painter.setFont(font)
@@ -175,8 +175,8 @@ class Renderer:
                 pixel_x = (x / 10.0 - self.center_x) * self.scale + width / 2.0
                 tick_height = 10 if x % 10 == 0 else 8 if x % 5 == 0 else 5
                 if x % 10 == 0:
-                    painter.drawText(int(pixel_x - 15), int(height / 2), 30, 20, Qt.AlignCenter, str(x))
-                painter.drawLine(pixel_x, 3.0 * height / 4.0, pixel_x, 3.0 * height / 4.0 - tick_height)
+                    painter.drawText(int(pixel_x - 15), int(0.6*height/4), 30, 20, Qt.AlignCenter, str(x))
+                painter.drawLine(pixel_x, 3.7 * height / 4.0, pixel_x, 3.7 * height / 4.0 - tick_height)
         finally:
             if painter.isActive():
                 painter.end()
@@ -186,28 +186,24 @@ class Renderer:
         try:
             painter.setRenderHint(QPainter.TextAntialiasing)
             painter.fillRect(self.ruler_y.rect(), self.colors["dark" if self.is_dark_mode_func() else "light"]["bg"])
-            if not self.plates or self.cb_plates.currentIndex() == -1:
-                return
+            if not self.plates or self.cb_plates.currentIndex() == -1: return
+
             width, height = float(self.ruler_y.width()), float(self.ruler_y.height())
             pixel_y_min = (self.min_y - self.center_y) * self.scale + height / 2.0
             pixel_y_max = (self.max_y - self.center_y) * self.scale + height / 2.0
             pen = QPen()
             pen.setWidth(2)
             painter.setPen(pen)
-            painter.drawLine(3.0 * width / 4.0, pixel_y_min, 3.0 * width / 4.0, pixel_y_max)
+            painter.drawLine(3.7 * width / 4.0, pixel_y_min, 3.7 * width / 4.0, pixel_y_max)
             font = QFont()
             font.setPointSize(10)
             painter.setFont(font)
             for y in range(int(self.limits[2] * 10), int(self.limits[3] * 10) + 1):
                 pixel_y = (y / 10.0 - self.center_y) * self.scale + height / 2.0
-                tick_width = 8 if y % 5 == 0 else 5
+                tick_width = 10 if y % 10 == 0 else 8 if y % 5 == 0 else 5
                 if y % 10 == 0:
-                    painter.save()
-                    painter.translate(width / 2.0 - 20.0, pixel_y + 5.0)
-                    painter.rotate(-90.0)
-                    painter.drawText(0, 0, 40, 20, Qt.AlignCenter, str(y))
-                    painter.restore()
-                painter.drawLine(3.0 * width / 4.0, pixel_y, 3.0 * width / 4.0 - tick_width, pixel_y)
+                    painter.drawText(int(0.1*width/4), int(pixel_y - 10), 30, 20, Qt.AlignCenter, str(y))
+                painter.drawLine(3.7 * width / 4.0, pixel_y, 3.7 * width / 4.0 - tick_width, pixel_y)
         finally:
             if painter.isActive():
                 painter.end()
