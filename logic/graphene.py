@@ -87,6 +87,7 @@ class Graphene:
     
     def add_oxydation_to_list_of_carbon(self, list_carbons, z_mode, prob_oh):
         i_atom = self.get_number_atoms()
+        count_oxidations = 0
         
         oxidized_carbons = []
         for ox in self.oxide_coords:
@@ -106,6 +107,7 @@ class Graphene:
                 i_atom += 1
                 self.add_oxide(x1+.093, y1, z1+z_dir*0.181, "HO", i_atom)
                 oxidized_carbons.append(carbon)
+                count_oxidations += 1
 
             else:
                 adjacent = self.carbons_adjacent(carbon)
@@ -123,6 +125,7 @@ class Graphene:
                     self.add_oxide(x_mid, y_mid, z_mid+z_dir*0.126, "OE", i_atom)
                     oxidized_carbons.append(carbon)
                     oxidized_carbons.append(adj)
+                    count_oxidations += 1
                     found = True
                     break
 
@@ -130,9 +133,12 @@ class Graphene:
                     #print(f"No adjacent carbon available for OE near {carbon[3]}, added OH instead")
                     i_atom += 1
                     self.add_oxide(x1, y1, z1+z_dir*0.149, "OO", i_atom)
+                    count_oxidations += 1
                     i_atom += 1
                     self.add_oxide(x1+.093, y1, z1+z_dir*0.18, "HO", i_atom)
                     oxidized_carbons.append(carbon)
+
+        return count_oxidations
 
 
     def carbons_adjacent(self, carbon_center):
