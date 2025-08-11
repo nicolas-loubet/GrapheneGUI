@@ -7,7 +7,6 @@ from PySide6.QtWidgets import QMainWindow, QMessageBox, QGraphicsScene, QDialog
 from PySide6.QtCore import Slot, QEvent
 from PySide6.QtGui import QPixmap
 from ..ui.main_ui import Ui_MainWindow
-import graphenegui.ui.resources_rc
 
 
 class MainWindow(QMainWindow):

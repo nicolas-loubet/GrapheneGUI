@@ -37,7 +37,7 @@
               </property>
               <property name="icon">
                 <iconset>
-                  <normaloff>:/icons/create.svg</normaloff>
+                  <normaloff>:/icons/img/svg/create.svg</normaloff>
                 </iconset>
               </property>
               <property name="iconSize">
@@ -70,7 +70,7 @@
               </property>
               <property name="icon">
                 <iconset>
-                  <normaloff>:/icons/duplicate.svg</normaloff>
+                  <normaloff>:/icons/img/svg/duplicate.svg</normaloff>
                 </iconset>
               </property>
               <property name="iconSize">
@@ -92,7 +92,7 @@
               </property>
               <property name="icon">
                 <iconset>
-                  <normaloff>:/icons/delete.svg</normaloff>
+                  <normaloff>:/icons/img/svg/delete.svg</normaloff>
                 </iconset>
               </property>
               <property name="iconSize">
@@ -114,7 +114,7 @@
               </property>
               <property name="icon">
                 <iconset>
-                  <normaloff>:/icons/import.svg</normaloff>
+                  <normaloff>:/icons/img/svg/import.svg</normaloff>
                 </iconset>
               </property>
               <property name="iconSize">
@@ -136,7 +136,7 @@
               </property>
               <property name="icon">
                 <iconset>
-                  <normaloff>:/icons/export.svg</normaloff>
+                  <normaloff>:/icons/img/svg/export.svg</normaloff>
                 </iconset>
               </property>
               <property name="iconSize">
@@ -158,7 +158,7 @@
               </property>
               <property name="icon">
                 <iconset>
-                  <normaloff>:/icons/dark_light_mode.svg</normaloff>
+                  <normaloff>:/icons/img/svg/dark_light_mode.svg</normaloff>
                 </iconset>
               </property>
               <property name="iconSize">
@@ -270,7 +270,7 @@
                   </property>
                   <property name="icon">
                     <iconset>
-                      <normaloff>:/icons/reduce.svg</normaloff>
+                      <normaloff>:/icons/img/svg/reduce.svg</normaloff>
                     </iconset>
                   </property>
                   <property name="minimumSize">
@@ -294,7 +294,7 @@
                   </property>
                   <property name="icon">
                     <iconset>
-                      <normaloff>:/icons/prob.svg</normaloff>
+                      <normaloff>:/icons/img/svg/prob.svg</normaloff>
                     </iconset>
                   </property>
                   <property name="minimumSize">
@@ -427,7 +427,7 @@
                   </property>
                   <property name="icon">
                     <iconset>
-                      <normaloff>:/icons/remove_one.svg</normaloff>
+                      <normaloff>:/icons/img/svg/remove_one.svg</normaloff>
                     </iconset>
                   </property>
                   <property name="minimumSize">

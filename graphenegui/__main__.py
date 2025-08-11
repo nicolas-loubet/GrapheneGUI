@@ -1,3 +1,4 @@
+import graphenegui.ui.resources_rc # Used to register resources
 from PySide6.QtWidgets import QApplication
 from .logic.main_window import MainWindow
 
