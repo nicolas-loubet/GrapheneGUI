@@ -1,0 +1,3 @@
+recursive-include graphenegui *
+global-exclude *.py[cod]
+global-exclude __pycache__
