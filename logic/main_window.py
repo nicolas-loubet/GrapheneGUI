@@ -8,7 +8,7 @@ from logic.renderer import Renderer
 from logic.export_formats import writeGRO, writeXYZ, writeTOP, writePDB, writeMOL2
 from logic.import_formats import readGRO, readXYZ, readPDB, readMOL2
 from PySide6.QtWidgets import (QMainWindow, QFileDialog, QMessageBox,
-    QGraphicsScene, QDialog)
+    QGraphicsScene, QDialog, QButtonGroup)
 from PySide6.QtCore import Qt, Slot, QEvent
 from PySide6.QtGui import QPixmap
 from ui.main_ui import Ui_MainWindow
@@ -44,7 +44,7 @@ class MainWindow(QMainWindow):
             cb_plates=self.ui.comboDrawings,
             is_dark_mode_func=is_dark_mode_func
         )
-        
+
         self.buttons_that_depend_of_having_a_plate(False)
         self.ui.radioZpm.setChecked(True)
 
@@ -71,10 +71,7 @@ class MainWindow(QMainWindow):
         self.ui.radioZpm.toggled.connect(lambda: self.handle_radio_toggled(self.ui.radioZpm))
         
         self.ui.graphicsView.viewport().installEventFilter(self)
-        self.ui.graphicsView.horizontalScrollBar().setVisible(False)
-        self.ui.graphicsView.verticalScrollBar().setVisible(False)
 
-        self.destroyed.connect(self.handle_main_window_destroy)
         self.scene.mousePressEvent = self.handle_drawing_area_clicked
 
 
@@ -89,6 +86,10 @@ class MainWindow(QMainWindow):
         super().resizeEvent(event)
         self.update_drawing_area()
 
+    def closeEvent(self, event):
+        print("\nThanks for using Graphene-GUI")
+        print("Please cite: No cite yet, stay in touch!")
+    
 
     # ================================
     # State functions
@@ -108,11 +109,6 @@ class MainWindow(QMainWindow):
         self.ui.radioZp.setEnabled(active)
         self.ui.radioZm.setEnabled(active)
 
-    def handle_main_window_destroy(self):
-        print("Exiting...")
-        print("Thanks for using Graphene-GUI")
-        print("Please cite: No cite yet, stay in touch!")
-    
     def eventFilter(self, source, event):
         if(source is self.ui.graphicsView.viewport() and event.type() == QEvent.Resize):
             self.update_drawing_area()
@@ -502,26 +498,43 @@ class MainWindow(QMainWindow):
         self.ui.btnAddO.setChecked(mode == "O")
         self.ui.btnRemoveOx.setChecked(mode == "Remove")
 
-    @Slot()
     def handle_btn_oh_clicked(self):
         if self.ui.btnAddOH.isChecked():
+            if self.active_oxide_mode:
+                print(f"{self.active_oxide_mode} mode deactivated")
+            self.ui.btnAddO.setChecked(False)
+            self.ui.btnRemoveOx.setChecked(False)
             self.set_oxide_mode("OH")
+            print("OH mode activated")
         else:
             self.set_oxide_mode(None)
+            print("OH mode deactivated")
 
     @Slot()
     def handle_btn_o_clicked(self):
         if self.ui.btnAddO.isChecked():
+            if self.active_oxide_mode:
+                print(f"{self.active_oxide_mode} mode deactivated")
+            self.ui.btnAddOH.setChecked(False)
+            self.ui.btnRemoveOx.setChecked(False)
             self.set_oxide_mode("O")
+            print("O (epoxy) mode activated")
         else:
             self.set_oxide_mode(None)
+            print("O (epoxy) mode deactivated")
 
     @Slot()
     def handle_btn_remove_ox_clicked(self):
         if self.ui.btnRemoveOx.isChecked():
+            if self.active_oxide_mode:
+                print(f"{self.active_oxide_mode} mode deactivated")
+            self.ui.btnAddOH.setChecked(False)
+            self.ui.btnAddO.setChecked(False)
             self.set_oxide_mode("Remove")
+            print("Remove mode activated")
         else:
             self.set_oxide_mode(None)
+            print("Remove mode deactivated")
 
     def handle_radio_toggled(self, radio_button):
         if radio_button == self.ui.radioZp and radio_button.isChecked():

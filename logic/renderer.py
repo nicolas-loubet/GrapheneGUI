@@ -1,4 +1,4 @@
-from PySide6.QtGui import QPainter, QColor, QPen, QFont, QImage
+from PySide6.QtGui import QPainter, QColor, QPen, QFont, QImage, QTransform
 from PySide6.QtCore import Qt, QPointF, QRectF
 from PySide6.QtGui import QPixmap
 

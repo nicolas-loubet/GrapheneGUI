@@ -130,6 +130,8 @@ class Ui_MainWindow(object):
         sizePolicy2.setVerticalStretch(0)
         sizePolicy2.setHeightForWidth(self.graphicsView.sizePolicy().hasHeightForWidth())
         self.graphicsView.setSizePolicy(sizePolicy2)
+        self.graphicsView.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.graphicsView.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         self.gridLayoutCentral.addWidget(self.graphicsView, 1, 1, 1, 1)
 
@@ -219,18 +221,21 @@ class Ui_MainWindow(object):
 
         self.btnAddOH = QPushButton(self.bottomBar)
         self.btnAddOH.setObjectName(u"btnAddOH")
+        self.btnAddOH.setCheckable(True)
         self.btnAddOH.setMinimumSize(QSize(60, 40))
 
         self.hLayoutBottom.addWidget(self.btnAddOH)
 
         self.btnAddO = QPushButton(self.bottomBar)
         self.btnAddO.setObjectName(u"btnAddO")
+        self.btnAddO.setCheckable(True)
         self.btnAddO.setMinimumSize(QSize(60, 40))
 
         self.hLayoutBottom.addWidget(self.btnAddO)
 
         self.btnRemoveOx = QPushButton(self.bottomBar)
         self.btnRemoveOx.setObjectName(u"btnRemoveOx")
+        self.btnRemoveOx.setCheckable(True)
         icon8 = QIcon()
         icon8.addFile(u"ui/img/svg/remove_one.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         self.btnRemoveOx.setIcon(icon8)

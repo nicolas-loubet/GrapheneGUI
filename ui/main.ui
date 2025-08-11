@@ -240,6 +240,12 @@
                       <verstretch>0</verstretch>
                     </sizepolicy>
                   </property>
+                  <property name="horizontalScrollBarPolicy">
+                    <enum>Qt::ScrollBarAlwaysOff</enum>
+                  </property>
+                  <property name="verticalScrollBarPolicy">
+                    <enum>Qt::ScrollBarAlwaysOff</enum>
+                  </property>
                 </widget>
               </item>
             </layout>
@@ -381,6 +387,9 @@
               </item>
               <item>
                 <widget class="QPushButton" name="btnAddOH">
+                  <property name="checkable">
+                    <bool>true</bool>
+                  </property>
                   <property name="text">
                     <string>Add OH</string>
                   </property>
@@ -394,6 +403,9 @@
               </item>
               <item>
                 <widget class="QPushButton" name="btnAddO">
+                  <property name="checkable">
+                    <bool>true</bool>
+                  </property>
                   <property name="text">
                     <string>Add O</string>
                   </property>
@@ -407,6 +419,9 @@
               </item>
               <item>
                 <widget class="QPushButton" name="btnRemoveOx">
+                  <property name="checkable">
+                    <bool>true</bool>
+                  </property>
                   <property name="text">
                     <string>Remove Ox.</string>
                   </property>
