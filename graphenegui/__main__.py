@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QApplication
-from logic.main_window import MainWindow
+from .logic.main_window import MainWindow
 
 def main():
     app = QApplication([])

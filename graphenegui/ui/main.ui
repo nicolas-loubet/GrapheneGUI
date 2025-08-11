@@ -37,7 +37,7 @@
               </property>
               <property name="icon">
                 <iconset>
-                  <normaloff>ui/img/svg/create.svg</normaloff>
+                  <normaloff>graphenegui/ui/img/svg/create.svg</normaloff>
                 </iconset>
               </property>
               <property name="iconSize">
@@ -70,7 +70,7 @@
               </property>
               <property name="icon">
                 <iconset>
-                  <normaloff>ui/img/svg/duplicate.svg</normaloff>
+                  <normaloff>graphenegui/ui/img/svg/duplicate.svg</normaloff>
                 </iconset>
               </property>
               <property name="iconSize">
@@ -92,7 +92,7 @@
               </property>
               <property name="icon">
                 <iconset>
-                  <normaloff>ui/img/svg/delete.svg</normaloff>
+                  <normaloff>graphenegui/ui/img/svg/delete.svg</normaloff>
                 </iconset>
               </property>
               <property name="iconSize">
@@ -114,7 +114,7 @@
               </property>
               <property name="icon">
                 <iconset>
-                  <normaloff>ui/img/svg/import.svg</normaloff>
+                  <normaloff>graphenegui/ui/img/svg/import.svg</normaloff>
                 </iconset>
               </property>
               <property name="iconSize">
@@ -136,7 +136,7 @@
               </property>
               <property name="icon">
                 <iconset>
-                  <normaloff>ui/img/svg/export.svg</normaloff>
+                  <normaloff>graphenegui/ui/img/svg/export.svg</normaloff>
                 </iconset>
               </property>
               <property name="iconSize">
@@ -158,7 +158,7 @@
               </property>
               <property name="icon">
                 <iconset>
-                  <normaloff>ui/img/svg/dark_light_mode.svg</normaloff>
+                  <normaloff>graphenegui/ui/img/svg/dark_light_mode.svg</normaloff>
                 </iconset>
               </property>
               <property name="iconSize">
@@ -270,7 +270,7 @@
                   </property>
                   <property name="icon">
                     <iconset>
-                      <normaloff>ui/img/svg/reduce.svg</normaloff>
+                      <normaloff>graphenegui/ui/img/svg/reduce.svg</normaloff>
                     </iconset>
                   </property>
                   <property name="minimumSize">
@@ -294,7 +294,7 @@
                   </property>
                   <property name="icon">
                     <iconset>
-                      <normaloff>ui/img/svg/prob.svg</normaloff>
+                      <normaloff>graphenegui/ui/img/svg/prob.svg</normaloff>
                     </iconset>
                   </property>
                   <property name="minimumSize">
@@ -427,7 +427,7 @@
                   </property>
                   <property name="icon">
                     <iconset>
-                      <normaloff>ui/img/svg/remove_one.svg</normaloff>
+                      <normaloff>graphenegui/ui/img/svg/remove_one.svg</normaloff>
                     </iconset>
                   </property>
                   <property name="minimumSize">

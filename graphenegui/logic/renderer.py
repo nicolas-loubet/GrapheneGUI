@@ -1,4 +1,4 @@
-from PySide6.QtGui import QPainter, QColor, QPen, QFont, QImage, QTransform
+from PySide6.QtGui import QPainter, QColor, QPen, QFont, QImage
 from PySide6.QtCore import Qt, QPointF, QRectF
 from PySide6.QtGui import QPixmap
 
@@ -119,6 +119,8 @@ class Renderer:
 
     def on_draw_drawing_area(self, event):
         painter = QPainter(self.drawing_area.viewport())
+        mode = "dark" if self.is_dark_mode_func() else "light"
+        bg_color = self.colors[mode]["bg"]
         try:
             if not self.plates or self.cb_plates.currentIndex() == -1:
                 pixmap = QPixmap("ui/img/background.svg")
@@ -137,8 +139,6 @@ class Renderer:
 
             painter.setRenderHint(QPainter.Antialiasing)
             self.update_plate_metrics()
-            mode = "dark" if self.is_dark_mode_func() else "light"
-            bg_color = self.colors[mode]["bg"]
             if not self.plates or self.cb_plates.currentIndex() == -1:
                 painter.fillRect(self.drawing_area.viewport().rect(), bg_color)
                 return

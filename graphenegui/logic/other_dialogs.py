@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QDialog
-from ui.dialog_create_ui import Ui_DialogCreate
-from ui.dialog_duplicate_ui import Ui_DialogDuplicate
-from ui.dialog_prob_ui import Ui_DialogProb
+from ..ui.dialog_create_ui import Ui_DialogCreate
+from ..ui.dialog_duplicate_ui import Ui_DialogDuplicate
+from ..ui.dialog_prob_ui import Ui_DialogProb
 
 class CreateDialog(QDialog, Ui_DialogCreate):
     def __init__(self, parent=None):

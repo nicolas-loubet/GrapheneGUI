@@ -1,4 +1,4 @@
-from logic.graphene import Graphene
+from .graphene import Graphene
 
 def readGRO(filename):
     with open(filename, 'r') as f:
