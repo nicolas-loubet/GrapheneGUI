@@ -1,6 +1,7 @@
 from PySide6.QtGui import QPainter, QColor, QPen, QFont, QImage
 from PySide6.QtCore import Qt, QPointF, QRectF
 from PySide6.QtGui import QPixmap
+import importlib.resources as pkg_resources
 
 class Renderer:
     def __init__(self, drawing_area, ruler_x, ruler_y, plates, cb_plates, is_dark_mode_func):
@@ -123,7 +124,7 @@ class Renderer:
         bg_color = self.colors[mode]["bg"]
         try:
             if not self.plates or self.cb_plates.currentIndex() == -1:
-                pixmap = QPixmap("ui/img/background.svg")
+                pixmap = QPixmap(str(pkg_resources.files("graphenegui.ui.img").joinpath("background.svg")))
                 if not pixmap.isNull():
                     scaled_pixmap = pixmap.scaled(self.drawing_area.viewport().size(),
                                                 Qt.KeepAspectRatio,
