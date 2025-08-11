@@ -1,2 +1,2 @@
-PyGObject>=3.36.0
+PySide6>=6.0.0
 numpy>=1.19.0

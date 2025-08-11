@@ -1,57 +1,60 @@
 # Graphene GUI
 
-**Graphene GUI** is a GTK-based graphical interface for creating and functionalizing graphene and graphene oxide sheets. It allows fast construction, modification, and export of graphene structures for use in molecular simulations.
+**Graphene GUI** is a Qt (PySide6)-based graphical interface for creating and functionalizing graphene and graphene oxide slabs. It allows rapid construction, modification, and export of graphene structures for molecular simulations.
 
-### Version: 0.6
+### Versión: 1.0
 
 ## 🧪 Purpose
 
-The aim of this program is to make it simple and fast to build custom graphene or graphene oxide models and export them in various formats compatible with simulation packages like **GROMACS**.
-
+The program's goal is to facilitate and accelerate the creation of customized graphene and oxidized graphene models, exportable in multiple formats compatible with simulation packages such as **GROMACS** and **AMBER**.
 
 ## 🖼️ Features
 
-- Interactive creation of graphene plates.
-- Oxidation of graphene based on pattern selection (with support for VMD-like boolean expressions) and random percentage.
-- Manual addition/removal of oxide groups (OH and O).
-- Multi-plate support for building layered systems.
-- Export to:
+- Interactive creation of graphene slabs.
+- Oxidation based on selection using Boolean expressions (VMD type) and random percentage.
+- Manual addition and removal of oxide groups (OH and O).
+- Multi-slab support for stacked systems.
+- Export in formats:
   - `.gro` (GROMACS)
-  - `.pdb` (standard PDB)
-  - `.xyz` (XYZ format)
+  - `.pdb` (standard PDB format)
+  - `.xyz` (simple XYZ format)
   - `.top` (topology for GROMACS)
-
+  - `.mol2` (MOL2 format for computational chemistry)
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-You need a Linux system with the following installed:
-
 - Python ≥ 3.6
-- GTK+ 3 (via PyGObject)
+- [PySide6](https://pypi.org/project/PySide6/)
 - NumPy
-- System dependencies: python3-gi, python3-gi-cairo, gir1.2-gtk-3.0
-
-Install system dependencies via:
-
-```bash
-sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-3.0 python3-numpy
-```
 
 ### Installation
+
+#### Linux
 
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/nicolas-loubet/GrapheneGUI.git
-cd GrapheneGUI/
+git clone https://github.com/nicolas-loubet/GrapheneGUI.git && cd GrapheneGUI/
 ```
 
-2. Install the package using pip:
+2. Install requirements:
+
+```bash
+pip install -r requirements.txt
+```
+
+3. Install the package using pip:
 
 ```bash
 pip install .
+```
+
+4. After installation, run the program using:
+
+```bash
+graphene-gui
 ```
 
 Alternatively, install directly from GitHub:
@@ -60,18 +63,34 @@ Alternatively, install directly from GitHub:
 pip install git+https://github.com/nicolas-loubet/GrapheneGUI.git
 ```
 
-### Running the Program
-
-After installation, run the program using:
-
-```bash
-graphene-gui
-```
-
-Or, if you prefer to run without installing, just download the repository and use:
+And run with:
 
 ```bash
 python3 main.py
+```
+
+Also, you can just download the repository and run it:
+
+```bash
+python3 main.py
+```
+
+
+#### Windows
+Install Python 3 from python.org.
+
+Open PowerShell or CMD in the project directory.
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Run the application:
+
+```bash
+python main.py
 ```
 
 ## 🧭 Typical Workflow
@@ -91,7 +110,7 @@ python3 main.py
 
 4. Add more plates if needed.
 
-5. Export the system using the Export dialog and select .gro, .pdb, .xyz, or .top.
+5. Export the system using the Export dialog and select .gro, .pdb, .xyz, .mol2, or .top.
 
 
 ## 📁 File Formats
@@ -100,6 +119,8 @@ python3 main.py
 - .pdb: Standard atom coordinates.
 
 - .xyz: Simple atomic format for visualization.
+
+- .mol2: Coordinates + Bond information
 
 - .top: GROMACS-compatible topology with atoms, bonds, pairs, angles, and dihedrals.
 
@@ -140,5 +161,3 @@ Email: nicolas.loubet@uns.edu.ar
 
 ## 📦 Future ideas
 - LAMMPS export support
-- Windows compatibility
-

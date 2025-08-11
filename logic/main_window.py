@@ -292,16 +292,6 @@ class MainWindow(QMainWindow):
                     file_name += ext
                     break
 
-        if os.path.exists(file_name):
-            reply = QMessageBox.question(
-                self,
-                "File exists",
-                f"Do you want to overwrite {file_name}?",
-                QMessageBox.Yes | QMessageBox.No
-            )
-            if reply != QMessageBox.Yes:
-                return
-
         if file_name.endswith(".gro"):
             writeGRO(file_name, self.plates)
         elif file_name.endswith(".pdb"):
@@ -483,10 +473,10 @@ class MainWindow(QMainWindow):
             
             oxide_new = random.sample(list_carbons_in_expression, min(number_oxidations_desired, len(list_carbons_in_expression)))
             plate.add_oxydation_to_list_of_carbon(oxide_new, self.z_mode, self.last_prob_oh)
-            print(f"Finished with {len(oxide_new)} oxides, that is {(plate.get_oxide_count())/len(list_carbons_in_expression)*100:.2f}% of the plate")
+            print(f"Finished with {len(oxide_new)} oxides, that is {(plate.get_oxide_count())/len(list_carbons_in_expression)*100:.2f}% of the plate"+" "*20, end='\r')
 
         except Exception as e:
-            print("Not valid expression, exc=", e)
+            print("Not valid expression, exc=",e," "*20, end='\r')
 
         self.update_drawing_area()
 
