@@ -2,18 +2,25 @@ import random
 import numpy as np
 
 class Graphene:
-    def __init__(self, carbon_coords=None, oxide_coords=None):
+    def __init__(self, carbon_coords=None, oxide_coords=None, scale_factor=1.0):
         self.carbon_coords = carbon_coords if carbon_coords is not None else []
         self.oxide_coords = oxide_coords if oxide_coords is not None else []
+        self.scale_factor = scale_factor
 
     @classmethod
     def create_from_coords(cls, carbon_coords, oxide_coords):
-        return cls(carbon_coords, oxide_coords)
+        plate= cls(carbon_coords, oxide_coords)
+        neighbors= plate.carbons_adjacent(plate.carbon_coords[0])
+        distance= plate.distance_2D(plate.carbon_coords[0][0], plate.carbon_coords[0][1], neighbors[0][0], neighbors[0][1])
+        factor= distance / 0.141588
+        plate.scale_factor= np.round(factor, 1)
+        return plate
 
     @classmethod
     def create_from_params(cls, n_x, n_y, center_x, center_y, center_z, factor):
         dx = 0.1225 * factor
         dy = 0.071 * factor
+        scale_factor = factor
         name_atoms = generatePatterns()
         coords = []
         i_atom = 1
@@ -67,6 +74,9 @@ class Graphene:
     def get_oxide_coords(self):
         return self.oxide_coords
     
+    def get_scale_factor(self):
+        return self.scale_factor
+
     def get_oxide_count(self):
         count= 0
         for ox in self.oxide_coords:

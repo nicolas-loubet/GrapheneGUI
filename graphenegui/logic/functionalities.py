@@ -1,9 +1,8 @@
 import random
 import math
-import threading
 from .graphene import Graphene, generatePatterns
-from PySide6.QtWidgets import QMessageBox
-from PySide6.QtWidgets import QFileDialog
+from PySide6.QtWidgets import QMessageBox, QFileDialog, QProgressDialog
+from PySide6.QtCore import Qt, QThread, Signal, QObject
 from .import_formats import readGRO, readXYZ, readPDB, readMOL2
 from .export_formats import writeGRO, writeXYZ, writeTOP, writePDB, writeMOL2
 
@@ -106,6 +105,7 @@ def get_list_carbons_in_expr(plate, expr):
         x, y, z = x * 10, y * 10, z * 10
         if evaluate_condition(x, y, z, i_atom, expr):
             list_carbons_in_expression.append(coord)
+    return list_carbons_in_expression
 
 def make_oxidations(max_theorical_oxidations, number_oxidations_desired, plate, main_window, list_carbons_in_expression, number_total_carbons, number_oxidations_done, fraction_oxidation):
     oxide_new = []
@@ -121,9 +121,11 @@ def make_oxidations(max_theorical_oxidations, number_oxidations_desired, plate, 
     else:
         number_oxidations_done+= plate.add_oxydation_to_list_of_carbon(list_carbons_in_expression, main_window.z_mode, main_window.last_prob_oh)
 
+    return number_oxidations_done
+
 def put_oxides(main_window, expr):
     if main_window.ui.comboDrawings.currentIndex() == -1: return
-    main_window.manage_duplicates_for_deletion(main_window.ui.comboDrawings.currentIndex()+1, False)
+    manage_duplicates_for_deletion(main_window, main_window.ui.comboDrawings.currentIndex()+1, False)
 
     fraction_oxidation = main_window.ui.spinRandom.value()/100
     plate = main_window.plates[main_window.ui.comboDrawings.currentIndex()]
@@ -142,10 +144,10 @@ def put_oxides(main_window, expr):
         plate_try.add_oxydation_to_list_of_carbon(list_carbons_in_expression, main_window.z_mode, main_window.last_prob_oh)
         max_theorical_oxidations = plate_try.get_oxide_count()
 
-        if(plate_try.get_oxide_count() <= number_oxidations_desired):
+        if(max_theorical_oxidations <= number_oxidations_desired):
             number_oxidations_done+= plate.add_oxydation_to_list_of_carbon(list_carbons_in_expression, main_window.z_mode, main_window.last_prob_oh)
         else:
-            make_oxidations(max_theorical_oxidations, number_oxidations_desired, plate, main_window, list_carbons_in_expression, number_total_carbons, number_oxidations_done, fraction_oxidation)
+            number_oxidations_done+= make_oxidations(max_theorical_oxidations, number_oxidations_desired, plate, main_window, list_carbons_in_expression, number_total_carbons, number_oxidations_done, fraction_oxidation)
             
         print(f"Finished with {number_oxidations_done} oxides, that is {number_oxidations_done/number_total_carbons*100:.2f}% of the selected part of the plate")
 
@@ -187,7 +189,7 @@ def create_plate(dialog, main_window):
     main_window.ui.comboDrawings.addItem(f"Plate {len(main_window.plates)}")
     main_window.ui.comboDrawings.setCurrentIndex(len(main_window.plates) - 1)
 
-    main_window.load_css()
+    load_css(main_window)
     main_window.update_drawing_area()
     main_window.buttons_that_depend_of_having_a_plate(True)
     print(f"Coords drawn: Plate {len(main_window.plates)}")
@@ -217,36 +219,87 @@ def import_file(ext, file_name, main_window):
 
     print(f"{len(new_plates)} plate(s) imported from {file_name}")
 
+class ExportTopWorker(QObject):
+    finished = Signal()
+    progress = Signal(float)
+
+    def __init__(self, file_name, plates, plates_duplicates):
+        super().__init__()
+        self.file_name = file_name
+        self.plates = plates
+        self.plates_duplicates = plates_duplicates
+
+    def run(self):
+        def progress_callback(frac):
+            self.progress.emit(frac)
+
+        writeTOP(self.file_name, self.plates, self.plates_duplicates, progress_callback)
+        self.finished.emit()
+
+def export_top(main_window, file_name, plates):
+    progress_dialog = QProgressDialog("Exportando archivo TOP...", None, 0, 100, main_window)
+    progress_dialog.setWindowTitle("Exportando...")
+    progress_dialog.setWindowModality(Qt.ApplicationModal)
+    progress_dialog.setCancelButton(None)
+    progress_dialog.setMinimumDuration(0)
+    progress_dialog.setValue(0)
+    progress_dialog.show()
+
+    worker = ExportTopWorker(file_name, plates, main_window.plates_corresponding_to_duplicates)
+
+    worker.progress.connect(lambda frac: progress_dialog.setValue(int(frac * 100)))
+    worker.finished.connect(progress_dialog.close)
+
+    thread = QThread()
+    worker.moveToThread(thread)
+    worker.finished.connect(thread.quit)
+    thread.started.connect(worker.run)
+
+    def cleanup():
+        thread.wait()
+        del main_window._export_thread
+        del main_window._export_worker
+        del main_window._export_progress_dialog
+
+    thread.finished.connect(cleanup)
+
+    worker.finished.connect(worker.deleteLater)
+    thread.finished.connect(thread.deleteLater)
+
+    thread.start()
+
+    main_window._export_thread = thread
+    main_window._export_worker = worker
+    main_window._export_progress_dialog = progress_dialog
+
 def export_file(main_window):
     filters = ("All Files (*);;GRO Files (*.gro);;PDB Files (*.pdb);;XYZ Files (*.xyz);;MOL2 Files (*.mol2);;TOP Files (*.top);;")
     file_name, selected_filter = QFileDialog.getSaveFileName(main_window, "Export File", "", filters)
 
-    if not file_name: return
+    if not file_name:
+        return
 
-    ext_map = {"GRO":".gro", "PDB":".pdb", "XYZ":".xyz", "MOL2":".mol2", "TOP":".top"}
+    plates = main_window.plates
+
+    ext_map = {"GRO": ".gro", "PDB": ".pdb", "XYZ": ".xyz", "MOL2": ".mol2", "TOP": ".top"}
     if '.' not in file_name:
         for key, ext in ext_map.items():
             if key in selected_filter:
                 file_name += ext
                 break
 
-    if file_name.endswith(".gro"):
-        writeGRO(file_name, main_window.plates)
+    if file_name.endswith(".top"):
+        export_top(main_window, file_name, plates)
+    elif file_name.endswith(".gro"):
+        writeGRO(file_name, plates)
     elif file_name.endswith(".pdb"):
-        writePDB(file_name, main_window.plates)
+        writePDB(file_name, plates)
     elif file_name.endswith(".xyz"):
-        writeXYZ(file_name, main_window.plates)
+        writeXYZ(file_name, plates)
     elif file_name.endswith(".mol2"):
-        writeMOL2(file_name, main_window.plates)
-    elif file_name.endswith(".top"):
-        factor = main_window.spin_scale.value() / 100.0
-        QMessageBox.information(main_window, "Exporting topology", "Exporting topology...")
-
-        def export_top_and_close():
-            writeTOP(file_name, main_window.plates, factor, main_window.plates_corresponding_to_duplicates)
-            QMessageBox.information(main_window, "Export Complete", "Topology export completed")
-
-        threading.Thread(target=export_top_and_close, daemon=True).start()
+        writeMOL2(file_name, plates)
+    else:
+        print("Unsupported file extension")
 
 def create_duplicate(main_window, dialog):
     index_base = main_window.ui.comboDrawings.currentIndex()+1
@@ -282,7 +335,7 @@ def delete_actual_plate(main_window):
     index = main_window.ui.comboDrawings.currentIndex()
     if index < 0: return
 
-    main_window.manage_duplicates_for_deletion(index+1, True)
+    manage_duplicates_for_deletion(main_window, index+1, True)
 
     main_window.plates.pop(index)
     main_window.ui.comboDrawings.clear()
@@ -299,4 +352,3 @@ def delete_actual_plate(main_window):
 
     main_window.update_drawing_area()
     print(f"Plate {index+1} deleted")
-    

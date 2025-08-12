@@ -3,11 +3,10 @@ import random
 from .other_dialogs import CreateDialog, DuplicateDialog, ProbDialog
 from .renderer import Renderer
 from .functionalities import *
-from PySide6.QtWidgets import QMainWindow, QMessageBox, QGraphicsScene, QDialog
+from PySide6.QtWidgets import QMainWindow, QMessageBox, QGraphicsScene, QDialog, QFileDialog
 from PySide6.QtCore import Slot, QEvent
 from PySide6.QtGui import QPixmap
 from ..ui.main_ui import Ui_MainWindow
-
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -120,7 +119,7 @@ class MainWindow(QMainWindow):
         if dialog.exec() != QDialog.Accepted: return
 
         try:
-            create_plate(dialog)
+            create_plate(dialog, self)
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))
 
@@ -155,15 +154,14 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error reading file", str(e))
 
-
     @Slot()
     def handle_btn_export_clicked(self):
         export_file(self)
-
+            
     @Slot()
     def handle_btn_dark_light_mode_clicked(self):
         self.is_dark_mode = not self.is_dark_mode
-        self.load_css()
+        load_css(self)
         self.update_drawing_area()
         print(f"Switched to {'dark' if self.is_dark_mode else 'light'} mode")
 
@@ -212,7 +210,7 @@ class MainWindow(QMainWindow):
     def handle_drawing_area_clicked(self, event):
         if self.ui.comboDrawings.currentIndex() == -1 or not self.active_oxide_mode: return
 
-        self.manage_duplicates_for_deletion(self.ui.comboDrawings.currentIndex()+1, False)
+        manage_duplicates_for_deletion(self, self.ui.comboDrawings.currentIndex()+1, False)
 
         plate = self.plates[self.ui.comboDrawings.currentIndex()]
         pos = event.scenePos()
@@ -258,7 +256,7 @@ class MainWindow(QMainWindow):
     def handle_btn_reduce_clicked(self):
         if self.ui.comboDrawings.currentIndex() == -1:
             return
-        self.manage_duplicates_for_deletion(self.ui.comboDrawings.currentIndex()+1, False)
+        manage_duplicates_for_deletion(self, self.ui.comboDrawings.currentIndex()+1, False)
 
         plate = self.plates[self.ui.comboDrawings.currentIndex()]
         plate.remove_oxides()
@@ -278,11 +276,11 @@ class MainWindow(QMainWindow):
 
     @Slot(int)
     def handle_spin_random_value_changed(self, value):
-        self.put_oxides(self.ui.entryVMD.text())
+        put_oxides(self,self.ui.entryVMD.text())
 
     @Slot(str)
     def handle_entry_selection_changed(self, text):
-        self.put_oxides(text)
+        put_oxides(self,text)
 
     def set_oxide_mode(self, mode):
         self.active_oxide_mode = mode
