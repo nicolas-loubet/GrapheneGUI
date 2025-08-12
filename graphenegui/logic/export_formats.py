@@ -207,12 +207,12 @@ def writeTOP(filename, plates, duplicate_list, progress_callback):
         top.append("\n[ atoms ]\n")
         top.append(write_atoms_top(plate, i_plate+1))
 
-        bonds= get_bonds_top(plate, plate.get_scale_factor(), progress_callback, (i_plate+1)/len(plates))
+        bonds= get_bonds_top(plate, plate.get_scale_factor(), progress_callback, i_plate+1, len(plates))
         if(len(bonds) > 0):
             top.append("\n[ bonds ]\n")
             top.append(write_bonds_top(bonds,"   1    1.4140e-01    2.8937e+05"))
             top.append("\n[ pairs ]\n")
-            pairs,angles,dihedrals= get_pairs_angles_dihedrals(bonds,n_atoms,progress_callback, (i_plate+1)/len(plates))
+            pairs,angles,dihedrals= get_pairs_angles_dihedrals(bonds,n_atoms,progress_callback, i_plate+1, len(plates))
             top.append(write_pairs_top(pairs))
             top.append("\n[ angles ]\n")
             top.append(write_angles_top(angles,plate))
@@ -257,7 +257,7 @@ def write_atoms_top(plate, i_molec):
         output+= "\n"
     return output
 
-def get_bonds_top(plate, factor, progress_callback, plate_progress):
+def get_bonds_top(plate, factor, progress_callback, number_present_plate, number_total_plates):
     r_dist= .145*factor
     output= []
 
@@ -265,16 +265,16 @@ def get_bonds_top(plate, factor, progress_callback, plate_progress):
     oxides= plate.get_oxide_coords()
     n_carbons= len(carbons)
     n_oxides= len(oxides)
-    n_total= (n_carbons + n_oxides)*2
+    factor_division_total= 0.5*(n_carbons+n_oxides)
     for ai in range(n_carbons):
-        progress_callback(plate_progress*(ai+1)/n_total)
+        progress_callback((number_present_plate-1+(ai+1)*factor_division_total)/number_total_plates)
         print(f"TOP: Evaluating bonds carbons {ai+1:5} / {n_carbons:5}"+" "*20,end="\r")
         for aj in range(ai+1,n_carbons):
             if(plate.distance_2D(carbons[ai][0],carbons[ai][1],carbons[aj][0],carbons[aj][1]) < r_dist):
                 output.append([ai+1,aj+1])
 
     for ai in range(n_oxides):
-        progress_callback(plate_progress*(ai+1+n_carbons)/n_total)
+        progress_callback((number_present_plate-1+(ai+1+n_carbons)*factor_division_total)/number_total_plates)
         print(f"TOP: Evaluating bonds oxides {ai+1:5} / {n_oxides:5}"+" "*20,end="\r")
         if oxides[ai][3].startswith("H"): continue
         for aj in range(n_carbons):
@@ -286,13 +286,13 @@ def get_bonds_top(plate, factor, progress_callback, plate_progress):
     
     return output
 
-def get_pairs_angles_dihedrals(bonds,n_atoms, progress_callback, plate_progress):
+def get_pairs_angles_dihedrals(bonds,n_atoms, progress_callback, number_present_plate, number_total_plates):
     pairs, angles, dihedrals= [], [], []
+    factor_division_total= 0.5/n_atoms
 
     for i in range(1,n_atoms+1):
-        progress_callback(plate_progress*(0.5*(1+i/n_atoms)))
-        print(plate_progress*(0.5*(1+i/n_atoms)),end="\r")
-        #print(f"TOP: Evaluating pairs & angles {i:5} / {n_atoms:5}"+" "*20,end="\r")
+        progress_callback((number_present_plate-0.5 + i*factor_division_total)/number_total_plates)
+        print(f"TOP: Evaluating pairs & angles {i:5} / {n_atoms:5}"+" "*20,end="\r")
         for neighbor_1 in get_bounded(bonds,i):
             for neighbor_2 in get_bounded(bonds,neighbor_1):
                 if(i == neighbor_2): continue
