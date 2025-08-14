@@ -110,20 +110,42 @@ python3 main.py
 
 
 ## Installation on Windows
-Install Python 3 from [python.org](https://www.python.org/downloads/).
 
-Open PowerShell or CMD in the project directory (or use cd to navigate to it).
+### 1) Download Python 3
+Go to the official website:  
+🔗 https://www.python.org/downloads/windows/  
+Click on **Download Python 3.x.x** (choose the latest stable version).
 
-Install dependencies:
+### 2) Download the ZIP from GitHub
+In the top-right corner of this page, click the green **Code** button, select **Download ZIP**, and save it on your computer (e.g., in your *Downloads* folder).
 
-```bash
+### 3) Extract the ZIP
+Navigate to the folder where you saved the ZIP file.  
+Right-click it, choose **Extract All**, and select your target destination (e.g., `C:\Users\<YourUser>\Documents\GrapheneGUI`).
+
+### 4) Open the folder in Windows Terminal
+Go to the extracted project folder.  
+Right-click on an empty space inside the folder and choose **Open in Windows Terminal** (or **Open in PowerShell**, depending on your Windows version).
+
+### 5) Continue with installation
+Once the terminal is open in the project folder, run the following command to install dependencies:
+
+```powershell
 pip install -r requirements.txt
 ```
 
-Run the application:
+### 6) Run the project from the module
+> Note: There is no main.py in the root directory. Instead, the application runs from the graphenegui module using __main__.py. Therefore, use:
 
-```bash
-python main.py
+```powershell
+python -m graphenegui
+```
+
+📌 Important: Make sure your terminal's current directory is the one containing graphenegui, requirements.txt, etc. For example:
+
+```powershell
+cd "C:\Users\<YourUser>\Documents\GrapheneGUI\GrapheneGUI-main\GrapheneGUI-main"
+python -m graphenegui
 ```
 
 ## 🧭 Typical Workflow
