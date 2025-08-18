@@ -52,6 +52,7 @@ class MainWindow(QMainWindow):
         self.ui.btnDelete.clicked.connect(self.handle_btn_delete_clicked)
         self.ui.btnImport.clicked.connect(self.handle_btn_import_clicked)
         self.ui.btnExport.clicked.connect(self.handle_btn_export_clicked)
+        self.ui.btnCNT.clicked.connect(self.handle_btn_cnt_clicked)
         self.ui.btnTheme.clicked.connect(self.handle_btn_dark_light_mode_clicked)
         self.ui.btnReduceAll.clicked.connect(self.handle_btn_reduce_clicked)
         self.ui.btnChangeProb.clicked.connect(self.handle_btn_change_prob_clicked)
@@ -93,6 +94,7 @@ class MainWindow(QMainWindow):
         self.ui.btnDuplicate.setEnabled(active)
         self.ui.btnDelete.setEnabled(active)
         self.ui.btnExport.setEnabled(active)
+        self.ui.btnCNT.setEnabled(active)
         self.ui.btnReduceAll.setEnabled(active)
         self.ui.btnChangeProb.setEnabled(active)
         self.ui.spinRandom.setEnabled(active)
@@ -157,7 +159,11 @@ class MainWindow(QMainWindow):
     @Slot()
     def handle_btn_export_clicked(self):
         export_file(self)
-            
+    
+    @Slot()
+    def handle_btn_cnt_clicked(self):
+        print("CNT")
+        
     @Slot()
     def handle_btn_dark_light_mode_clicked(self):
         self.is_dark_mode = not self.is_dark_mode
