@@ -220,3 +220,4 @@ Email: nicolas.loubet@uns.edu.ar
 - LAMMPS export support
 - AMBER names compatibility
 - Auto add H in the borders
+- More atoms / groups available
