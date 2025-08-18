@@ -118,7 +118,7 @@ def writeMOL2(filename, plates, factor=1.0):
         total_atoms = sum(len(plate.get_carbon_coords()) + len(plate.get_oxide_coords()) for plate in plates)
         bonds = []
         for i_plate, plate in enumerate(plates):
-            plate_bonds = get_bonds_top(plate, factor)
+            plate_bonds = get_bonds_top(plate, factor, )
             for bond in plate_bonds:
                 offset = sum(len(p.get_carbon_coords()) + len(p.get_oxide_coords()) for p in plates[:i_plate])
                 bonds.append([bond[0] + offset, bond[1] + offset])
@@ -257,7 +257,7 @@ def write_atoms_top(plate, i_molec):
         output+= "\n"
     return output
 
-def get_bonds_top(plate, factor, progress_callback, number_present_plate, number_total_plates):
+def get_bonds_top(plate, factor, progress_callback=None, number_present_plate=None, number_total_plates=None):
     r_dist= .145*factor
     output= []
 
@@ -267,14 +267,16 @@ def get_bonds_top(plate, factor, progress_callback, number_present_plate, number
     n_oxides= len(oxides)
     factor_division_total= 0.5*(n_carbons+n_oxides)
     for ai in range(n_carbons):
-        progress_callback((number_present_plate-1+(ai+1)*factor_division_total)/number_total_plates)
+        if progress_callback:
+            progress_callback((number_present_plate-1+(ai+1)*factor_division_total)/number_total_plates)
         print(f"TOP: Evaluating bonds carbons {ai+1:5} / {n_carbons:5}"+" "*20,end="\r")
         for aj in range(ai+1,n_carbons):
             if(plate.distance_2D(carbons[ai][0],carbons[ai][1],carbons[aj][0],carbons[aj][1]) < r_dist):
                 output.append([ai+1,aj+1])
 
     for ai in range(n_oxides):
-        progress_callback((number_present_plate-1+(ai+1+n_carbons)*factor_division_total)/number_total_plates)
+        if progress_callback:
+            progress_callback((number_present_plate-1+(ai+1+n_carbons)*factor_division_total)/number_total_plates)
         print(f"TOP: Evaluating bonds oxides {ai+1:5} / {n_oxides:5}"+" "*20,end="\r")
         if oxides[ai][3].startswith("H"): continue
         for aj in range(n_carbons):
