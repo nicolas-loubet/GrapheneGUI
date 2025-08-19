@@ -1,7 +1,10 @@
 from PySide6.QtGui import QPainter, QColor, QPen, QFont, QImage
 from PySide6.QtCore import Qt, QPointF, QRectF
 from PySide6.QtGui import QPixmap
+from .export_formats import checkBounds
 import importlib.resources as pkg_resources
+import numpy as np
+import warnings
 
 class Renderer:
     def __init__(self, drawing_area, ruler_x, ruler_y, plates, cb_plates, is_dark_mode_func):
@@ -20,6 +23,8 @@ class Renderer:
         self.min_y = 0.0
         self.max_y = 0.0
         self.limits = [0.0, 0.0, 0.0, 0.0]
+
+        self.roll_vector= None
 
         self.drawing_area.setMouseTracking(True)
         self.drawing_area.mouseMoveEvent = self.on_motion_notify
@@ -107,16 +112,50 @@ class Renderer:
         self.center_y = (self.min_y + self.max_y) / 2.0
 
     def _draw_plate(self, painter, plate, is_dark_mode):
-        mode = "dark" if is_dark_mode else "light"
-        colors = self.colors[mode]
+        mode= "dark" if is_dark_mode else "light"
+        colors= self.colors[mode]
+
         painter.fillRect(QRectF(-1000, -1000, 2000, 2000), colors["bg"])
         painter.setPen(Qt.NoPen)
-        painter.setBrush(colors["carbon"])
-        for x, y, *_ in plate.get_carbon_coords():
-            painter.drawEllipse(QPointF(x, y), 0.035, 0.035)
-        for x, y, _, oxide_type, _ in plate.get_oxide_coords():
-            painter.setBrush(colors[f"oxide_{oxide_type}"])
-            painter.drawEllipse(QPointF(x, y), 0.025, 0.025)
+
+        carbons,oxides= plate.get_carbon_coords(),plate.get_oxide_coords()
+
+        if not plate.get_is_CNT():
+            # Case 1: Flat graphene (original behavior)
+            painter.setBrush(colors["carbon"])
+            for x, y, *_ in carbons:
+                painter.drawEllipse(QPointF(x, y), 0.035, 0.035)
+
+            for x, y, _, oxide_type, _ in oxides:
+                painter.setBrush(colors[f"oxide_{oxide_type}"])
+                painter.drawEllipse(QPointF(x, y), 0.035, 0.035)
+        else:
+            # Case 2: CNT (rolled)
+            x_ref, y_ref= carbons[0][0], carbons[0][1]
+            # Asume centrado en 00, adaptar
+            R= np.sqrt((x_ref**2 + y_ref**2))
+            mins,bounds= checkBounds([plate])
+
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', category=Warning)
+                a_zr, b_zr, c_zr= np.polyfit([mins[2], bounds[2]+mins[2]], [R*0.1, R], 2)
+
+            a_zs,b_zs= np.polyfit([mins[2],bounds[2]+mins[2]],[.1,1],1)
+            painter.setBrush(colors["carbon"])
+            for x, y, z, *_ in carbons:
+                angle= np.arctan(y/x)
+                if x<0: angle+= np.pi
+                r_new= a_zr*z*z+b_zr*z+c_zr
+                xn,yn= r_new*np.cos(angle), r_new*np.sin(angle)
+                scale= a_zs*z+b_zs
+                painter.drawEllipse(QPointF(xn, yn), 0.035*scale, 0.035*scale)
+
+            for x, y, _, oxide_type, _ in oxides:
+                painter.setBrush(colors[f"oxide_{oxide_type}"])
+                painter.drawEllipse(QPointF(x, y), 0.035, 0.035)
+
+    def set_roll_vector(self, roll_vector):
+        self.roll_vector= roll_vector
 
     def on_draw_drawing_area(self, event):
         painter = QPainter(self.drawing_area.viewport())

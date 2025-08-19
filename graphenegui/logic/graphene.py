@@ -81,6 +81,9 @@ class Graphene:
     def set_is_CNT(self, is_CNT):
         self.is_CNT= is_CNT
     
+    def get_is_CNT(self):
+        return self.is_CNT
+    
     def get_carbon_coords(self):
         return self.carbon_coords
 

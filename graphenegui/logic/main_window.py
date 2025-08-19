@@ -143,6 +143,7 @@ class MainWindow(QMainWindow):
     @Slot()
     def handle_btn_delete_clicked(self):
         delete_actual_plate(self)
+        self.renderer.update_view()
 
     @Slot()
     def handle_btn_import_clicked(self):
@@ -171,16 +172,18 @@ class MainWindow(QMainWindow):
         dialog= CNTDialog(self)
         if dialog.exec() != QDialog.Accepted: return
 
-        roll_vec = dialog.get_vector(bounds)
+        roll_vec= dialog.get_vector(bounds)
         if roll_vec is None or (roll_vec[0] == 0 and roll_vec[1] == 0):
             QMessageBox.warning(self, "Invalid vector", "Please select a valid CNT option or enter a valid custom vector.")
             return
 
+        self.renderer.set_roll_vector(roll_vec)
         new_atoms = roll_atoms_as_CNT(atoms, roll_vec)
         plate.set_atoms(new_atoms)
         plate.set_is_CNT(True)
         self.buttons_that_depend_of_having_a_plate(False)
         self.ui.btnExport.setEnabled(True)
+        self.ui.btnDelete.setEnabled(True)
         self.update_drawing_area()
         
     @Slot()
