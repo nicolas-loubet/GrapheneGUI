@@ -6,6 +6,7 @@ class Graphene:
         self.carbon_coords = carbon_coords if carbon_coords is not None else []
         self.oxide_coords = oxide_coords if oxide_coords is not None else []
         self.scale_factor = scale_factor
+        self.is_CNT= False
 
     @classmethod
     def create_from_coords(cls, carbon_coords, oxide_coords):
@@ -68,6 +69,18 @@ class Graphene:
     def add_oxide(self, x, y, z, oxide_type, atom_index):
         self.oxide_coords.append([x, y, z, oxide_type, atom_index])
 
+    def set_atoms(self, atoms):
+        self.carbon_coords= []
+        self.oxide_coords= []
+        for x, y, z, atom_name, atom_index in atoms:
+            if atom_name.startswith("C"):
+                self.carbon_coords.append([x, y, z, atom_name, atom_index])
+            else:
+                self.oxide_coords.append([x, y, z, atom_name, atom_index])
+
+    def set_is_CNT(self, is_CNT):
+        self.is_CNT= is_CNT
+    
     def get_carbon_coords(self):
         return self.carbon_coords
 

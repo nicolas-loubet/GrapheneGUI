@@ -1,5 +1,6 @@
 import random
 import math
+import numpy as np
 from .graphene import Graphene, generatePatterns
 from PySide6.QtWidgets import QMessageBox, QFileDialog, QProgressDialog
 from PySide6.QtCore import Qt, QThread, Signal, QObject
@@ -352,3 +353,32 @@ def delete_actual_plate(main_window):
 
     main_window.update_drawing_area()
     print(f"Plate {index+1} deleted")
+
+def roll_atoms_as_CNT(atoms, roll_vec):
+    atoms= np.array(atoms, dtype=object)
+    ux,uy= roll_vec
+    L= np.sqrt(ux**2 + uy**2)
+    if L == 0: raise ValueError("The rolling vector cannot be (0,0).")
+
+    R= L / (2*np.pi)
+
+    e_u= np.array([ux, uy]) / L
+    e_v= np.array([-uy, ux]) / L
+
+    xy= atoms[:, :2].astype(float)
+    z_ref= float(atoms[0,2])
+
+    u= xy @ e_u
+    v= xy @ e_v
+
+    theta= 2*np.pi * u / L
+    X= R * np.cos(theta)
+    Y= R * np.sin(theta)
+    Z= v + z_ref
+
+    new_atoms= atoms.copy()
+    new_atoms[:, 0]= X
+    new_atoms[:, 1]= Y
+    new_atoms[:, 2]= Z
+
+    return new_atoms

@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QMainWindow, QMessageBox, QGraphicsScene, QDialog,
 from PySide6.QtCore import Slot, QEvent
 from PySide6.QtGui import QPixmap
 from ..ui.main_ui import Ui_MainWindow
+from .export_formats import checkBounds
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -162,7 +163,16 @@ class MainWindow(QMainWindow):
     
     @Slot()
     def handle_btn_cnt_clicked(self):
-        print("CNT")
+        plate= self.plates[self.ui.comboDrawings.currentIndex()]
+        atoms= plate.get_carbon_coords() + plate.get_oxide_coords()
+        
+        _,bounds= checkBounds([plate])
+        new_atoms= roll_atoms_as_CNT(atoms, [0,bounds[1]+.142])
+        plate.set_atoms(new_atoms)
+        plate.set_is_CNT(True)
+        self.buttons_that_depend_of_having_a_plate(False)
+        self.ui.btnExport.setEnabled(True)
+        self.update_drawing_area()
         
     @Slot()
     def handle_btn_dark_light_mode_clicked(self):
