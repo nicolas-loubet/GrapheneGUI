@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+  <class>CNTDialog</class>
+  <widget class="QDialog" name="dialog_cnt">
+    <property name="windowTitle">
+      <string>Carbon Nanotube Settings</string>
+    </property>
+    <property name="modal">
+      <bool>true</bool>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+        <widget class="QWidget" name="widget" native="true">
+          <layout class="QGridLayout" name="gridLayout">
+
+            <!-- CNT Type -->
+            <item row="0" column="0">
+              <widget class="QLabel" name="label_type">
+                <property name="text">
+                  <string>CNT Type:</string>
+                </property>
+                <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignVCenter</set>
+                </property>
+              </widget>
+            </item>
+            <item row="0" column="1">
+              <widget class="QComboBox" name="combo_type">
+                <item>
+                  <property name="text">
+                    <string>Zigzag</string>
+                  </property>
+                </item>
+                <item>
+                  <property name="text">
+                    <string>Armchair</string>
+                  </property>
+                </item>
+                <item>
+                  <property name="text">
+                    <string>Custom</string>
+                  </property>
+                </item>
+              </widget>
+            </item>
+
+            <!-- Wrapping Vector X -->
+            <item row="1" column="0">
+              <widget class="QLabel" name="label_vecx">
+                <property name="text">
+                  <string>Wrapping Vector X:</string>
+                </property>
+                <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignVCenter</set>
+                </property>
+              </widget>
+            </item>
+            <item row="1" column="1">
+              <widget class="QDoubleSpinBox" name="spin_vec_x">
+                <property name="minimum">
+                  <double>-9999.0</double>
+                </property>
+                <property name="maximum">
+                  <double>9999.0</double>
+                </property>
+                <property name="value">
+                  <double>1.0</double>
+                </property>
+                <property name="singleStep">
+                  <double>0.1</double>
+                </property>
+              </widget>
+            </item>
+
+            <!-- Wrapping Vector Y -->
+            <item row="2" column="0">
+              <widget class="QLabel" name="label_vecy">
+                <property name="text">
+                  <string>Wrapping Vector Y:</string>
+                </property>
+                <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignVCenter</set>
+                </property>
+              </widget>
+            </item>
+            <item row="2" column="1">
+              <widget class="QDoubleSpinBox" name="spin_vec_y">
+                <property name="minimum">
+                  <double>-9999.0</double>
+                </property>
+                <property name="maximum">
+                  <double>9999.0</double>
+                </property>
+                <property name="value">
+                  <double>0.0</double>
+                </property>
+                <property name="singleStep">
+                  <double>0.1</double>
+                </property>
+              </widget>
+            </item>
+          </layout>
+        </widget>
+      </item>
+
+      <!-- Buttons -->
+      <item>
+        <widget class="QDialogButtonBox" name="buttonBox">
+          <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="standardButtons">
+            <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+          </property>
+        </widget>
+      </item>
+    </layout>
+  </widget>
+
+  <resources/>
+  <connections>
+    <connection>
+      <sender>buttonBox</sender>
+      <signal>accepted()</signal>
+      <receiver>dialog_cnt</receiver>
+      <slot>accept()</slot>
+    </connection>
+    <connection>
+      <sender>buttonBox</sender>
+      <signal>rejected()</signal>
+      <receiver>dialog_cnt</receiver>
+      <slot>reject()</slot>
+    </connection>
+  </connections>
+</ui>
