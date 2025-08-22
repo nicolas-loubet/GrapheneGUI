@@ -13,6 +13,11 @@
     <property name="windowTitle">
       <string>Graphene GUI</string>
     </property>
+    <property name="windowIcon">
+      <iconset>
+        <normaloff>:/icons/img/svg/icon.svg</normaloff>
+      </iconset>
+    </property>
     <widget class="QWidget" name="centralwidget">
       <layout class="QVBoxLayout" name="verticalLayout_1">
         

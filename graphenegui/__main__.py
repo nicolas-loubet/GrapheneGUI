@@ -1,5 +1,6 @@
 import graphenegui.ui.resources_rc  # Used to register resources
 from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtGui import QIcon
 from .logic.main_window import MainWindow
 import sys
 import traceback
@@ -29,7 +30,9 @@ def show_error_dialog(exc_type, exc_value, exc_traceback):
 
 def main():
     app = QApplication([])
+    app.setWindowIcon(QIcon(":/icons/img/svg/icon.svg"))
     window = MainWindow()
+    window.setWindowIcon(QIcon(":/icons/img/svg/icon.svg"))
     window.show()
     app.exec()
 
