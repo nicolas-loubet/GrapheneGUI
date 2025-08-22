@@ -29,9 +29,6 @@ class MainWindow(QMainWindow):
         
         is_dark_mode_func = lambda: self.is_dark_mode
 
-        self.ui.topRuler.setStyleSheet("background-color: #3d3d3d;")
-        self.ui.leftRuler.setStyleSheet("background-color: #3d3d3d;")
-        
         self.renderer = Renderer(
             drawing_area=self.ui.graphicsView,
             ruler_x=self.ui.topRuler,
@@ -45,6 +42,7 @@ class MainWindow(QMainWindow):
         self.ui.radioZpm.setChecked(True)
 
         self.setup_connections()
+        load_css(self)
 
     def setup_connections(self):
         self.ui.btnCreate.clicked.connect(self.handle_btn_create_clicked)
@@ -167,6 +165,7 @@ class MainWindow(QMainWindow):
         plate = self.plates[self.ui.comboDrawings.currentIndex()]
         if plate.get_is_CNT():
             plate.restore_plate()
+            self.buttons_that_depend_of_having_a_plate(True)
         else:
             atoms = plate.get_carbon_coords() + plate.get_oxide_coords()
 

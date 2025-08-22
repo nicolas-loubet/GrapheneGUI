@@ -118,7 +118,6 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.topRuler.sizePolicy().hasHeightForWidth())
         self.topRuler.setSizePolicy(sizePolicy)
         self.topRuler.setMinimumSize(QSize(0, 40))
-        self.topRuler.setStyleSheet(u"background-color: #f0f0f0; border: 1px solid #ccc;")
 
         self.gridLayoutCentral.addWidget(self.topRuler, 0, 1, 1, 1)
 
@@ -130,7 +129,6 @@ class Ui_MainWindow(object):
         sizePolicy1.setHeightForWidth(self.leftRuler.sizePolicy().hasHeightForWidth())
         self.leftRuler.setSizePolicy(sizePolicy1)
         self.leftRuler.setMinimumSize(QSize(40, 0))
-        self.leftRuler.setStyleSheet(u"background-color: #f0f0f0; border: 1px solid #ccc;")
 
         self.gridLayoutCentral.addWidget(self.leftRuler, 1, 0, 1, 1)
 
@@ -164,7 +162,7 @@ class Ui_MainWindow(object):
         icon8 = QIcon()
         icon8.addFile(u":/icons/img/svg/reduce.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         self.btnReduceAll.setIcon(icon8)
-        self.btnReduceAll.setMinimumSize(QSize(100, 40))
+        self.btnReduceAll.setMinimumSize(QSize(120, 40))
         self.btnReduceAll.setIconSize(QSize(25, 25))
 
         self.hLayoutBottom.addWidget(self.btnReduceAll)
@@ -233,7 +231,7 @@ class Ui_MainWindow(object):
         self.btnAddOH = QPushButton(self.bottomBar)
         self.btnAddOH.setObjectName(u"btnAddOH")
         self.btnAddOH.setCheckable(True)
-        self.btnAddOH.setMinimumSize(QSize(60, 40))
+        self.btnAddOH.setMinimumSize(QSize(70, 40))
 
         self.hLayoutBottom.addWidget(self.btnAddOH)
 
@@ -250,7 +248,7 @@ class Ui_MainWindow(object):
         icon10 = QIcon()
         icon10.addFile(u":/icons/img/svg/remove_one.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         self.btnRemoveOx.setIcon(icon10)
-        self.btnRemoveOx.setMinimumSize(QSize(110, 40))
+        self.btnRemoveOx.setMinimumSize(QSize(130, 40))
         self.btnRemoveOx.setIconSize(QSize(25, 25))
 
         self.hLayoutBottom.addWidget(self.btnRemoveOx)

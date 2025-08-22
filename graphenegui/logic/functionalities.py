@@ -354,36 +354,50 @@ def delete_actual_plate(main_window):
     main_window.update_drawing_area()
     print(f"Plate {index+1} deleted")
 
-def roll_atoms_as_CNT(atoms, roll_vec, center= [0,0,0]):
+def remove_overlapping_atoms(atoms):
+    to_remove_list= []
+    for i in range(len(atoms)):
+        for j in range(i+1, len(atoms)):
+            x1,y1,z1 = atoms[i][:3]
+            x2,y2,z2 = atoms[j][:3]
+            if np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2) < .02:
+                to_remove_list.append(j)
+    print(f"Removed {len(to_remove_list)} overlapping atoms")
+    return np.delete(atoms, to_remove_list, axis=0)
+
+def roll_atoms_as_CNT(atoms, roll_vec, center=[0,0,0]):
     atoms= np.array(atoms, dtype=object)
-    ux,uy= roll_vec
+    ux, uy= roll_vec
     L= np.sqrt(ux**2 + uy**2)
     if L == 0: raise ValueError("The rolling vector cannot be (0,0).")
 
-    R= L / (2*np.pi)
+    R= L / (2 * np.pi)
 
-    e_u= np.array([ux, uy]) / L
-    e_v= np.array([-uy, ux]) / L
+    e_u, e_v= np.array([ux,uy])/L, np.array([-uy,ux])/L
 
-    xy= atoms[:, :2].astype(float)
-    z_ref= float(atoms[0,2])
+    xy= np.array(atoms[:,:2].tolist(), dtype=float)
+    atom_z= np.array(atoms[:,2].tolist(), dtype=float)
 
-    u= xy @ e_u
-    v= xy @ e_v
+    is_carbon= np.array([str(a).startswith("C") for a in atoms[:,3]])
+    z_ref= np.mean(atom_z[is_carbon])
 
+    delta_z= atom_z - z_ref
+
+    u,v= np.dot(xy, e_u), np.dot(xy, e_v)
     theta= 2*np.pi * u / L
-    X= R * np.cos(theta)
-    Y= R * np.sin(theta)
-    Z= v + z_ref
+    R_eff= R - delta_z
+    new_x, new_y, new_z= R_eff*np.cos(theta), R_eff*np.sin(theta), v
 
     new_atoms= atoms.copy()
-    new_atoms[:, 0]= X
-    new_atoms[:, 1]= Y
-    new_atoms[:, 2]= Z
-
-    carbons= new_atoms[[new_atoms[i,3].startswith("C") for i in range(len(new_atoms))]]
-    new_center= carbons[:,:3].mean(axis=0)
-    displacement= np.array(new_center) - np.array(center)
-    new_atoms[:,:3]-= displacement
-
-    return new_atoms
+    for i in range(len(new_atoms)):
+        new_atoms[i][0], new_atoms[i][1], new_atoms[i][2]= new_x[i], new_y[i], new_z[i]
+    
+    carbons= new_atoms[is_carbon]
+    carbon_coords= np.array([list(c[:3]) for c in carbons], dtype=float)
+    new_center= np.mean(carbon_coords, axis=0)
+    displacement= new_center - np.array(center)
+    
+    for i in range(len(new_atoms)):
+        new_atoms[i][:3]= np.array(new_atoms[i][:3], dtype=float) - displacement
+    
+    return remove_overlapping_atoms(new_atoms)

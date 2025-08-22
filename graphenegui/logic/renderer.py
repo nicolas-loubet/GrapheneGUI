@@ -150,9 +150,14 @@ class Renderer:
                 scale= a_zs*z*z+b_zs*z+c_zs
                 painter.drawEllipse(QPointF(xn + center[0], yn + center[1]), 0.035*scale, 0.035*scale)
 
-            for x, y, _, oxide_type, _ in oxides:
+            for x, y, z, oxide_type, _ in oxides:
                 painter.setBrush(colors[f"oxide_{oxide_type}"])
-                painter.drawEllipse(QPointF(x, y), 0.035, 0.035)
+                angle= np.arctan( (y - center[1]) / (x - center[0]) )
+                if x < center[0]: angle+= np.pi
+                r_new= a_zr*z*z+b_zr*z+c_zr
+                xn,yn= r_new*np.cos(angle), r_new*np.sin(angle)
+                scale= a_zs*z*z+b_zs*z+c_zs
+                painter.drawEllipse(QPointF(xn + center[0], yn + center[1]), 0.035*scale, 0.035*scale)
 
     def set_roll_vector(self, roll_vector):
         self.roll_vector= roll_vector

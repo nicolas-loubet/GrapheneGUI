@@ -235,9 +235,6 @@
                       <height>40</height>
                     </size>
                   </property>
-                  <property name="styleSheet">
-                    <string notr="true">background-color: #f0f0f0; border: 1px solid #ccc;</string>
-                  </property>
                 </widget>
               </item>
               <item row="1" column="0">
@@ -253,9 +250,6 @@
                       <width>40</width>
                       <height>0</height>
                     </size>
-                  </property>
-                  <property name="styleSheet">
-                    <string notr="true">background-color: #f0f0f0; border: 1px solid #ccc;</string>
                   </property>
                 </widget>
               </item>
@@ -302,7 +296,7 @@
                   </property>
                   <property name="minimumSize">
                     <size>
-                      <width>100</width>
+                      <width>120</width>
                       <height>40</height>
                     </size>
                   </property>
@@ -422,7 +416,7 @@
                   </property>
                   <property name="minimumSize">
                     <size>
-                      <width>60</width>
+                      <width>70</width>
                       <height>40</height>
                     </size>
                   </property>
@@ -459,7 +453,7 @@
                   </property>
                   <property name="minimumSize">
                     <size>
-                      <width>110</width>
+                      <width>130</width>
                       <height>40</height>
                     </size>
                   </property>
