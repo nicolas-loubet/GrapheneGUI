@@ -1,8 +1,8 @@
 from PySide6.QtGui import QPainter, QColor, QPen, QFont, QImage
 from PySide6.QtCore import Qt, QPointF, QRectF
 from PySide6.QtGui import QPixmap
+from PySide6.QtSvg import QSvgRenderer
 from .export_formats import checkBounds
-import importlib.resources as pkg_resources
 import numpy as np
 import warnings
 
@@ -163,7 +163,7 @@ class Renderer:
         bg_color = self.colors[mode]["bg"]
         try:
             if not self.plates or self.cb_plates.currentIndex() == -1:
-                pixmap = QPixmap(str(pkg_resources.files("graphenegui.ui.img").joinpath("background.svg")))
+                pixmap = QPixmap(":/icons/img/svg/background.svg")
                 if not pixmap.isNull():
                     scaled_pixmap = pixmap.scaled(self.drawing_area.viewport().size(),
                                                 Qt.KeepAspectRatio,
@@ -186,8 +186,21 @@ class Renderer:
             painter.save()
             painter.scale(self.scale, self.scale)
             painter.translate(width / (2.0 * self.scale) - self.center_x, height / (2.0 * self.scale) - self.center_y)
+
+            plate = self.plates[self.cb_plates.currentIndex()]
             self._draw_plate(painter, self.plates[self.cb_plates.currentIndex()], self.is_dark_mode_func())
             painter.restore()
+
+            if plate.get_is_CNT():
+                svg_renderer = QSvgRenderer(":/icons/img/svg/lock.svg")
+                if svg_renderer.isValid():
+                    icon_height = height / 5.0
+                    icon_width = icon_height * (svg_renderer.defaultSize().width() / svg_renderer.defaultSize().height())
+                    margin = 10
+                    icon_x = width - icon_width - margin
+                    icon_y = height - icon_height - margin
+                    svg_renderer.render(painter, QRectF(icon_x, icon_y, icon_width, icon_height))
+            
             self.ruler_x.update()
             self.ruler_y.update()
         finally:
