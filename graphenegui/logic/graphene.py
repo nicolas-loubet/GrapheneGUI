@@ -80,6 +80,13 @@ class Graphene:
 
     def set_is_CNT(self, is_CNT):
         self.is_CNT= is_CNT
+        if is_CNT:
+            self.backup_not_CNT= [self.carbon_coords.copy(), self.oxide_coords.copy()]
+
+    def restore_plate(self):
+        self.carbon_coords= self.backup_not_CNT[0]
+        self.oxide_coords= self.backup_not_CNT[1]
+        self.is_CNT= False
     
     def get_is_CNT(self):
         return self.is_CNT

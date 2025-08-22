@@ -165,25 +165,29 @@ class MainWindow(QMainWindow):
     @Slot()
     def handle_btn_cnt_clicked(self):
         plate = self.plates[self.ui.comboDrawings.currentIndex()]
-        atoms = plate.get_carbon_coords() + plate.get_oxide_coords()
+        if plate.get_is_CNT():
+            plate.restore_plate()
+        else:
+            atoms = plate.get_carbon_coords() + plate.get_oxide_coords()
 
-        _, bounds = checkBounds([plate])
+            _, bounds = checkBounds([plate])
 
-        dialog= CNTDialog(self)
-        if dialog.exec() != QDialog.Accepted: return
+            dialog= CNTDialog(self)
+            if dialog.exec() != QDialog.Accepted: return
 
-        roll_vec= dialog.get_vector(bounds)
-        if roll_vec is None or (roll_vec[0] == 0 and roll_vec[1] == 0):
-            QMessageBox.warning(self, "Invalid vector", "Please select a valid CNT option or enter a valid custom vector.")
-            return
+            roll_vec= dialog.get_vector(bounds)
+            if roll_vec is None or (roll_vec[0] == 0 and roll_vec[1] == 0):
+                QMessageBox.warning(self, "Invalid vector", "Please select a valid CNT option or enter a valid custom vector.")
+                return
 
-        self.renderer.set_roll_vector(roll_vec)
-        new_atoms = roll_atoms_as_CNT(atoms, roll_vec)
-        plate.set_atoms(new_atoms)
-        plate.set_is_CNT(True)
-        self.buttons_that_depend_of_having_a_plate(False)
-        self.ui.btnExport.setEnabled(True)
-        self.ui.btnDelete.setEnabled(True)
+            self.renderer.set_roll_vector(roll_vec)
+            new_atoms = roll_atoms_as_CNT(atoms, roll_vec)
+            plate.set_is_CNT(True)
+            plate.set_atoms(new_atoms)
+            self.buttons_that_depend_of_having_a_plate(False)
+            self.ui.btnExport.setEnabled(True)
+            self.ui.btnDelete.setEnabled(True)
+            self.ui.btnCNT.setEnabled(True)
         self.update_drawing_area()
         
     @Slot()

@@ -140,14 +140,14 @@ class Renderer:
                 warnings.simplefilter('ignore', category=Warning)
                 a_zr, b_zr, c_zr= np.polyfit([mins[2], bounds[2]+mins[2]], [R*0.1, R], 2)
 
-            a_zs,b_zs= np.polyfit([mins[2],bounds[2]+mins[2]],[.1,1],1)
+                a_zs, b_zs, c_zs= np.polyfit([mins[2],bounds[2]+mins[2]], [.1,1], 2)
             painter.setBrush(colors["carbon"])
             for x, y, z, *_ in carbons:
                 angle= np.arctan(y/x)
                 if x<0: angle+= np.pi
                 r_new= a_zr*z*z+b_zr*z+c_zr
                 xn,yn= r_new*np.cos(angle), r_new*np.sin(angle)
-                scale= a_zs*z+b_zs
+                scale= a_zs*z*z+b_zs*z+c_zs
                 painter.drawEllipse(QPointF(xn, yn), 0.035*scale, 0.035*scale)
 
             for x, y, _, oxide_type, _ in oxides:
