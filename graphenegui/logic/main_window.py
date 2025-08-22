@@ -181,7 +181,7 @@ class MainWindow(QMainWindow):
                 return
 
             self.renderer.set_roll_vector(roll_vec)
-            new_atoms = roll_atoms_as_CNT(atoms, roll_vec)
+            new_atoms = roll_atoms_as_CNT(atoms, roll_vec, plate.get_geometric_center())
             plate.set_is_CNT(True)
             plate.set_atoms(new_atoms)
             self.buttons_that_depend_of_having_a_plate(False)

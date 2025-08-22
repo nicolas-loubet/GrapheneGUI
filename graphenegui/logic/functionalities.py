@@ -354,7 +354,7 @@ def delete_actual_plate(main_window):
     main_window.update_drawing_area()
     print(f"Plate {index+1} deleted")
 
-def roll_atoms_as_CNT(atoms, roll_vec):
+def roll_atoms_as_CNT(atoms, roll_vec, center= [0,0,0]):
     atoms= np.array(atoms, dtype=object)
     ux,uy= roll_vec
     L= np.sqrt(ux**2 + uy**2)
@@ -380,5 +380,10 @@ def roll_atoms_as_CNT(atoms, roll_vec):
     new_atoms[:, 0]= X
     new_atoms[:, 1]= Y
     new_atoms[:, 2]= Z
+
+    carbons= new_atoms[[new_atoms[i,3].startswith("C") for i in range(len(new_atoms))]]
+    new_center= carbons[:,:3].mean(axis=0)
+    displacement= np.array(new_center) - np.array(center)
+    new_atoms[:,:3]-= displacement
 
     return new_atoms

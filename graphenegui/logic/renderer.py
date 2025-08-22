@@ -131,24 +131,24 @@ class Renderer:
                 painter.drawEllipse(QPointF(x, y), 0.035, 0.035)
         else:
             # Case 2: CNT (rolled)
-            x_ref, y_ref= carbons[0][0], carbons[0][1]
-            # Asume centrado en 00, adaptar
+            center= plate.get_geometric_center()
+            x_ref, y_ref= carbons[0][0] - center[0], carbons[0][1] - center[1]
             R= np.sqrt((x_ref**2 + y_ref**2))
             mins,bounds= checkBounds([plate])
 
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore', category=Warning)
-                a_zr, b_zr, c_zr= np.polyfit([mins[2], bounds[2]+mins[2]], [R*0.1, R], 2)
+                a_zr, b_zr, c_zr= np.polyfit([mins[2], bounds[2]+mins[2]], [R*.1, R], 2)
+                a_zs, b_zs, c_zs= np.polyfit([mins[2], bounds[2]+mins[2]], [  .1, 1], 2)
 
-                a_zs, b_zs, c_zs= np.polyfit([mins[2],bounds[2]+mins[2]], [.1,1], 2)
             painter.setBrush(colors["carbon"])
             for x, y, z, *_ in carbons:
-                angle= np.arctan(y/x)
-                if x<0: angle+= np.pi
+                angle= np.arctan( (y - center[1]) / (x - center[0]) )
+                if x < center[0]: angle+= np.pi
                 r_new= a_zr*z*z+b_zr*z+c_zr
                 xn,yn= r_new*np.cos(angle), r_new*np.sin(angle)
                 scale= a_zs*z*z+b_zs*z+c_zs
-                painter.drawEllipse(QPointF(xn, yn), 0.035*scale, 0.035*scale)
+                painter.drawEllipse(QPointF(xn + center[0], yn + center[1]), 0.035*scale, 0.035*scale)
 
             for x, y, _, oxide_type, _ in oxides:
                 painter.setBrush(colors[f"oxide_{oxide_type}"])
@@ -158,9 +158,9 @@ class Renderer:
         self.roll_vector= roll_vector
 
     def on_draw_drawing_area(self, event):
-        painter = QPainter(self.drawing_area.viewport())
-        mode = "dark" if self.is_dark_mode_func() else "light"
-        bg_color = self.colors[mode]["bg"]
+        painter= QPainter(self.drawing_area.viewport())
+        mode= "dark" if self.is_dark_mode_func() else "light"
+        bg_color= self.colors[mode]["bg"]
         try:
             if not self.plates or self.cb_plates.currentIndex() == -1:
                 pixmap = QPixmap(":/icons/img/svg/background.svg")
