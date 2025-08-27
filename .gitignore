@@ -13,3 +13,4 @@ __pycache__/
 *.mol2
 *.glade
 notas/
+output/
