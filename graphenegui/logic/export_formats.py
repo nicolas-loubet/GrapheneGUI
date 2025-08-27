@@ -281,7 +281,7 @@ def get_bonds_top(plate, factor, progress_callback=None, number_present_plate=No
         print(f"TOP: Evaluating bonds oxides {ai+1:5} / {n_oxides:5}"+" "*20,end="\r")
         if oxides[ai][3].startswith("H"): continue
         for aj in range(n_carbons):
-            if(plate.distance_3D(oxides[ai][0],oxides[ai][1],oxides[ai][2],carbons[aj][0],carbons[aj][1],carbons[ai][2]) < r_dist):
+            if(plate.distance_3D(oxides[ai][0],oxides[ai][1],oxides[ai][2],carbons[aj][0],carbons[aj][1],carbons[aj][2]) < r_dist):
                 output.append([ai+1+n_carbons,aj+1])
 
         if oxides[ai][3] == "OO":
