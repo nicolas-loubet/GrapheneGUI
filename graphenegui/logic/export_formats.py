@@ -118,7 +118,7 @@ def writeMOL2(filename, plates, factor=1.0):
         total_atoms = sum(len(plate.get_carbon_coords()) + len(plate.get_oxide_coords()) for plate in plates)
         bonds = []
         for i_plate, plate in enumerate(plates):
-            plate_bonds = get_bonds_top(plate, factor, )
+            plate_bonds = get_bonds_top(plate, factor)
             for bond in plate_bonds:
                 offset = sum(len(p.get_carbon_coords()) + len(p.get_oxide_coords()) for p in plates[:i_plate])
                 bonds.append([bond[0] + offset, bond[1] + offset])
@@ -258,7 +258,7 @@ def write_atoms_top(plate, i_molec):
     return output
 
 def get_bonds_top(plate, factor, progress_callback=None, number_present_plate=None, number_total_plates=None):
-    r_dist= .145*factor
+    r_dist= .146*factor
     output= []
 
     carbons= plate.get_carbon_coords()
@@ -271,20 +271,21 @@ def get_bonds_top(plate, factor, progress_callback=None, number_present_plate=No
             progress_callback((number_present_plate-1+(ai+1)*factor_division_total)/number_total_plates)
         print(f"TOP: Evaluating bonds carbons {ai+1:5} / {n_carbons:5}"+" "*20,end="\r")
         for aj in range(ai+1,n_carbons):
-            if(plate.distance_2D(carbons[ai][0],carbons[ai][1],carbons[aj][0],carbons[aj][1]) < r_dist):
+            if(plate.distance_3D(carbons[ai][0],carbons[ai][1],carbons[ai][2],carbons[aj][0],carbons[aj][1],carbons[aj][2]) < r_dist):
                 output.append([ai+1,aj+1])
 
+    r_dist+= .02*factor
     for ai in range(n_oxides):
         if progress_callback:
             progress_callback((number_present_plate-1+(ai+1+n_carbons)*factor_division_total)/number_total_plates)
         print(f"TOP: Evaluating bonds oxides {ai+1:5} / {n_oxides:5}"+" "*20,end="\r")
         if oxides[ai][3].startswith("H"): continue
         for aj in range(n_carbons):
-            if(plate.distance_2D(oxides[ai][0],oxides[ai][1],carbons[aj][0],carbons[aj][1]) < r_dist):
-                output.append([ai+1,aj+1])
+            if(plate.distance_3D(oxides[ai][0],oxides[ai][1],oxides[ai][2],carbons[aj][0],carbons[aj][1],carbons[ai][2]) < r_dist):
+                output.append([ai+1+n_carbons,aj+1])
 
         if oxides[ai][3] == "OO":
-            output.append([ai+1,ai+2]) # Always next to each other
+            output.append([ai+1+n_carbons,ai+2+n_carbons]) # Always next to each other
     
     return output
 
