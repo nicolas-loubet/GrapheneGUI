@@ -142,6 +142,8 @@ pip install -r requirements.txt
 python -m graphenegui
 ```
 
+If it fails, it could be that you need to use `py -m graphenegui` instead.
+
 📌 Important: Make sure your terminal's current directory is the one containing graphenegui, requirements.txt, etc. For example:
 
 ```powershell
