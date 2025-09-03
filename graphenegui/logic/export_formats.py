@@ -112,7 +112,7 @@ def writePDB(filename, plates):
     print("File exported to " + filename)
 
 def writeMOL2(filename, plates, factor=1.0):
-    atom_type_dict = {"C": "C.ar", "CO": "C.3", "CE": "C.3", "OO": "O.3", "HO": "H", "OE": "O.2"}
+    atom_type_dict = {"C": "ca", "CO": "c3", "CE": "cx", "OO": "oh", "HO": "ho", "OE": "os"}
     
     with open(filename, 'w') as f:
         total_atoms = sum(len(plate.get_carbon_coords()) + len(plate.get_oxide_coords()) for plate in plates)
@@ -142,7 +142,7 @@ def writeMOL2(filename, plates, factor=1.0):
                 x_ang = (x - min_coords[0]) * 10
                 y_ang = (y - min_coords[1]) * 10
                 z_ang = (z - min_coords[2]) * 10
-                mol2_type = atom_type_dict.get(name, "C.ar")
+                mol2_type = atom_type_dict.get(name, atom_type_dict["C"])
                 f.write(f"{global_atom_id:>7} {name:<8} {x_ang:>8.4f} {y_ang:>8.4f} {z_ang:>8.4f} "
                         f"{mol2_type:<8} {i_plate+1:>3} {residue_name:<8} 0.0000\n")
                 global_atom_id += 1
