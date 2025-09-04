@@ -16,10 +16,10 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QComboBox, QFrame, QGraphicsView,
-    QGridLayout, QHBoxLayout, QLabel, QLineEdit,
-    QMainWindow, QPushButton, QRadioButton, QSizePolicy,
-    QSpacerItem, QSpinBox, QToolBar, QVBoxLayout,
-    QWidget)
+    QGridLayout, QGroupBox, QHBoxLayout, QLabel,
+    QLineEdit, QMainWindow, QPushButton, QRadioButton,
+    QSizePolicy, QSpacerItem, QSpinBox, QToolBar,
+    QVBoxLayout, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -144,6 +144,81 @@ class Ui_MainWindow(object):
 
         self.gridLayoutCentral.addWidget(self.graphicsView, 1, 1, 1, 1)
 
+        self.rightSidebar = QWidget(self.drawingArea)
+        self.rightSidebar.setObjectName(u"rightSidebar")
+        self.vLayoutSidebar = QVBoxLayout(self.rightSidebar)
+        self.vLayoutSidebar.setObjectName(u"vLayoutSidebar")
+        self.vLayoutSidebar.setContentsMargins(0, 0, 0, 0)
+        self.labelManual = QLabel(self.rightSidebar)
+        self.labelManual.setObjectName(u"labelManual")
+
+        self.vLayoutSidebar.addWidget(self.labelManual, 0, Qt.AlignHCenter)
+
+        self.btnAddOH = QPushButton(self.rightSidebar)
+        self.btnAddOH.setObjectName(u"btnAddOH")
+        icon8 = QIcon()
+        icon8.addFile(u":/icons/img/svg/oh.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnAddOH.setIcon(icon8)
+        self.btnAddOH.setCheckable(True)
+        self.btnAddOH.setMinimumSize(QSize(90, 35))
+
+        self.vLayoutSidebar.addWidget(self.btnAddOH, 0, Qt.AlignHCenter)
+
+        self.btnAddO = QPushButton(self.rightSidebar)
+        self.btnAddO.setObjectName(u"btnAddO")
+        self.btnAddO.setCheckable(True)
+        icon9 = QIcon()
+        icon9.addFile(u":/icons/img/svg/o.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnAddO.setIcon(icon9)
+        self.btnAddO.setMinimumSize(QSize(90, 35))
+
+        self.vLayoutSidebar.addWidget(self.btnAddO, 0, Qt.AlignHCenter)
+
+        self.btnRemoveOx = QPushButton(self.rightSidebar)
+        self.btnRemoveOx.setObjectName(u"btnRemoveOx")
+        icon10 = QIcon()
+        icon10.addFile(u":/icons/img/svg/remove_one.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnRemoveOx.setIcon(icon10)
+        self.btnRemoveOx.setCheckable(True)
+        self.btnRemoveOx.setMinimumSize(QSize(90, 35))
+
+        self.vLayoutSidebar.addWidget(self.btnRemoveOx, 0, Qt.AlignHCenter)
+
+        self.spacerBetweenRemoveAndWhere = QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.vLayoutSidebar.addItem(self.spacerBetweenRemoveAndWhere)
+
+        self.labelWhere = QLabel(self.rightSidebar)
+        self.labelWhere.setObjectName(u"labelWhere")
+
+        self.vLayoutSidebar.addWidget(self.labelWhere, 0, Qt.AlignHCenter)
+
+        self.radioGroupWhere = QWidget(self.rightSidebar)
+        self.radioGroupWhere.setObjectName(u"radioGroupWhere")
+        self.vLayoutWhere = QVBoxLayout(self.radioGroupWhere)
+        self.vLayoutWhere.setObjectName(u"vLayoutWhere")
+        self.vLayoutWhere.setContentsMargins(0, 0, 0, 0)
+        self.radioZpm = QRadioButton(self.radioGroupWhere)
+        self.radioZpm.setObjectName(u"radioZpm")
+
+        self.vLayoutWhere.addWidget(self.radioZpm)
+
+        self.radioZp = QRadioButton(self.radioGroupWhere)
+        self.radioZp.setObjectName(u"radioZp")
+
+        self.vLayoutWhere.addWidget(self.radioZp)
+
+        self.radioZm = QRadioButton(self.radioGroupWhere)
+        self.radioZm.setObjectName(u"radioZm")
+
+        self.vLayoutWhere.addWidget(self.radioZm)
+
+
+        self.vLayoutSidebar.addWidget(self.radioGroupWhere, 0, Qt.AlignHCenter)
+
+
+        self.gridLayoutCentral.addWidget(self.rightSidebar, 1, 2, 1, 1)
+
 
         self.verticalLayout_1.addWidget(self.drawingArea)
 
@@ -159,9 +234,9 @@ class Ui_MainWindow(object):
 
         self.btnReduceAll = QPushButton(self.bottomBar)
         self.btnReduceAll.setObjectName(u"btnReduceAll")
-        icon8 = QIcon()
-        icon8.addFile(u":/icons/img/svg/reduce.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.btnReduceAll.setIcon(icon8)
+        icon11 = QIcon()
+        icon11.addFile(u":/icons/img/svg/reduce.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnReduceAll.setIcon(icon11)
         self.btnReduceAll.setMinimumSize(QSize(120, 40))
         self.btnReduceAll.setIconSize(QSize(25, 25))
 
@@ -169,9 +244,9 @@ class Ui_MainWindow(object):
 
         self.btnChangeProb = QPushButton(self.bottomBar)
         self.btnChangeProb.setObjectName(u"btnChangeProb")
-        icon9 = QIcon()
-        icon9.addFile(u":/icons/img/svg/prob.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.btnChangeProb.setIcon(icon9)
+        icon12 = QIcon()
+        icon12.addFile(u":/icons/img/svg/prob.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnChangeProb.setIcon(icon12)
         self.btnChangeProb.setMinimumSize(QSize(130, 40))
         self.btnChangeProb.setIconSize(QSize(25, 25))
 
@@ -205,6 +280,42 @@ class Ui_MainWindow(object):
 
         self.hLayoutBottom.addWidget(self.line2)
 
+        self.groupLogic = QGroupBox(self.bottomBar)
+        self.groupLogic.setObjectName(u"groupLogic")
+        self.verticalLayout_logic = QVBoxLayout(self.groupLogic)
+        self.verticalLayout_logic.setSpacing(2)
+        self.verticalLayout_logic.setObjectName(u"verticalLayout_logic")
+        self.verticalLayout_logic.setContentsMargins(0, 0, 0, 0)
+        self.radioAnd = QRadioButton(self.groupLogic)
+        self.radioAnd.setObjectName(u"radioAnd")
+        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        sizePolicy3.setHorizontalStretch(0)
+        sizePolicy3.setVerticalStretch(0)
+        sizePolicy3.setHeightForWidth(self.radioAnd.sizePolicy().hasHeightForWidth())
+        self.radioAnd.setSizePolicy(sizePolicy3)
+        self.radioAnd.setMinimumSize(QSize(0, 15))
+        self.radioAnd.setChecked(True)
+
+        self.verticalLayout_logic.addWidget(self.radioAnd)
+
+        self.radioOr = QRadioButton(self.groupLogic)
+        self.radioOr.setObjectName(u"radioOr")
+        sizePolicy3.setHeightForWidth(self.radioOr.sizePolicy().hasHeightForWidth())
+        self.radioOr.setSizePolicy(sizePolicy3)
+        self.radioOr.setMinimumSize(QSize(0, 15))
+
+        self.verticalLayout_logic.addWidget(self.radioOr)
+
+
+        self.hLayoutBottom.addWidget(self.groupLogic)
+
+        self.line3 = QFrame(self.bottomBar)
+        self.line3.setObjectName(u"line3")
+        self.line3.setFrameShape(QFrame.Shape.VLine)
+        self.line3.setFrameShadow(QFrame.Shadow.Sunken)
+
+        self.hLayoutBottom.addWidget(self.line3)
+
         self.labelVMD = QLabel(self.bottomBar)
         self.labelVMD.setObjectName(u"labelVMD")
 
@@ -216,43 +327,6 @@ class Ui_MainWindow(object):
 
         self.hLayoutBottom.addWidget(self.entryVMD)
 
-        self.line3 = QFrame(self.bottomBar)
-        self.line3.setObjectName(u"line3")
-        self.line3.setFrameShape(QFrame.Shape.VLine)
-        self.line3.setFrameShadow(QFrame.Shadow.Sunken)
-
-        self.hLayoutBottom.addWidget(self.line3)
-
-        self.labelManual = QLabel(self.bottomBar)
-        self.labelManual.setObjectName(u"labelManual")
-
-        self.hLayoutBottom.addWidget(self.labelManual)
-
-        self.btnAddOH = QPushButton(self.bottomBar)
-        self.btnAddOH.setObjectName(u"btnAddOH")
-        self.btnAddOH.setCheckable(True)
-        self.btnAddOH.setMinimumSize(QSize(70, 40))
-
-        self.hLayoutBottom.addWidget(self.btnAddOH)
-
-        self.btnAddO = QPushButton(self.bottomBar)
-        self.btnAddO.setObjectName(u"btnAddO")
-        self.btnAddO.setCheckable(True)
-        self.btnAddO.setMinimumSize(QSize(60, 40))
-
-        self.hLayoutBottom.addWidget(self.btnAddO)
-
-        self.btnRemoveOx = QPushButton(self.bottomBar)
-        self.btnRemoveOx.setObjectName(u"btnRemoveOx")
-        self.btnRemoveOx.setCheckable(True)
-        icon10 = QIcon()
-        icon10.addFile(u":/icons/img/svg/remove_one.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.btnRemoveOx.setIcon(icon10)
-        self.btnRemoveOx.setMinimumSize(QSize(130, 40))
-        self.btnRemoveOx.setIconSize(QSize(25, 25))
-
-        self.hLayoutBottom.addWidget(self.btnRemoveOx)
-
         self.line4 = QFrame(self.bottomBar)
         self.line4.setObjectName(u"line4")
         self.line4.setFrameShape(QFrame.Shape.VLine)
@@ -260,33 +334,24 @@ class Ui_MainWindow(object):
 
         self.hLayoutBottom.addWidget(self.line4)
 
-        self.labelWhere = QLabel(self.bottomBar)
-        self.labelWhere.setObjectName(u"labelWhere")
+        self.btnAddOxidation = QPushButton(self.bottomBar)
+        self.btnAddOxidation.setObjectName(u"btnAddOxidation")
+        self.btnAddOxidation.setMinimumSize(QSize(200, 40))
 
-        self.hLayoutBottom.addWidget(self.labelWhere)
+        self.hLayoutBottom.addWidget(self.btnAddOxidation)
 
-        self.radioGroupWhere = QWidget(self.bottomBar)
-        self.radioGroupWhere.setObjectName(u"radioGroupWhere")
-        self.hLayoutWhere = QHBoxLayout(self.radioGroupWhere)
-        self.hLayoutWhere.setObjectName(u"hLayoutWhere")
-        self.hLayoutWhere.setContentsMargins(0, 0, 0, 0)
-        self.radioZpm = QRadioButton(self.radioGroupWhere)
-        self.radioZpm.setObjectName(u"radioZpm")
+        self.btnAddCType = QPushButton(self.bottomBar)
+        self.btnAddCType.setObjectName(u"btnAddCType")
+        self.btnAddCType.setMinimumSize(QSize(120, 40))
 
-        self.hLayoutWhere.addWidget(self.radioZpm)
+        self.hLayoutBottom.addWidget(self.btnAddCType)
 
-        self.radioZp = QRadioButton(self.radioGroupWhere)
-        self.radioZp.setObjectName(u"radioZp")
+        self.comboCType = QComboBox(self.bottomBar)
+        self.comboCType.addItem("")
+        self.comboCType.setObjectName(u"comboCType")
+        self.comboCType.setMinimumSize(QSize(100, 40))
 
-        self.hLayoutWhere.addWidget(self.radioZp)
-
-        self.radioZm = QRadioButton(self.radioGroupWhere)
-        self.radioZm.setObjectName(u"radioZm")
-
-        self.hLayoutWhere.addWidget(self.radioZm)
-
-
-        self.hLayoutBottom.addWidget(self.radioGroupWhere)
+        self.hLayoutBottom.addWidget(self.comboCType)
 
 
         self.verticalLayout_1.addWidget(self.bottomBar)
@@ -307,19 +372,25 @@ class Ui_MainWindow(object):
         self.btnExport.setText(QCoreApplication.translate("MainWindow", u"Export", None))
         self.btnCNT.setText(QCoreApplication.translate("MainWindow", u"CNT", None))
         self.btnTheme.setText(QCoreApplication.translate("MainWindow", u"Light/Dark", None))
+        self.labelManual.setText(QCoreApplication.translate("MainWindow", u"Manual", None))
+        self.btnAddOH.setText(QCoreApplication.translate("MainWindow", u"-OH", None))
+        self.btnAddO.setText(QCoreApplication.translate("MainWindow", u"-O-", None))
+        self.btnRemoveOx.setText(QCoreApplication.translate("MainWindow", u"Remove", None))
+        self.labelWhere.setText(QCoreApplication.translate("MainWindow", u"Where:", None))
+        self.radioZpm.setText(QCoreApplication.translate("MainWindow", u"z\u00b1", None))
+        self.radioZp.setText(QCoreApplication.translate("MainWindow", u"z+", None))
+        self.radioZm.setText(QCoreApplication.translate("MainWindow", u"z-", None))
         self.labelOxidation.setText(QCoreApplication.translate("MainWindow", u"Oxidation:", None))
         self.btnReduceAll.setText(QCoreApplication.translate("MainWindow", u"Reduce All", None))
         self.btnChangeProb.setText(QCoreApplication.translate("MainWindow", u"Change Prob.", None))
         self.labelRandom.setText(QCoreApplication.translate("MainWindow", u"Random", None))
         self.spinRandom.setSuffix(QCoreApplication.translate("MainWindow", u"%", None))
+        self.radioAnd.setText(QCoreApplication.translate("MainWindow", u"AND", None))
+        self.radioOr.setText(QCoreApplication.translate("MainWindow", u"OR", None))
         self.labelVMD.setText(QCoreApplication.translate("MainWindow", u"VMD Selection:", None))
-        self.labelManual.setText(QCoreApplication.translate("MainWindow", u"Manual", None))
-        self.btnAddOH.setText(QCoreApplication.translate("MainWindow", u"Add OH", None))
-        self.btnAddO.setText(QCoreApplication.translate("MainWindow", u"Add O", None))
-        self.btnRemoveOx.setText(QCoreApplication.translate("MainWindow", u"Remove Ox.", None))
-        self.labelWhere.setText(QCoreApplication.translate("MainWindow", u"Where:", None))
-        self.radioZpm.setText(QCoreApplication.translate("MainWindow", u"z\u00b1", None))
-        self.radioZp.setText(QCoreApplication.translate("MainWindow", u"z+", None))
-        self.radioZm.setText(QCoreApplication.translate("MainWindow", u"z-", None))
+        self.btnAddOxidation.setText(QCoreApplication.translate("MainWindow", u"Add Oxidation to selection", None))
+        self.btnAddCType.setText(QCoreApplication.translate("MainWindow", u"Add C type", None))
+        self.comboCType.setItemText(0, QCoreApplication.translate("MainWindow", u"ca", None))
+
     # retranslateUi
 
