@@ -143,6 +143,11 @@ def writeMOL2(filename, plates, factor=1.0):
                 y_ang = (y - min_coords[1]) * 10
                 z_ang = (z - min_coords[2]) * 10
                 mol2_type = atom_type_dict.get(name, atom_type_dict["C"])
+                if(mol2_type == atom_type_dict["C"]):
+                    list_ox= plate.get_oxides_for_carbon(atom)
+                    if(len(list_ox) != 0):
+                        if(list_ox[0][3] == "OO"): mol2_type= atom_type_dict.get("CO")
+                        if(list_ox[0][3] == "OE"): mol2_type= atom_type_dict.get("CE")
                 f.write(f"{global_atom_id:>7} {name:<8} {x_ang:>8.4f} {y_ang:>8.4f} {z_ang:>8.4f} "
                         f"{mol2_type:<8} {i_plate+1:>3} {residue_name:<8} 0.0000\n")
                 global_atom_id += 1
