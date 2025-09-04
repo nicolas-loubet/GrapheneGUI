@@ -11,6 +11,16 @@ setup(
     url="https://github.com/nicolas-loubet/GrapheneGUI",
     packages=find_packages(),
     include_package_data=True,
+    package_data={
+        "graphenegui": [
+            "ui/*.ui",
+            "ui/*.py",
+            "ui/img/png/*.png",
+            "ui/img/svg/*.svg",
+            "ui/resources.qrc",
+            "ui/resources_rc.py",
+        ],
+    },
     install_requires=[
         "PySide6>=6.0.0",
         "numpy>=1.19.0",
