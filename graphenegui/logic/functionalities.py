@@ -102,7 +102,7 @@ def evaluate_condition(x, y, z, i_atom, expr):
 def get_list_carbons_in_expr(plate, expr):
     list_carbons_in_expression = []
     for coord in plate.get_carbon_coords():
-        x, y, z, _, i_atom, _ = coord
+        x, y, z, _, i_atom = coord[:5]
         x, y, z = x * 10, y * 10, z * 10
         if evaluate_condition(x, y, z, i_atom, expr):
             list_carbons_in_expression.append(coord)

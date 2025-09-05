@@ -26,8 +26,8 @@ class Graphene:
         coords = []
         i_atom = 1
 
-        width = n_x * 2 * dx
-        height = ((n_y-1) * 6 + 4) * dy
+        width= n_x * 2 * dx
+        height= ((n_y - 1) * 6 + 4) * dy
         center_x_geom = width / 2
         center_y_geom = height / 2
 
@@ -37,20 +37,20 @@ class Graphene:
         for iy in range(n_y):
             ybase = iy * 6 * dy
             for ix in range(n_x):
-                coords.append([dx * ix * 2 + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom-1], i_atom, False])
+                coords.append([dx * ix * 2 + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
                 i_atom += 1
-                coords.append([dx * (ix * 2 + 1) + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False])
+                coords.append([dx * (ix * 2 + 1) + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
                 i_atom += 1
-            coords.append([dx * n_x * 2 + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom-1], i_atom, False])
+            coords.append([dx * n_x * 2 + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
             i_atom += 1
 
             ybase = ybase + dy * 3
             for ix in range(n_x):
-                coords.append([dx * ix * 2 + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False])
+                coords.append([dx * ix * 2 + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
                 i_atom += 1
-                coords.append([dx * (ix * 2 + 1) + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom-1], i_atom, False])
+                coords.append([dx * (ix * 2 + 1) + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
                 i_atom += 1
-            coords.append([dx * n_x * 2 + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False])
+            coords.append([dx * n_x * 2 + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
             i_atom += 1
 
         return cls(coords, [])
@@ -58,13 +58,13 @@ class Graphene:
     def duplicate(self, translations):
         carbons,oxides= [],[]
         for c in self.carbon_coords:
-            carbons.append([c[0]+translations[0],c[1]+translations[1],c[2]+translations[2],c[3],c[4],c[5]])
+            carbons.append([c[0] + translations[0], c[1] + translations[1], c[2] + translations[2], c[3], c[4], c[5], c[6]])
         for o in self.oxide_coords:
-            oxides.append([o[0]+translations[0],o[1]+translations[1],o[2]+translations[2],o[3],o[4],o[5]])
+            oxides.append([o[0] + translations[0], o[1] + translations[1], o[2] + translations[2], o[3], o[4], o[5]])
         return Graphene.create_from_coords(carbons,oxides)
 
-    def add_carbon(self, x, y, z, atom_name, atom_index, modified=False):
-        self.carbon_coords.append([x, y, z, atom_name, atom_index, modified])
+    def add_carbon(self, x, y, z, atom_name, atom_index, modified=False, atom_type="ca"):
+        self.carbon_coords.append([x, y, z, atom_name, atom_index, modified, atom_type])
 
     def add_oxide(self, x, y, z, oxide_type, atom_index, modified=False):
         self.oxide_coords.append([x, y, z, oxide_type, atom_index, modified])
@@ -72,9 +72,10 @@ class Graphene:
     def set_atoms(self, atoms):
         self.carbon_coords= []
         self.oxide_coords= []
-        for x, y, z, atom_name, atom_index, modified in atoms:
+        for x, y, z, atom_name, atom_index, modified, *extra in atoms:  
+            atom_type= extra[0] if extra else "ca"
             if atom_name.startswith("C"):
-                self.carbon_coords.append([x, y, z, atom_name, atom_index, modified])
+                self.carbon_coords.append([x, y, z, atom_name, atom_index, modified, atom_type])
             else:
                 self.oxide_coords.append([x, y, z, atom_name, atom_index, modified])
 
@@ -163,7 +164,6 @@ class Graphene:
                     break
 
                 if not found:
-                    #print(f"No adjacent carbon available for OE near {carbon[3]}, added OH instead")
                     i_atom += 1
                     self.add_oxide(x1, y1, z1+z_dir*0.149, "OO", i_atom)
                     count_oxidations += 1
@@ -266,6 +266,12 @@ class Graphene:
             min_coors= [min(min_coors[i], carbon[i]) for i in range(3)]
             max_coords= [max(max_coords[i], carbon[i]) for i in range(3)]
         return [(min_coors[i] + max_coords[i])*.5 for i in range(3)]
+
+    def set_carbon_type(self, carbon, new_type):
+        for i,c in enumerate(self.carbon_coords):
+            if c[:6] == carbon[:6]:
+                self.carbon_coords[i][6]= new_type
+                break
 
 
 def generatePatterns(initial_character="C"):

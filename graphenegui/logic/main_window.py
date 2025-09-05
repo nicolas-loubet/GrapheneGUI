@@ -1,6 +1,6 @@
 import os
 import random
-from .other_dialogs import CreateDialog, DuplicateDialog, ProbDialog, CNTDialog
+from .other_dialogs import CreateDialog, DuplicateDialog, ProbDialog, CNTDialog, AtomTypeDialog
 from .renderer import Renderer
 from .functionalities import *
 from PySide6.QtWidgets import QMainWindow, QMessageBox, QGraphicsScene, QDialog, QFileDialog
@@ -42,6 +42,24 @@ class MainWindow(QMainWindow):
         self.buttons_that_depend_of_having_a_plate(False)
         self.ui.radioZpm.setChecked(True)
 
+        self.atom_types = {
+            "ca": {"epsilon": 0.359824, "sigma": 3.39967}
+        }
+        self.water_model = "TIP3P"
+        self.water_params = {
+            "TIP3P": {"epsilon": 0.6364, "sigma": 3.15061},
+            "TIP4P": {"epsilon": 0.6480, "sigma": 3.15365},
+            "TIP4P/2005": {"epsilon": 0.7749, "sigma": 3.1589},
+            "TIP5P": {"epsilon": 0.6694, "sigma": 3.12},
+            "TIP5P-2018": {"epsilon": 0.79, "sigma": 3.145},
+            "SPC": {"epsilon": 0.650, "sigma": 3.166},
+            "SPC/E": {"epsilon": 0.650, "sigma": 3.166},
+        }
+
+        self.ui.comboCType.clear()
+        for typ in self.atom_types.keys():
+            self.ui.comboCType.addItem(typ)
+
         self.setup_connections()
         load_css(self)
 
@@ -62,6 +80,8 @@ class MainWindow(QMainWindow):
         self.ui.btnAddO.clicked.connect(self.handle_btn_o_clicked)
         self.ui.btnRemoveOx.clicked.connect(self.handle_btn_remove_ox_clicked)
         self.ui.btnAddOxidation.clicked.connect(self.handle_btn_add_oxidation_clicked)
+        self.ui.comboCType.currentIndexChanged.connect(self.handle_ctype_changed)
+        self.ui.btnAddCType.clicked.connect(self.handle_btn_add_ctype_clicked)
         
         self.ui.radioZp.toggled.connect(lambda: self.handle_radio_toggled(self.ui.radioZp))
         self.ui.radioZm.toggled.connect(lambda: self.handle_radio_toggled(self.ui.radioZm))
@@ -106,6 +126,7 @@ class MainWindow(QMainWindow):
         self.ui.radioZpm.setEnabled(active)
         self.ui.radioZp.setEnabled(active)
         self.ui.radioZm.setEnabled(active)
+        self.ui.btnAddOxidation.setEnabled(active)
 
     def eventFilter(self, source, event):
         if(source is self.ui.graphicsView.viewport() and event.type() == QEvent.Resize):
@@ -197,6 +218,38 @@ class MainWindow(QMainWindow):
         load_css(self)
         self.update_drawing_area()
         print(f"Switched to {'dark' if self.is_dark_mode else 'light'} mode")
+
+    @Slot()
+    def handle_btn_add_ctype_clicked(self):
+        dialog= AtomTypeDialog(self)
+        dialog.ui.cb_water.setCurrentText(self.water_model)
+        dialog.update_water_params()
+        dialog.update_calculated()
+        if dialog.exec() == QDialog.Accepted:
+            data= dialog.get_data()
+            name= data["name"]
+            if name in self.atom_types:
+                QMessageBox.warning(self, "Error", "Type name already exists.")
+                return
+            if not name:
+                QMessageBox.warning(self, "Error", "Type name cannot be empty.")
+                return
+            self.atom_types[name]= {"epsilon": data["epsilon"], "sigma": data["sigma"]}
+            self.ui.comboCType.addItem(name)
+            self.ui.comboCType.setCurrentText(name)
+            print(f"Added new carbon type '{name}' with epsilon={data['epsilon']}, sigma={data['sigma']}")
+
+    @Slot(int)
+    def handle_ctype_changed(self, index):
+        if index < 0: return
+        new_type= self.ui.comboCType.currentText()
+        if self.renderer.highlighted_atoms:
+            plate= self.plates[self.ui.comboDrawings.currentIndex()]
+            for carbon in self.renderer.highlighted_atoms:
+                plate.set_carbon_type(carbon, new_type)
+            print(f"Changed {len(self.renderer.highlighted_atoms)} carbons to type '{new_type}'")
+            self.renderer.highlighted_atoms= []  
+            self.update_drawing_area()
 
 
     # ================================
