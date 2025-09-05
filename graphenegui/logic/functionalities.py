@@ -102,60 +102,53 @@ def evaluate_condition(x, y, z, i_atom, expr):
 def get_list_carbons_in_expr(plate, expr):
     list_carbons_in_expression = []
     for coord in plate.get_carbon_coords():
-        x, y, z, _, i_atom = coord
+        x, y, z, _, i_atom, _ = coord
         x, y, z = x * 10, y * 10, z * 10
         if evaluate_condition(x, y, z, i_atom, expr):
             list_carbons_in_expression.append(coord)
     return list_carbons_in_expression
 
-def make_oxidations(max_theorical_oxidations, number_oxidations_desired, plate, main_window, list_carbons_in_expression, number_total_carbons, number_oxidations_done, fraction_oxidation):
-    oxide_new = []
-    if(max_theorical_oxidations > number_oxidations_desired):
-        correction_factor = int(fraction_oxidation*main_window.last_prob_oh*number_oxidations_desired/200)
-        oxide_new = random.sample(list_carbons_in_expression, min(number_oxidations_desired + correction_factor, number_total_carbons))
-        [list_carbons_in_expression.remove(x) for x in oxide_new]
-        number_oxidations_done+= plate.add_oxydation_to_list_of_carbon(oxide_new, main_window.z_mode, main_window.last_prob_oh)
-        while(number_oxidations_desired > plate.get_oxide_count()):
-            oxide_new= [random.choice(list_carbons_in_expression)]
-            list_carbons_in_expression.remove(oxide_new[0])
-            number_oxidations_done+= plate.add_oxydation_to_list_of_carbon(oxide_new, main_window.z_mode, main_window.last_prob_oh)
-    else:
-        number_oxidations_done+= plate.add_oxydation_to_list_of_carbon(list_carbons_in_expression, main_window.z_mode, main_window.last_prob_oh)
-
-    return number_oxidations_done
-
-def put_oxides(main_window, expr):
-    if main_window.ui.comboDrawings.currentIndex() == -1: return
+def select_atoms_expr(main_window, expr):
+    if main_window.ui.comboDrawings.currentIndex() == -1: return None
     manage_duplicates_for_deletion(main_window, main_window.ui.comboDrawings.currentIndex()+1, False)
+    plate= main_window.plates[main_window.ui.comboDrawings.currentIndex()]
 
-    fraction_oxidation = main_window.ui.spinRandom.value()/100
-    plate = main_window.plates[main_window.ui.comboDrawings.currentIndex()]
-    plate.remove_oxides()
-    
-    if not expr: expr = ""
+    fraction_oxidation= main_window.ui.spinRandom.value() / 100
+    if not expr: expr= ""
 
     try:
-        list_carbons_in_expression = get_list_carbons_in_expr(plate, expr)
-        
-        number_total_carbons = len(list_carbons_in_expression)
-        number_oxidations_desired = int(number_total_carbons*fraction_oxidation)
-        number_oxidations_done = 0
+        list_carbons_in_expression= get_list_carbons_in_expr(plate, expr)
+        number_total_carbons= len(list_carbons_in_expression)
+        number_oxidations_desired= int(number_total_carbons * fraction_oxidation)
 
-        plate_try= plate.duplicate([0,0,0])
+        if number_total_carbons == 0 or number_oxidations_desired == 0: return None
+
+        plate_try= plate.duplicate([0, 0, 0])
         plate_try.add_oxydation_to_list_of_carbon(list_carbons_in_expression, main_window.z_mode, main_window.last_prob_oh)
-        max_theorical_oxidations = plate_try.get_oxide_count()
+        max_theorical_oxidations= plate_try.get_oxide_count()
 
-        if(max_theorical_oxidations <= number_oxidations_desired):
-            number_oxidations_done+= plate.add_oxydation_to_list_of_carbon(list_carbons_in_expression, main_window.z_mode, main_window.last_prob_oh)
+        if max_theorical_oxidations <= number_oxidations_desired:
+            selected_atoms= list_carbons_in_expression
         else:
-            number_oxidations_done+= make_oxidations(max_theorical_oxidations, number_oxidations_desired, plate, main_window, list_carbons_in_expression, number_total_carbons, number_oxidations_done, fraction_oxidation)
-            
-        print(f"Finished with {number_oxidations_done} oxides, that is {number_oxidations_done/number_total_carbons*100:.2f}% of the selected part of the plate")
+            correction_factor= int(fraction_oxidation * main_window.last_prob_oh * number_oxidations_desired / 200)
+            selected_atoms= random.sample(list_carbons_in_expression, min(number_oxidations_desired + correction_factor, number_total_carbons))
+
+        return selected_atoms
 
     except Exception as e:
-        print("Not valid expression, exc=",e," "*20, end='\r')
+        print("Not valid expression, exc=", e, " "*20, end="\r")
+        return None
+
+def put_oxides(main_window, list_carbons):
+    if not list_carbons: return 0
+    if main_window.ui.comboDrawings.currentIndex() == -1: return 0
+
+    plate= main_window.plates[main_window.ui.comboDrawings.currentIndex()]
+    number_oxidations_done= plate.add_oxydation_to_list_of_carbon(list_carbons, main_window.z_mode, main_window.last_prob_oh)
 
     main_window.update_drawing_area()
+    print(f"Finished with {number_oxidations_done} oxides, that is {plate.get_oxide_count()/plate.get_number_atoms()*100:.2f}% of the selected part of the plate")
+    return number_oxidations_done
 
 
 # ================================

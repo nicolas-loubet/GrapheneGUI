@@ -25,6 +25,7 @@ class Renderer:
         self.limits = [0.0, 0.0, 0.0, 0.0]
 
         self.roll_vector= None
+        self.highlighted_atoms= []
 
         self.drawing_area.setMouseTracking(True)
         self.drawing_area.mouseMoveEvent = self.on_motion_notify
@@ -57,7 +58,7 @@ class Renderer:
         self.ruler_y.update()
 
     def _event_pos_to_point(self, event):
-        p = event.position() if hasattr(event, "position") else event.pos()
+        p= event.position() if hasattr(event, "position") else event.pos()
         return float(p.x()), float(p.y())
 
     def pixel_to_nm(self, x_win, y_win):
@@ -80,7 +81,7 @@ class Renderer:
             return
         plate = self.plates[self.cb_plates.currentIndex()]
         for coords in (plate.get_carbon_coords(), plate.get_oxide_coords()):
-            for x_atom, y_atom, z_atom, name, _ in coords:
+            for x_atom, y_atom, z_atom, name, *_ in coords:
                 if (x_nm - x_atom) ** 2 + (y_nm - y_atom) ** 2 < 0.01:
                     self.drawing_area.setToolTip(f"{name}: ({x_atom*10:.2f}, {y_atom*10:.2f}, {z_atom*10:.2f})")
                     return
@@ -126,7 +127,7 @@ class Renderer:
             for x, y, *_ in carbons:
                 painter.drawEllipse(QPointF(x, y), 0.035, 0.035)
 
-            for x, y, _, oxide_type, _ in oxides:
+            for x, y, _, oxide_type, *_ in oxides:
                 painter.setBrush(colors[f"oxide_{oxide_type}"])
                 painter.drawEllipse(QPointF(x, y), 0.035, 0.035)
         else:
@@ -150,7 +151,7 @@ class Renderer:
                 scale= a_zs*z*z+b_zs*z+c_zs
                 painter.drawEllipse(QPointF(xn + center[0], yn + center[1]), 0.035*scale, 0.035*scale)
 
-            for x, y, z, oxide_type, _ in oxides:
+            for x, y, z, oxide_type, *_ in oxides:
                 painter.setBrush(colors[f"oxide_{oxide_type}"])
                 angle= np.arctan( (y - center[1]) / (x - center[0]) )
                 if x < center[0]: angle+= np.pi
@@ -158,6 +159,11 @@ class Renderer:
                 xn,yn= r_new*np.cos(angle), r_new*np.sin(angle)
                 scale= a_zs*z*z+b_zs*z+c_zs
                 painter.drawEllipse(QPointF(xn + center[0], yn + center[1]), 0.035*scale, 0.035*scale)
+        
+        if not self.highlighted_atoms: return
+        painter.setBrush(QColor(0, 255, 255, 100))
+        for x, y, *_ in self.highlighted_atoms:
+            painter.drawEllipse(QPointF(x, y), 0.07, 0.07)
 
     def set_roll_vector(self, roll_vector):
         self.roll_vector= roll_vector

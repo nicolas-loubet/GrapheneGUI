@@ -26,6 +26,7 @@ class MainWindow(QMainWindow):
         self.last_prob_o = 34
         self.plates = []
         self.plates_corresponding_to_duplicates = [[], []]  # [duplicates, bases]
+        self.information_selected_atoms = []
         
         is_dark_mode_func = lambda: self.is_dark_mode
 
@@ -60,6 +61,7 @@ class MainWindow(QMainWindow):
         self.ui.btnAddOH.clicked.connect(self.handle_btn_oh_clicked)
         self.ui.btnAddO.clicked.connect(self.handle_btn_o_clicked)
         self.ui.btnRemoveOx.clicked.connect(self.handle_btn_remove_ox_clicked)
+        self.ui.btnAddOxidation.clicked.connect(self.handle_btn_add_oxidation_clicked)
         
         self.ui.radioZp.toggled.connect(lambda: self.handle_radio_toggled(self.ui.radioZp))
         self.ui.radioZm.toggled.connect(lambda: self.handle_radio_toggled(self.ui.radioZm))
@@ -285,8 +287,7 @@ class MainWindow(QMainWindow):
     # ================================
     @Slot()
     def handle_btn_reduce_clicked(self):
-        if self.ui.comboDrawings.currentIndex() == -1:
-            return
+        if self.ui.comboDrawings.currentIndex() == -1: return
         manage_duplicates_for_deletion(self, self.ui.comboDrawings.currentIndex()+1, False)
 
         plate = self.plates[self.ui.comboDrawings.currentIndex()]
@@ -305,46 +306,92 @@ class MainWindow(QMainWindow):
             self.last_prob_oh = dialog.spin_prob_oh.value()
             self.last_prob_o = dialog.spin_prob_o.value()
 
+    def expr_changed(self):
+        if self.ui.comboDrawings.currentIndex() == -1: return
+        information_selected_atoms= select_atoms_expr(self, self.ui.entryVMD.text())
+        self.information_selected_atoms= information_selected_atoms
+        if not information_selected_atoms:
+            self.renderer.highlighted_atoms= []
+            self.update_drawing_area()
+            return
+        self.renderer.highlighted_atoms= information_selected_atoms
+        self.update_drawing_area()
+
+
     @Slot(int)
     def handle_spin_random_value_changed(self, value):
-        put_oxides(self,self.ui.entryVMD.text())
+        self.expr_changed()
 
     @Slot(str)
     def handle_entry_selection_changed(self, text):
-        put_oxides(self,text)
+        self.expr_changed()
 
+    @Slot()
+    def handle_btn_add_oxidation_clicked(self):
+        if self.ui.comboDrawings.currentIndex() == -1: return
+        if not self.information_selected_atoms: return
+        put_oxides(self, self.information_selected_atoms)
+        self.renderer.highlighted_atoms= []
+        self.information_selected_atoms= []
+
+
+
+
+    # ================================
+    # Lateral panel
+    # ================================
     def set_oxide_mode(self, mode):
-        self.active_oxide_mode = mode
-        self.first_carbon = None
+        self.active_oxide_mode= mode
+        self.first_carbon= None
 
         self.ui.btnAddOH.setChecked(mode == "OH")
         self.ui.btnAddO.setChecked(mode == "O")
         self.ui.btnRemoveOx.setChecked(mode == "Remove")
 
     def handle_btn_oh_clicked(self):
-        if self.ui.btnAddOH.isChecked():
-            if self.active_oxide_mode:
-                print(f"{self.active_oxide_mode} mode deactivated")
-            self.ui.btnAddO.setChecked(False)
-            self.ui.btnRemoveOx.setChecked(False)
-            self.set_oxide_mode("OH")
-            print("OH mode activated")
-        else:
+        if self.ui.comboDrawings.currentIndex() == -1: return
+        plate= self.plates[self.ui.comboDrawings.currentIndex()]
+        carbons= self.renderer.highlighted_atoms
+        if carbons:
+            count= plate.add_oxydation_to_list_of_carbon(carbons, self.z_mode, 100)
+            self.renderer.highlighted_atoms = []
+            self.update_drawing_area()
+            print(f"Forced OH oxidation applied ({count} carbons modified), that is {plate.get_oxide_count()/plate.get_number_atoms()*100:.2f}% of the selected part of the plate")
             self.set_oxide_mode(None)
-            print("OH mode deactivated")
+        else:
+            if self.ui.btnAddOH.isChecked():
+                if self.active_oxide_mode:
+                    print(f"{self.active_oxide_mode} mode deactivated")
+                self.ui.btnAddO.setChecked(False)
+                self.ui.btnRemoveOx.setChecked(False)
+                self.set_oxide_mode("OH")
+                print("OH mode activated")
+            else:
+                self.set_oxide_mode(None)
+                print("OH mode deactivated")
 
     @Slot()
     def handle_btn_o_clicked(self):
-        if self.ui.btnAddO.isChecked():
-            if self.active_oxide_mode:
-                print(f"{self.active_oxide_mode} mode deactivated")
-            self.ui.btnAddOH.setChecked(False)
-            self.ui.btnRemoveOx.setChecked(False)
-            self.set_oxide_mode("O")
-            print("O (epoxy) mode activated")
-        else:
+        if self.ui.comboDrawings.currentIndex() == -1: return
+        plate= self.plates[self.ui.comboDrawings.currentIndex()]
+        carbons= self.renderer.highlighted_atoms if self.renderer.highlighted_atoms else []
+        if carbons:
+            count= plate.add_oxydation_to_list_of_carbon(carbons, self.z_mode, 0)
+            self.renderer.highlighted_atoms= []
+            self.update_drawing_area()
+            print(f"Forced O (epoxy) oxidation applied ({count} carbons modified), that is {plate.get_oxide_count()/plate.get_number_atoms()*100:.2f}% of the selected part of the plate")
             self.set_oxide_mode(None)
-            print("O (epoxy) mode deactivated")
+        else:
+            if self.ui.btnAddO.isChecked():
+                if self.active_oxide_mode:
+                    print(f"{self.active_oxide_mode} mode deactivated")
+                self.ui.btnAddOH.setChecked(False)
+                self.ui.btnRemoveOx.setChecked(False)
+                self.set_oxide_mode("O")
+                print("O (epoxy) mode activated")
+            else:
+                self.set_oxide_mode(None)
+                print("O (epoxy) mode deactivated")
 
     @Slot()
     def handle_btn_remove_ox_clicked(self):

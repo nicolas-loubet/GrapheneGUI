@@ -37,20 +37,20 @@ class Graphene:
         for iy in range(n_y):
             ybase = iy * 6 * dy
             for ix in range(n_x):
-                coords.append([dx * ix * 2 + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom - 1], i_atom])
+                coords.append([dx * ix * 2 + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom-1], i_atom, False])
                 i_atom += 1
-                coords.append([dx * (ix * 2 + 1) + offset_x, ybase + offset_y, center_z, name_atoms[i_atom - 1], i_atom])
+                coords.append([dx * (ix * 2 + 1) + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False])
                 i_atom += 1
-            coords.append([dx * n_x * 2 + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom - 1], i_atom])
+            coords.append([dx * n_x * 2 + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom-1], i_atom, False])
             i_atom += 1
 
             ybase = ybase + dy * 3
             for ix in range(n_x):
-                coords.append([dx * ix * 2 + offset_x, ybase + offset_y, center_z, name_atoms[i_atom - 1], i_atom])
+                coords.append([dx * ix * 2 + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False])
                 i_atom += 1
-                coords.append([dx * (ix * 2 + 1) + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom - 1], i_atom])
+                coords.append([dx * (ix * 2 + 1) + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom-1], i_atom, False])
                 i_atom += 1
-            coords.append([dx * n_x * 2 + offset_x, ybase + offset_y, center_z, name_atoms[i_atom - 1], i_atom])
+            coords.append([dx * n_x * 2 + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False])
             i_atom += 1
 
         return cls(coords, [])
@@ -58,25 +58,25 @@ class Graphene:
     def duplicate(self, translations):
         carbons,oxides= [],[]
         for c in self.carbon_coords:
-            carbons.append([c[0]+translations[0],c[1]+translations[1],c[2]+translations[2],c[3],c[4]])
+            carbons.append([c[0]+translations[0],c[1]+translations[1],c[2]+translations[2],c[3],c[4],c[5]])
         for o in self.oxide_coords:
-            oxides.append([o[0]+translations[0],o[1]+translations[1],o[2]+translations[2],o[3],o[4]])
+            oxides.append([o[0]+translations[0],o[1]+translations[1],o[2]+translations[2],o[3],o[4],o[5]])
         return Graphene.create_from_coords(carbons,oxides)
 
-    def add_carbon(self, x, y, z, atom_name, atom_index):
-        self.carbon_coords.append([x, y, z, atom_name, atom_index])
+    def add_carbon(self, x, y, z, atom_name, atom_index, modified=False):
+        self.carbon_coords.append([x, y, z, atom_name, atom_index, modified])
 
-    def add_oxide(self, x, y, z, oxide_type, atom_index):
-        self.oxide_coords.append([x, y, z, oxide_type, atom_index])
+    def add_oxide(self, x, y, z, oxide_type, atom_index, modified=False):
+        self.oxide_coords.append([x, y, z, oxide_type, atom_index, modified])
 
     def set_atoms(self, atoms):
         self.carbon_coords= []
         self.oxide_coords= []
-        for x, y, z, atom_name, atom_index in atoms:
+        for x, y, z, atom_name, atom_index, modified in atoms:
             if atom_name.startswith("C"):
-                self.carbon_coords.append([x, y, z, atom_name, atom_index])
+                self.carbon_coords.append([x, y, z, atom_name, atom_index, modified])
             else:
-                self.oxide_coords.append([x, y, z, atom_name, atom_index])
+                self.oxide_coords.append([x, y, z, atom_name, atom_index, modified])
 
     def set_is_CNT(self, is_CNT):
         self.is_CNT= is_CNT
@@ -247,12 +247,12 @@ class Graphene:
                 if i+1 < len(prev_ox) and prev_ox[i+1][3] == "HO": continue
 
                 z_dir= 1 if prev_ox[i][2] > self.carbon_coords[0][2] else -1
-                new_ox= [prev_ox[i][0]+.093, prev_ox[i][1], prev_ox[i][2]+z_dir*.032, "HO", -1]
+                new_ox= [prev_ox[i][0]+.093, prev_ox[i][1], prev_ox[i][2]+z_dir*.032, "HO", -1, prev_ox[i][5]]
                 prev_ox= prev_ox[:i+1] + [new_ox] + prev_ox[i+1:]
 
         for ox in prev_ox:
             i_atom += 1
-            self.add_oxide(ox[0], ox[1], ox[2], ox[3], i_atom)
+            self.add_oxide(ox[0], ox[1], ox[2], ox[3], i_atom, ox[5])
 
     def distance_2D(self, x1, y1, x2, y2):
         return np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
