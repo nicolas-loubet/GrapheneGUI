@@ -340,6 +340,13 @@ class Ui_MainWindow(object):
 
         self.hLayoutBottom.addWidget(self.btnAddOxidation)
 
+        self.line5 = QFrame(self.bottomBar)
+        self.line5.setObjectName(u"line5")
+        self.line5.setFrameShape(QFrame.Shape.VLine)
+        self.line5.setFrameShadow(QFrame.Shadow.Sunken)
+
+        self.hLayoutBottom.addWidget(self.line5)
+
         self.btnAddCType = QPushButton(self.bottomBar)
         self.btnAddCType.setObjectName(u"btnAddCType")
         self.btnAddCType.setMinimumSize(QSize(120, 40))

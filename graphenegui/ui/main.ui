@@ -602,6 +602,13 @@
                 </widget>
               </item>
               <item>
+                <widget class="Line" name="line5">
+                  <property name="orientation">
+                    <enum>Qt::Vertical</enum>
+                  </property>
+                </widget>
+              </item>
+              <item>
                 <widget class="QPushButton" name="btnAddCType">
                   <property name="text">
                     <string>Add C type</string>

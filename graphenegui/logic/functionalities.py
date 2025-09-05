@@ -54,11 +54,20 @@ def load_css(main_window):
     main_window.ui.topToolBar.setStyleSheet(f"background-color: {bg_color};")
     main_window.ui.bottomBar.setStyleSheet(f"background-color: {bg_color};")
 
+    main_window.ui.comboDrawings.setStyleSheet(f"color: {text_color};")
+
     main_window.ui.labelOxidation.setStyleSheet(f"color: {text_color};")
     main_window.ui.labelRandom.setStyleSheet(f"color: {text_color};")
     main_window.ui.labelVMD.setStyleSheet(f"color: {text_color};")
+    main_window.ui.radioAnd.setStyleSheet(f"color: {text_color};")
+    main_window.ui.radioOr.setStyleSheet(f"color: {text_color};")
+    main_window.ui.comboCType.setStyleSheet(f"color: {text_color};")
+
     main_window.ui.labelManual.setStyleSheet(f"color: {text_color};")
     main_window.ui.labelWhere.setStyleSheet(f"color: {text_color};")
+    main_window.ui.radioZpm.setStyleSheet(f"color: {text_color};")
+    main_window.ui.radioZp.setStyleSheet(f"color: {text_color};")
+    main_window.ui.radioZm.setStyleSheet(f"color: {text_color};")
 
 def manage_duplicates_for_deletion(main_window, index, index_would_be_removed):
     if index in main_window.plates_corresponding_to_duplicates[0]:
