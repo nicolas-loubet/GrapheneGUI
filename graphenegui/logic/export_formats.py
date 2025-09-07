@@ -187,15 +187,24 @@ def writeMOL2(filename, plates, factor=1.0):
     
     print("File exported to " + filename)
 
-def writeTOP(filename, plates, duplicate_list, progress_callback):
+def writeTOP(filename, plates, duplicate_list, atom_types, progress_callback):
+    list_carbons= ""
+    for a_type in atom_types:
+        sigma,epsilon= atom_types[a_type]["sigma"]/10, atom_types[a_type]["epsilon"]
+        epsilon_formatted= f"{epsilon:.5e}"
+        if epsilon_formatted[-2] == 'e': epsilon_formatted= epsilon_formatted[:-1] + '0' + epsilon_formatted[-1]
+        sigma_formatted= f"{sigma:.5e}"
+        if sigma_formatted[-2] == 'e': sigma_formatted= sigma_formatted[:-1] + '0' + sigma_formatted[-1]
+        list_carbons+= f" {a_type:<4}     {a_type:<4}       12.01000  0.00000   A    {sigma_formatted:>12}  {epsilon_formatted:>12}\n"
+        list_carbons+= f" c{a_type:<3}     c{a_type:<3}       12.01000  0.18000   A    {sigma_formatted:>12}  {epsilon_formatted:>12}\n"
+
     top= ["; Topology created with Graphene-GUI\n\n",
         "[ defaults ]\n",
         "; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ\n",
         "1               2               yes             0.5     0.8333\n\n",
         "[ atomtypes ]\n",
         ";name   bond_type     mass     charge   ptype   sigma         epsilon\n",
-        " ca       ca         12.01000  0.00000   A     3.39967e-01   3.59824e-01\n",
-        " c        c          12.01000  0.18000   A     3.39967e-01   3.59824e-01\n",
+        list_carbons,
         " os       os         15.99940 -0.36000   A     3.16600e-01   6.49775e-01\n",
         " oh       oh         15.99940 -0.57000   A     3.16600e-01   6.49775e-01\n",
         " ho       ho          1.00800  0.39000   A     0.00000e+00   0.00000e+00\n\n"]

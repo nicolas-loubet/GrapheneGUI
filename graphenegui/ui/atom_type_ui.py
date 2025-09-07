@@ -69,7 +69,7 @@ class Ui_AtomTypeDialog(object):
         self.sb_sigma_cc.setMinimum(0.000000000000000)
         self.sb_sigma_cc.setMaximum(1000000.000000000000000)
         self.sb_sigma_cc.setSingleStep(0.000001000000000)
-        self.sb_sigma_cc.setValue(0.339967000000000)
+        self.sb_sigma_cc.setValue(3.399670000000000)
 
         self.gridLayout.addWidget(self.sb_sigma_cc, 2, 1, 1, 1)
 

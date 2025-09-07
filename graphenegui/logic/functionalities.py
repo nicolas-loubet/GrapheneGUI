@@ -140,6 +140,7 @@ def select_atoms_expr(main_window, expr):
             correction_factor= int(fraction_oxidation * main_window.last_prob_oh * number_oxidations_desired / 200)
             selected_atoms= random.sample(list_carbons_in_expression, min(number_oxidations_desired + correction_factor, number_total_carbons))
 
+        print(" "*70, end="\r")
         return selected_atoms
 
     except Exception as e:
@@ -224,29 +225,30 @@ class ExportTopWorker(QObject):
     finished = Signal()
     progress = Signal(float)
 
-    def __init__(self, file_name, plates, plates_duplicates):
+    def __init__(self, file_name, plates, plates_duplicates, atom_types):
         super().__init__()
-        self.file_name = file_name
-        self.plates = plates
-        self.plates_duplicates = plates_duplicates
+        self.file_name= file_name
+        self.plates= plates
+        self.plates_duplicates= plates_duplicates
+        self.atom_types= atom_types
 
     def run(self):
         def progress_callback(frac):
             self.progress.emit(frac)
 
-        writeTOP(self.file_name, self.plates, self.plates_duplicates, progress_callback)
+        writeTOP(self.file_name, self.plates, self.plates_duplicates, self.atom_types, progress_callback)
         self.finished.emit()
 
 def export_top(main_window, file_name, plates):
-    progress_dialog = QProgressDialog("Exportando archivo TOP...", None, 0, 100, main_window)
-    progress_dialog.setWindowTitle("Exportando...")
+    progress_dialog= QProgressDialog("Exporting TOP file...", None, 0, 100, main_window)
+    progress_dialog.setWindowTitle("Exporting...")
     progress_dialog.setWindowModality(Qt.ApplicationModal)
     progress_dialog.setCancelButton(None)
     progress_dialog.setMinimumDuration(0)
     progress_dialog.setValue(0)
     progress_dialog.show()
 
-    worker = ExportTopWorker(file_name, plates, main_window.plates_corresponding_to_duplicates)
+    worker = ExportTopWorker(file_name, plates, main_window.plates_corresponding_to_duplicates, main_window.atom_types)
 
     worker.progress.connect(lambda frac: progress_dialog.setValue(int(frac * 100)))
     worker.finished.connect(progress_dialog.close)

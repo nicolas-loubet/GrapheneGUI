@@ -219,38 +219,6 @@ class MainWindow(QMainWindow):
         self.update_drawing_area()
         print(f"Switched to {'dark' if self.is_dark_mode else 'light'} mode")
 
-    @Slot()
-    def handle_btn_add_ctype_clicked(self):
-        dialog= AtomTypeDialog(self)
-        dialog.ui.cb_water.setCurrentText(self.water_model)
-        dialog.update_water_params()
-        dialog.update_calculated()
-        if dialog.exec() == QDialog.Accepted:
-            data= dialog.get_data()
-            name= data["name"]
-            if name in self.atom_types:
-                QMessageBox.warning(self, "Error", "Type name already exists.")
-                return
-            if not name:
-                QMessageBox.warning(self, "Error", "Type name cannot be empty.")
-                return
-            self.atom_types[name]= {"epsilon": data["epsilon"], "sigma": data["sigma"]}
-            self.ui.comboCType.addItem(name)
-            self.ui.comboCType.setCurrentText(name)
-            print(f"Added new carbon type '{name}' with epsilon={data['epsilon']}, sigma={data['sigma']}")
-
-    @Slot(int)
-    def handle_ctype_changed(self, index):
-        if index < 0: return
-        new_type= self.ui.comboCType.currentText()
-        if self.renderer.highlighted_atoms:
-            plate= self.plates[self.ui.comboDrawings.currentIndex()]
-            for carbon in self.renderer.highlighted_atoms:
-                plate.set_carbon_type(carbon, new_type)
-            print(f"Changed {len(self.renderer.highlighted_atoms)} carbons to type '{new_type}'")
-            self.renderer.highlighted_atoms= []  
-            self.update_drawing_area()
-
 
     # ================================
     # Drawing area, central panel
@@ -368,6 +336,44 @@ class MainWindow(QMainWindow):
             self.update_drawing_area()
             return
         self.renderer.highlighted_atoms= information_selected_atoms
+        self.update_drawing_area()
+
+    @Slot()
+    def handle_btn_add_ctype_clicked(self):
+        dialog= AtomTypeDialog(self)
+        dialog.ui.cb_water.setCurrentText(self.water_model)
+        dialog.update_water_params()
+        dialog.update_calculated()
+        if dialog.exec() == QDialog.Accepted:
+            data= dialog.get_data()
+            name= data["name"]
+            if len(name) > 4:
+                QMessageBox.warning(self, "Error", "Type name cannot be longer than 4 characters.")
+                return
+            if name in self.atom_types:
+                QMessageBox.warning(self, "Error", "Type name already exists.")
+                return
+            if "c"+name in self.atom_types:
+                QMessageBox.warning(self, "Error", "Type name could be ambiguous because of charged C atoms, choose another name.")
+                return
+            if not name:
+                QMessageBox.warning(self, "Error", "Type name cannot be empty.")
+                return
+            self.atom_types[name]= {"epsilon": data["epsilon"], "sigma": data["sigma"]}
+            self.ui.comboCType.addItem(name)
+            self.ui.comboCType.setCurrentText(name)
+            print(f"Added new carbon type '{name}' with epsilon={data['epsilon']}, sigma={data['sigma']}")
+
+    @Slot(int)
+    def handle_ctype_changed(self, index):
+        if index < 0: return
+        new_type= self.ui.comboCType.currentText()
+        if self.renderer.highlighted_atoms:
+            plate= self.plates[self.ui.comboDrawings.currentIndex()]
+            for carbon in self.renderer.highlighted_atoms:
+                plate.set_carbon_type(carbon, new_type)
+            print(f"Changed {len(self.renderer.highlighted_atoms)} carbons to type '{new_type}'")
+            self.renderer.highlighted_atoms= []  
         self.update_drawing_area()
 
 
