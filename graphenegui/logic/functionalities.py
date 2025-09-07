@@ -59,8 +59,6 @@ def load_css(main_window):
     main_window.ui.labelOxidation.setStyleSheet(f"color: {text_color};")
     main_window.ui.labelRandom.setStyleSheet(f"color: {text_color};")
     main_window.ui.labelVMD.setStyleSheet(f"color: {text_color};")
-    main_window.ui.radioAnd.setStyleSheet(f"color: {text_color};")
-    main_window.ui.radioOr.setStyleSheet(f"color: {text_color};")
     main_window.ui.comboCType.setStyleSheet(f"color: {text_color};")
 
     main_window.ui.labelManual.setStyleSheet(f"color: {text_color};")

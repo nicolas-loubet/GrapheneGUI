@@ -16,10 +16,10 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QComboBox, QFrame, QGraphicsView,
-    QGridLayout, QGroupBox, QHBoxLayout, QLabel,
-    QLineEdit, QMainWindow, QPushButton, QRadioButton,
-    QSizePolicy, QSpacerItem, QSpinBox, QToolBar,
-    QVBoxLayout, QWidget)
+    QGridLayout, QHBoxLayout, QLabel, QLineEdit,
+    QMainWindow, QPushButton, QRadioButton, QSizePolicy,
+    QSpacerItem, QSpinBox, QToolBar, QVBoxLayout,
+    QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -280,42 +280,6 @@ class Ui_MainWindow(object):
 
         self.hLayoutBottom.addWidget(self.line2)
 
-        self.groupLogic = QGroupBox(self.bottomBar)
-        self.groupLogic.setObjectName(u"groupLogic")
-        self.verticalLayout_logic = QVBoxLayout(self.groupLogic)
-        self.verticalLayout_logic.setSpacing(2)
-        self.verticalLayout_logic.setObjectName(u"verticalLayout_logic")
-        self.verticalLayout_logic.setContentsMargins(0, 0, 0, 0)
-        self.radioAnd = QRadioButton(self.groupLogic)
-        self.radioAnd.setObjectName(u"radioAnd")
-        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        sizePolicy3.setHorizontalStretch(0)
-        sizePolicy3.setVerticalStretch(0)
-        sizePolicy3.setHeightForWidth(self.radioAnd.sizePolicy().hasHeightForWidth())
-        self.radioAnd.setSizePolicy(sizePolicy3)
-        self.radioAnd.setMinimumSize(QSize(0, 15))
-        self.radioAnd.setChecked(True)
-
-        self.verticalLayout_logic.addWidget(self.radioAnd)
-
-        self.radioOr = QRadioButton(self.groupLogic)
-        self.radioOr.setObjectName(u"radioOr")
-        sizePolicy3.setHeightForWidth(self.radioOr.sizePolicy().hasHeightForWidth())
-        self.radioOr.setSizePolicy(sizePolicy3)
-        self.radioOr.setMinimumSize(QSize(0, 15))
-
-        self.verticalLayout_logic.addWidget(self.radioOr)
-
-
-        self.hLayoutBottom.addWidget(self.groupLogic)
-
-        self.line3 = QFrame(self.bottomBar)
-        self.line3.setObjectName(u"line3")
-        self.line3.setFrameShape(QFrame.Shape.VLine)
-        self.line3.setFrameShadow(QFrame.Shadow.Sunken)
-
-        self.hLayoutBottom.addWidget(self.line3)
-
         self.labelVMD = QLabel(self.bottomBar)
         self.labelVMD.setObjectName(u"labelVMD")
 
@@ -392,8 +356,6 @@ class Ui_MainWindow(object):
         self.btnChangeProb.setText(QCoreApplication.translate("MainWindow", u"Change Prob.", None))
         self.labelRandom.setText(QCoreApplication.translate("MainWindow", u"Random", None))
         self.spinRandom.setSuffix(QCoreApplication.translate("MainWindow", u"%", None))
-        self.radioAnd.setText(QCoreApplication.translate("MainWindow", u"AND", None))
-        self.radioOr.setText(QCoreApplication.translate("MainWindow", u"OR", None))
         self.labelVMD.setText(QCoreApplication.translate("MainWindow", u"VMD Selection:", None))
         self.btnAddOxidation.setText(QCoreApplication.translate("MainWindow", u"Add Oxidation to selection", None))
         self.btnAddCType.setText(QCoreApplication.translate("MainWindow", u"Add C type", None))
