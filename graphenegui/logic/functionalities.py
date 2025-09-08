@@ -222,8 +222,8 @@ def import_file(ext, file_name, main_window):
     print(f"{len(new_plates)} plate(s) imported from {file_name}")
 
 class ExportTopWorker(QObject):
-    finished = Signal()
-    progress = Signal(float)
+    finished= Signal()
+    progress= Signal(int)
 
     def __init__(self, file_name, plates, plates_duplicates, atom_types):
         super().__init__()
@@ -234,7 +234,7 @@ class ExportTopWorker(QObject):
 
     def run(self):
         def progress_callback(frac):
-            self.progress.emit(frac)
+            self.progress.emit(int(frac*100))
 
         writeTOP(self.file_name, self.plates, self.plates_duplicates, self.atom_types, progress_callback)
         self.finished.emit()
@@ -250,8 +250,8 @@ def export_top(main_window, file_name, plates):
 
     worker = ExportTopWorker(file_name, plates, main_window.plates_corresponding_to_duplicates, main_window.atom_types)
 
-    worker.progress.connect(lambda frac: progress_dialog.setValue(int(frac * 100)))
-    worker.finished.connect(progress_dialog.close)
+    worker.progress.connect(progress_dialog.setValue, Qt.QueuedConnection)
+    worker.finished.connect(progress_dialog.accept, Qt.QueuedConnection)
 
     thread = QThread()
     worker.moveToThread(thread)
