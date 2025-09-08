@@ -3,8 +3,8 @@ import random
 from .other_dialogs import CreateDialog, DuplicateDialog, ProbDialog, CNTDialog, AtomTypeDialog
 from .renderer import Renderer
 from .functionalities import *
-from PySide6.QtWidgets import QMainWindow, QMessageBox, QGraphicsScene, QDialog, QFileDialog
-from PySide6.QtCore import Slot, QEvent
+from PySide6.QtWidgets import QMainWindow, QMessageBox, QGraphicsScene, QDialog, QFileDialog, QRubberBand
+from PySide6.QtCore import Slot, QEvent, QPoint, QRect, Qt, QSize
 from PySide6.QtGui import QPixmap
 from ..ui.main_ui import Ui_MainWindow
 from .export_formats import checkBounds
@@ -61,6 +61,10 @@ class MainWindow(QMainWindow):
             self.ui.comboCType.addItem(typ)
 
         self.setup_connections()
+
+        self.rubberBand= QRubberBand(QRubberBand.Rectangle, self.ui.graphicsView.viewport())
+        self.origin= QPoint()
+
         load_css(self)
 
     def setup_connections(self):
@@ -129,8 +133,29 @@ class MainWindow(QMainWindow):
         self.ui.btnAddOxidation.setEnabled(active)
 
     def eventFilter(self, source, event):
-        if(source is self.ui.graphicsView.viewport() and event.type() == QEvent.Resize):
-            self.update_drawing_area()
+        if source is self.ui.graphicsView.viewport():
+            if event.type() == QEvent.MouseButtonPress:
+                if event.button() == Qt.LeftButton and not self.active_oxide_mode:
+                    self.origin= event.pos()
+                    self.rubberBand.setGeometry(QRect(self.origin, QSize()))
+                    self.rubberBand.show()
+                    return True
+                elif self.active_oxide_mode:
+                    return super().eventFilter(source, event)
+
+            elif event.type() == QEvent.MouseMove:
+                if not self.origin.isNull():
+                    self.rubberBand.setGeometry(QRect(self.origin, event.pos()).normalized())
+                    return True
+
+            elif event.type() == QEvent.MouseButtonRelease:
+                if event.button() == Qt.LeftButton and not self.origin.isNull():
+                    rect= QRect(self.origin, event.pos()).normalized()
+                    self.rubberBand.hide()
+                    self.origin = QPoint()
+                    self.select_carbons_in_rect(rect)
+                    return True
+
         return super().eventFilter(source, event)
 
 
@@ -290,6 +315,27 @@ class MainWindow(QMainWindow):
             self.update_drawing_area()
             plate.recheck_ox_indexes()
             print(f"{len(list_remove_ox)} atom{'s' if len(list_remove_ox) != 1 else ''} removed")
+
+    def select_carbons_in_rect(self, rect):
+        if self.ui.comboDrawings.currentIndex() == -1: return
+        plate= self.plates[self.ui.comboDrawings.currentIndex()]
+        x1,y1= self.renderer.pixel_to_nm(rect.topLeft().x(), rect.topLeft().y())
+        x2,y2= self.renderer.pixel_to_nm(rect.bottomRight().x(), rect.bottomRight().y())
+
+        if x1 is None or x2 is None: return
+
+        min_x,max_x= min(x1, x2), max(x1, x2)
+        min_y,max_y= min(y1, y2), max(y1, y2)
+
+        selected= [c for c in plate.get_carbon_coords() if min_x <= c[0] <= max_x and min_y <= c[1] <= max_y]
+
+        if selected:
+            self.renderer.highlighted_atoms = selected
+            self.information_selected_atoms = selected
+            self.update_drawing_area()
+            print(f"Selected {len(selected)} carbons in rectangle ({min_x:.2f},{min_y:.2f}) to ({max_x:.2f},{max_y:.2f}) nm")
+        else:
+            print("No carbons selected in the rectangle")
 
     def update_drawing_area(self):
         active_index = self.ui.comboDrawings.currentIndex()

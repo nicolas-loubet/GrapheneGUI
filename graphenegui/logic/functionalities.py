@@ -55,6 +55,7 @@ def load_css(main_window):
     main_window.ui.bottomBar.setStyleSheet(f"background-color: {bg_color};")
 
     main_window.ui.comboDrawings.setStyleSheet(f"color: {text_color};")
+    main_window.rubberBand.setStyleSheet("QRubberBand { border: 2px solid blue; background: rgba(0, 0, 255, 20); }")
 
     main_window.ui.labelOxidation.setStyleSheet(f"color: {text_color};")
     main_window.ui.labelRandom.setStyleSheet(f"color: {text_color};")
