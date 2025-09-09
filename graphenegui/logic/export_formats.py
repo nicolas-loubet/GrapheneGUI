@@ -51,7 +51,7 @@ def writeGRO(filename, plates):
         for i_plate,plate in enumerate(plates):
             atoms= plate.get_carbon_coords() + plate.get_oxide_coords()
             for coord in atoms:
-                x,y,z,name,i_atom= coord
+                x,y,z,name,i_atom= coord[:5]
                 f.write(formatGRO((i_plate + 1, "GR"+str(i_plate+1), name, i_atom, x-min_coords[0], y-min_coords[1], z-min_coords[2])))
 
         f.write(f"{bounds[0]:10.5f}{bounds[1]:10.5f}{bounds[2]:10.5f}\n")
@@ -99,7 +99,7 @@ def writePDB(filename, plates):
             atoms = plate.get_carbon_coords() + plate.get_oxide_coords()
             residue_name = f"GR{i_plate+1}"
             for i_atom, atom in enumerate(atoms, 1):
-                x, y, z, name, atom_index = atom
+                x, y, z, name = atom[:4]
                 x_ang = (x - min_coords[0]) * 10
                 y_ang = (y - min_coords[1]) * 10
                 z_ang = (z - min_coords[2]) * 10
@@ -138,7 +138,7 @@ def writeMOL2(filename, plates, factor=1.0):
             residue_name = f"GRA{i_plate+1}"
             atoms = plate.get_carbon_coords() + plate.get_oxide_coords()
             for atom in atoms:
-                x, y, z, name, _ = atom
+                x, y, z, name = atom[:4]
                 x_ang = (x - min_coords[0]) * 10
                 y_ang = (y - min_coords[1]) * 10
                 z_ang = (z - min_coords[2]) * 10
