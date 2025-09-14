@@ -21,9 +21,12 @@ def readGRO(filename):
                 carbons, oxides = [], []
 
             if atomname.startswith("C"):
-                carbons.append([x, y, z, atomname, atomid])
+                carbons.append([x, y, z, atomname, atomid, False, "ca"])
             else:
-                oxides.append([x, y, z, atomname, atomid])
+                atomname_without_numbers= atomname
+                while atomname_without_numbers[-1].isdigit():
+                    atomname_without_numbers= atomname_without_numbers[:-1]
+                oxides.append([x, y, z, atomname, atomid, False, atomname_without_numbers])
 
         plates.append(Graphene.create_from_coords(carbons, oxides))
     return plates
@@ -44,12 +47,13 @@ def readXYZ(filename):
             atomname = sym
 
             if atomname == "C":
-                carbons.append([x, y, z, "C", i+1])
+                carbons.append([x, y, z, "C", i+1, False, "ca"])
             elif atomname == "O":
-                oxides.append([x, y, z, "OE", i+1])
+                oxides.append([x, y, z, "OE", i+1, False, "OE"])
             elif atomname == "H":
                 oxides[-1][3]= "OO"
-                oxides.append([x, y, z, "HO", i+1])
+                oxides[-1][6]= "OO"
+                oxides.append([x, y, z, "HO", i+1, False, "HO"])
             else:
                 raise Exception("Unknown atom type: " + atomname)
 
@@ -66,7 +70,12 @@ def change_name_carbons_oxidized(plate):
     carbons_list= plate.get_carbon_coords()
     for ox in plate.get_oxide_coords():
         for carb in plate.get_nearest_carbons_to_oxide(ox):
-            carbons_list[carbons_list.index(carb)][3]= "CO"
+            if(ox[6] == "OO"):
+                carbons_list[carbons_list.index(carb)][3]= "CO"
+                carbons_list[carbons_list.index(carb)][6]= "CO"
+            elif(ox[6] == "OE"):
+                carbons_list[carbons_list.index(carb)][3]= "CE"
+                carbons_list[carbons_list.index(carb)][6]= "CE"
         
 def readPDB(filename):
     with open(filename, 'r') as f:
@@ -91,9 +100,9 @@ def readPDB(filename):
                     current_molec = molec_num
                 
                 if atom_name.startswith("C"):
-                    carbons.append([x, y, z, atom_name, atom_id])
+                    carbons.append([x, y, z, atom_name, atom_id, False, "ca"])
                 elif atom_name in ("OO", "HO", "OE"):
-                    oxides.append([x, y, z, atom_name, atom_id])
+                    oxides.append([x, y, z, atom_name, atom_id, False, atom_name])
                 else:
                     raise Exception("Unknown atom type: " + atom_name)
         
@@ -132,7 +141,6 @@ def readMOL2(filename):
                 z = float(parts[4]) / 10.0
                 mol2_type = parts[5]
                 residue_num = int(parts[6])
-                residue_name = parts[7]
                 
                 internal_type = atom_type_map.get(mol2_type, "C")
                 if mol2_type == "C.3":
@@ -146,9 +154,9 @@ def readMOL2(filename):
                     current_molec = residue_num
                 
                 if internal_type.startswith("C"):
-                    carbons.append([x, y, z, internal_type, atom_id])
+                    carbons.append([x, y, z, internal_type, atom_id, False, "ca"])
                 else:
-                    oxides.append([x, y, z, internal_type, atom_id])
+                    oxides.append([x, y, z, internal_type, atom_id, False, internal_type])
         
         if carbons or oxides:
             plate = Graphene.create_from_coords(carbons, oxides)
