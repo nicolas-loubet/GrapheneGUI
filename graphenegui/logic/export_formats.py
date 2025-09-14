@@ -1,4 +1,19 @@
-from .graphene import Graphene
+def generatePatternsOxides():
+    result = []
+    for i in range(1, 100):
+        result.append(f"{i}")
+    for letter in range(ord('A'), ord('Z') + 1):
+        result.append(f"{chr(letter)}")
+    for letter in range(ord('A'), ord('Z') + 1):
+        for num in range(1, 10):
+            result.append(f"{chr(letter)}{num}")
+    for letter1 in range(ord('A'), ord('Z') + 1):
+        for letter2 in range(ord('A'), ord('Z') + 1):
+            result.append(f"{chr(letter1)}{chr(letter2)}")
+    for num in range(1, 10):
+        for letter in range(ord('A'), ord('Z') + 1):
+            result.append(f"{num}{chr(letter)}")
+    return result
 
 def formatGRO(atom_gro):
     i_molec, n_molec, atom_type, i_atom, x, y, z = atom_gro
@@ -243,10 +258,49 @@ def writeTOP(filename, plates, duplicate_list, atom_types, progress_callback):
         f.writelines(top)
     print("File exported to " + filename)
 
+def change_name_oxides(plate, carbons, oxides):
+    atoms= carbons.copy()
+    i_HO, i_OO, i_OE= 0, 0, 0
+    patterns= generatePatternsOxides()
+
+    for ox in oxides:
+        if(ox[6] == "HO"):
+            atoms.append([*ox[:3], ox[3]+patterns[i_HO], *ox[4:]])
+            i_HO+= 1
+        elif(ox[6] == "OO"):
+            atoms.append([*ox[:3], ox[3]+patterns[i_OO], *ox[4:]])
+
+            carbon_near= plate.get_nearest_carbons_to_oxide(ox)[0]
+            for i,c in enumerate(carbons):
+                if(c == carbon_near):
+                    atoms[i][3]= "CO"+patterns[i_OO]
+                    atoms[i][6]= "CO"+atoms[i][6]
+                
+            i_OO+= 1
+        elif(ox[6] == "OE"):
+            atoms.append([*ox[:3], ox[3]+patterns[i_OE], *ox[4:]])
+
+            carbons_near= plate.get_nearest_carbons_to_oxide(ox)
+            find_one= False
+            for i,c in enumerate(carbons):
+                if(c in carbons_near):
+                    if(find_one):
+                        atoms[i][3]= "CF"+patterns[i_OE]
+                    else:
+                        atoms[i][3]= "CE"+patterns[i_OE]
+                    atoms[i][6]= "CE"+atoms[i][6]
+                    find_one= True
+            i_OE+= 1
+        else:
+            atoms.append(ox)
+    return atoms
+
+
 def write_atoms_top(plate, i_molec):
     output= ";   nr  type  resi  res  atom  cgnr     charge      mass\n"
-    atoms= plate.get_carbon_coords() + plate.get_oxide_coords()
     name_molec= f"GR{i_molec}"
+
+    atoms= change_name_oxides(plate, plate.get_carbon_coords(), plate.get_oxide_coords())
 
     atom_type_dict= {
         "CE": ["c",0.18,12.01],
@@ -256,10 +310,13 @@ def write_atoms_top(plate, i_molec):
         "HO": ["ho",0.39,1.008],
     }
     
+    q_tot= 0.0
     for i,atom in enumerate(atoms):
-        name_atom,i_atom= atom[3],atom[4]
-        atom_type, q, mass = atom_type_dict.get(name_atom, ["ca", 0.0, 12.01])
-            
+        name_atom,i_atom,type_atom= atom[3],atom[4],atom[6]
+        atom_type, q, mass= atom_type_dict.get(type_atom[:2], [type_atom, 0.0, 12.01])
+        if(atom_type == "c"): atom_type+= type_atom[2:]
+        q_tot+= q
+        
         output+= str(i+1).rjust(6)
         output+= atom_type.rjust(5)
         output+= str(i_molec).rjust(6)
@@ -268,6 +325,7 @@ def write_atoms_top(plate, i_molec):
         output+= str(i_atom).rjust(5)
         output+= str("{:.6f}".format(q)).rjust(13)
         output+= str("{:.5f}".format(mass)).rjust(13)
+        output+= "; qtot="+str("{:.6f}".format(q_tot)).rjust(14)
         output+= "\n"
     return output
 

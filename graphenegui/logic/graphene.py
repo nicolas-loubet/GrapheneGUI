@@ -60,14 +60,14 @@ class Graphene:
         for c in self.carbon_coords:
             carbons.append([c[0] + translations[0], c[1] + translations[1], c[2] + translations[2], c[3], c[4], c[5], c[6]])
         for o in self.oxide_coords:
-            oxides.append([o[0] + translations[0], o[1] + translations[1], o[2] + translations[2], o[3], o[4], o[5]])
+            oxides.append([o[0] + translations[0], o[1] + translations[1], o[2] + translations[2], o[3], o[4], o[5], o[6]])
         return Graphene.create_from_coords(carbons,oxides)
 
     def add_carbon(self, x, y, z, atom_name, atom_index, modified=False, atom_type="ca"):
         self.carbon_coords.append([x, y, z, atom_name, atom_index, modified, atom_type])
 
     def add_oxide(self, x, y, z, oxide_type, atom_index, modified=False):
-        self.oxide_coords.append([x, y, z, oxide_type, atom_index, modified])
+        self.oxide_coords.append([x, y, z, oxide_type, atom_index, modified, oxide_type])
 
     def set_atoms(self, atoms):
         self.carbon_coords= []
@@ -77,7 +77,7 @@ class Graphene:
             if atom_name.startswith("C"):
                 self.carbon_coords.append([x, y, z, atom_name, atom_index, modified, atom_type])
             else:
-                self.oxide_coords.append([x, y, z, atom_name, atom_index, modified])
+                self.oxide_coords.append([x, y, z, atom_name, atom_index, modified, atom_type])
 
     def set_is_CNT(self, is_CNT):
         self.is_CNT= is_CNT
@@ -247,7 +247,7 @@ class Graphene:
                 if i+1 < len(prev_ox) and prev_ox[i+1][3] == "HO": continue
 
                 z_dir= 1 if prev_ox[i][2] > self.carbon_coords[0][2] else -1
-                new_ox= [prev_ox[i][0]+.093, prev_ox[i][1], prev_ox[i][2]+z_dir*.032, "HO", -1, prev_ox[i][5]]
+                new_ox= [prev_ox[i][0]+.093, prev_ox[i][1], prev_ox[i][2]+z_dir*.032, "HO", -1, prev_ox[i][5], prev_ox[i][6]]
                 prev_ox= prev_ox[:i+1] + [new_ox] + prev_ox[i+1:]
 
         for ox in prev_ox:
