@@ -3,9 +3,9 @@ import numpy as np
 
 class Graphene:
     def __init__(self, carbon_coords=None, oxide_coords=None, scale_factor=1.0):
-        self.carbon_coords = carbon_coords if carbon_coords is not None else []
-        self.oxide_coords = oxide_coords if oxide_coords is not None else []
-        self.scale_factor = scale_factor
+        self.carbon_coords= carbon_coords if carbon_coords is not None else []
+        self.oxide_coords= oxide_coords if oxide_coords is not None else []
+        self.scale_factor= scale_factor
         self.is_CNT= False
 
     @classmethod
@@ -18,40 +18,41 @@ class Graphene:
         return plate
 
     @classmethod
-    def create_from_params(cls, n_x, n_y, center_x, center_y, center_z, factor):
-        dx = 0.1225 * factor
-        dy = 0.071 * factor
-        scale_factor = factor
-        name_atoms = generatePatterns()
-        coords = []
-        i_atom = 1
+    def create_from_params(cls, n_x, n_y, center_x, center_y, center_z, factor, periodic_boundary_x):
+        dx= 0.1225 * factor
+        dy= 0.071 * factor
+        name_atoms= generatePatterns()
+        coords= []
+        i_atom= 1
 
         width= n_x * 2 * dx
         height= ((n_y - 1) * 6 + 4) * dy
-        center_x_geom = width / 2
-        center_y_geom = height / 2
+        center_x_geom= width / 2
+        center_y_geom= height / 2
 
-        offset_x = center_x - center_x_geom
-        offset_y = center_y - center_y_geom
+        offset_x= center_x - center_x_geom
+        offset_y= center_y - center_y_geom
 
         for iy in range(n_y):
-            ybase = iy * 6 * dy
+            ybase= iy * 6 * dy
             for ix in range(n_x):
                 coords.append([dx * ix * 2 + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
-                i_atom += 1
+                i_atom+= 1
                 coords.append([dx * (ix * 2 + 1) + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
-                i_atom += 1
-            coords.append([dx * n_x * 2 + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
-            i_atom += 1
+                i_atom+= 1
+            if(not periodic_boundary_x):
+                coords.append([dx * n_x * 2 + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
+                i_atom+= 1
 
-            ybase = ybase + dy * 3
+            ybase= ybase + dy * 3
             for ix in range(n_x):
                 coords.append([dx * ix * 2 + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
-                i_atom += 1
+                i_atom+= 1
                 coords.append([dx * (ix * 2 + 1) + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
-                i_atom += 1
-            coords.append([dx * n_x * 2 + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
-            i_atom += 1
+                i_atom+= 1
+            if(not periodic_boundary_x):
+                coords.append([dx * n_x * 2 + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
+                i_atom+= 1
 
         return cls(coords, [])
 
@@ -113,61 +114,61 @@ class Graphene:
     
     def remove_oxides(self):
         ox= self.oxide_coords
-        self.oxide_coords = []
+        self.oxide_coords= []
         return ox
     
     def remove_atom_oxide(self, ox):
         self.oxide_coords.remove(ox)
     
     def add_oxydation_to_list_of_carbon(self, list_carbons, z_mode, prob_oh):
-        i_atom = self.get_number_atoms()
-        count_oxidations = 0
+        i_atom= self.get_number_atoms()
+        count_oxidations= 0
         
-        oxidized_carbons = []
+        oxidized_carbons= []
         for ox in self.oxide_coords:
             if ox[3] == "HO": continue
             oxidized_carbons.append(self.get_nearest_carbon(ox[0], ox[1]))
 
         for carbon in list_carbons:
             if carbon in oxidized_carbons: continue
-            rand = random.random()*100
-            x1, y1, z1 = carbon[:3]
+            rand= random.random()*100
+            x1, y1, z1= carbon[:3]
 
-            z_dir = 1 if z_mode == 0 else -1 if z_mode == 1 else random.choice([-1,1])
+            z_dir= 1 if z_mode == 0 else -1 if z_mode == 1 else random.choice([-1,1])
 
             if rand <= prob_oh:
-                i_atom += 1
+                i_atom+= 1
                 self.add_oxide(x1, y1, z1+z_dir*0.149, "OO", i_atom)
-                i_atom += 1
+                i_atom+= 1
                 self.add_oxide(x1+.093, y1, z1+z_dir*0.181, "HO", i_atom)
                 oxidized_carbons.append(carbon)
-                count_oxidations += 1
+                count_oxidations+= 1
 
             else:
-                adjacent = self.carbons_adjacent(carbon)
+                adjacent= self.carbons_adjacent(carbon)
                 random.shuffle(adjacent)
-                found = False
+                found= False
                 for adj in adjacent:
                     if adj in oxidized_carbons:
                         continue
-                    x2, y2, z2 = adj[:3]
-                    x_mid = (x1 + x2) / 2
-                    y_mid = (y1 + y2) / 2
-                    z_mid = (z1 + z2) / 2
+                    x2, y2, z2= adj[:3]
+                    x_mid= (x1 + x2) / 2
+                    y_mid= (y1 + y2) / 2
+                    z_mid= (z1 + z2) / 2
 
-                    i_atom += 1
+                    i_atom+= 1
                     self.add_oxide(x_mid, y_mid, z_mid+z_dir*0.126, "OE", i_atom)
                     oxidized_carbons.append(carbon)
                     oxidized_carbons.append(adj)
-                    count_oxidations += 1
-                    found = True
+                    count_oxidations+= 1
+                    found= True
                     break
 
                 if not found:
-                    i_atom += 1
+                    i_atom+= 1
                     self.add_oxide(x1, y1, z1+z_dir*0.149, "OO", i_atom)
-                    count_oxidations += 1
-                    i_atom += 1
+                    count_oxidations+= 1
+                    i_atom+= 1
                     self.add_oxide(x1+.093, y1, z1+z_dir*0.18, "HO", i_atom)
                     oxidized_carbons.append(carbon)
 
@@ -175,7 +176,7 @@ class Graphene:
 
 
     def carbons_adjacent(self, carbon_center):
-        adjacent_carbons = []
+        adjacent_carbons= []
         min_dist= float("inf")
         tolerance= .01
         x,y= carbon_center[:2]
@@ -211,15 +212,15 @@ class Graphene:
 
     def is_position_occupied(self, x, y, z, threshold=0.1):
         for ox in self.get_oxide_coords():
-            ox_x, ox_y, ox_z = ox[:3]
-            dist = self.distance_3D(x, y, z, ox_x, ox_y, ox_z)
+            ox_x, ox_y, ox_z= ox[:3]
+            dist= self.distance_3D(x, y, z, ox_x, ox_y, ox_z)
             if dist < threshold:
                 return True
         return False
     
     def get_oxides_for_carbon(self, carbon_center):
-        oxides_to_remove = []
-        x, y = carbon_center[:2]
+        oxides_to_remove= []
+        x, y= carbon_center[:2]
         
         min_dist= float("inf")
         for carbon in self.carbon_coords:
@@ -230,8 +231,8 @@ class Graphene:
                 min_dist= d
         
         for ox in self.oxide_coords:
-            ox_x, ox_y = ox[:2]
-            dist = self.distance_2D(x, y, ox_x, ox_y)
+            ox_x, ox_y= ox[:2]
+            dist= self.distance_2D(x, y, ox_x, ox_y)
             if dist < min_dist:
                 oxides_to_remove.append(ox)
         
@@ -251,7 +252,7 @@ class Graphene:
                 prev_ox= prev_ox[:i+1] + [new_ox] + prev_ox[i+1:]
 
         for ox in prev_ox:
-            i_atom += 1
+            i_atom+= 1
             self.add_oxide(ox[0], ox[1], ox[2], ox[3], i_atom, ox[5])
 
     def distance_2D(self, x1, y1, x2, y2):
@@ -275,7 +276,7 @@ class Graphene:
 
 
 def generatePatterns(initial_character="C"):
-    result = []
+    result= []
     for i in range(1, 1000):
         result.append(f"{initial_character}{i}")
     for letter in range(ord('A'), ord('Z') + 1):

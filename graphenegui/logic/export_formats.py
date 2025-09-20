@@ -1,5 +1,5 @@
 def generatePatternsOxides():
-    result = []
+    result= []
     for i in range(1, 100):
         result.append(f"{i}")
     for letter in range(ord('A'), ord('Z') + 1):
@@ -16,53 +16,50 @@ def generatePatternsOxides():
     return result
 
 def formatGRO(atom_gro):
-    i_molec, n_molec, atom_type, i_atom, x, y, z = atom_gro
-    output = str(i_molec).rjust(5)
-    output += n_molec.ljust(5)
-    output += atom_type.rjust(5)
-    output += str(i_atom).rjust(5)
-    output += str("{:.3f}".format(x)).rjust(8)
-    output += str("{:.3f}".format(y)).rjust(8)
-    output += str("{:.3f}".format(z)).rjust(8)
+    i_molec, n_molec, atom_type, i_atom, x, y, z= atom_gro
+    output= str(i_molec).rjust(5)
+    output+= n_molec.ljust(5)
+    output+= atom_type.rjust(5)
+    output+= str(i_atom).rjust(5)
+    output+= str("{:.3f}".format(x)).rjust(8)
+    output+= str("{:.3f}".format(y)).rjust(8)
+    output+= str("{:.3f}".format(z)).rjust(8)
     return output+"\n"
 
-def getMaxCoords(coords):
-    max_coord = [0, 0, 0]
-    for c in coords:
-        for i in range(3):
-            if c[i] > max_coord[i]:
-                max_coord[i] = c[i]
-    return max_coord
-
-def checkBounds(plates):
-    max_coords = [0.0, 0.0, 0.0]
-    min_coords = [0.0, 0.0, 0.0]
+def checkBounds(plates, periodicity_conditions):
+    max_coords= [0.0, 0.0, 0.0]
+    min_coords= [0.0, 0.0, 0.0]
 
     for plate in plates:
         atoms= plate.get_carbon_coords() + plate.get_oxide_coords()
 
         for coord in atoms:
             x,y,z= coord[:3]
-            min_coords[0] = min(min_coords[0], x)
-            min_coords[1] = min(min_coords[1], y)
-            min_coords[2] = min(min_coords[2], z)
-            max_coords[0] = max(max_coords[0], x)
-            max_coords[1] = max(max_coords[1], y)
-            max_coords[2] = max(max_coords[2], z)
+            min_coords[0]= min(min_coords[0], x)
+            min_coords[1]= min(min_coords[1], y)
+            min_coords[2]= min(min_coords[2], z)
+            max_coords[0]= max(max_coords[0], x)
+            max_coords[1]= max(max_coords[1], y)
+            max_coords[2]= max(max_coords[2], z)
 
-    max_coords[0] -= min_coords[0]
-    max_coords[1] -= min_coords[1]
-    max_coords[2] -= min_coords[2]
+    max_coords[0]-= min_coords[0]
+    max_coords[1]-= min_coords[1]
+    max_coords[2]-= min_coords[2]
+
+    if(periodicity_conditions[0]):
+        max_coords[0]+= 0.1225 * plate.get_scale_factor()
+    if(periodicity_conditions[1]):
+        max_coords[1]+= 0.142 * plate.get_scale_factor()
 
     return min_coords, max_coords
 
-def writeGRO(filename, plates):
+def writeGRO(filename, plates, periodicity_conditions):
     with open(filename, 'w') as f:
         f.write("Graphene, generated with Graphene GUI.\n")
-        total_atoms = sum(len(plate.get_carbon_coords()) + len(plate.get_oxide_coords()) for plate in plates)
+        total_atoms= sum(len(plate.get_carbon_coords()) + len(plate.get_oxide_coords()) for plate in plates)
         f.write(f"{total_atoms}\n")
 
-        min_coords,bounds= checkBounds(plates)
+        min_coords,bounds= checkBounds(plates, periodicity_conditions)
         for i_plate,plate in enumerate(plates):
             atoms= change_name_oxides(plate, plate.get_carbon_coords(), plate.get_oxide_coords())
             for coord in atoms:
@@ -73,36 +70,36 @@ def writeGRO(filename, plates):
 
         print("File exported to " + filename)
 
-def writeXYZ(filename, plates):
-    symbol_dict = {
+def writeXYZ(filename, plates, periodicity_conditions):
+    symbol_dict= {
         "CE": "C", "CO": "C",
         "OE": "O", "OO": "O",
         "HO": "H"
     }
     with open(filename, 'w') as f:
-        all_atoms = []
+        all_atoms= []
         for plate in plates:
             all_atoms+= change_name_oxides(plate, plate.get_carbon_coords(), plate.get_oxide_coords())
 
-        min_coords,bounds= checkBounds(plates)
+        min_coords,bounds= checkBounds(plates, periodicity_conditions)
 
         f.write(f"{len(all_atoms)}\n")
         f.write(f"Graphene structure exported in XYZ format. Box size= {bounds[0]}x{bounds[1]}x{bounds[2]}\n")
 
         for atom in all_atoms:
-            x, y, z, name = atom[:4]
-            symbol = symbol_dict.get(name[:2],"C")
+            x, y, z, name= atom[:4]
+            symbol= symbol_dict.get(name[:2],"C")
             f.write(f"{symbol} {(x-min_coords[0])*10:.6f} {(y-min_coords[1])*10:.6f} {(z-min_coords[2])*10:.6f}\n")
 
         print("File exported to " + filename)
 
-def writePDB(filename, plates):
-    symbol_dict = {"C": "C", "CO": "C", "CE": "C", "OO": "O", "HO": "H", "OE": "O"}
+def writePDB(filename, plates, periodicity_conditions):
+    symbol_dict= {"C": "C", "CO": "C", "CE": "C", "OO": "O", "HO": "H", "OE": "O"}
     
     with open(filename, 'w') as f:
         f.write("REMARK Graphene structure generated with Graphene GUI\n")
         
-        min_coords, bounds= checkBounds(plates)
+        min_coords, bounds= checkBounds(plates, periodicity_conditions)
         
         f.write(f"CRYST1{bounds[0]*10:9.3f}{bounds[1]*10:9.3f}{bounds[2]*10:9.3f}  90.00  90.00  90.00 P 1           1\n")
         
@@ -122,19 +119,22 @@ def writePDB(filename, plates):
     
     print("File exported to " + filename)
 
-def writeMOL2(filename, plates, factor=1.0):
-    atom_type_dict = {"C": "ca", "CO": "c3", "CE": "cx", "OO": "oh", "HO": "ho", "OE": "os"}
+def writeMOL2(filename, plates, periodicity_conditions):
+    atom_type_dict= {"C": "ca", "CO": "c3", "CE": "cx", "OO": "oh", "HO": "ho", "OE": "os"}
     
     with open(filename, 'w') as f:
-        total_atoms = sum(len(plate.get_carbon_coords()) + len(plate.get_oxide_coords()) for plate in plates)
-        bonds = []
+        total_atoms= sum(len(plate.get_carbon_coords()) + len(plate.get_oxide_coords()) for plate in plates)
+        bonds= []
         for i_plate, plate in enumerate(plates):
-            plate_bonds = get_bonds_top(plate, factor)
+            plate_bonds= get_bonds_top(plate, plate.get_scale_factor())
+            if(periodicity_conditions[0]): plate_bonds+= get_bonds_periodicity(plate, 0)
+            if(periodicity_conditions[1]): plate_bonds+= get_bonds_periodicity(plate, 1)
+
             for bond in plate_bonds:
-                offset = sum(len(p.get_carbon_coords()) + len(p.get_oxide_coords()) for p in plates[:i_plate])
+                offset= sum(len(p.get_carbon_coords()) + len(p.get_oxide_coords()) for p in plates[:i_plate])
                 bonds.append([bond[0] + offset, bond[1] + offset])
         
-        total_residues = len(plates)
+        total_residues= len(plates)
         
         f.write("@<TRIPOS>MOLECULE\n")
         f.write("GrapheneGUI\n")
@@ -143,17 +143,17 @@ def writeMOL2(filename, plates, factor=1.0):
         f.write("File created by GrapheneGUI\n")
         
         f.write("@<TRIPOS>ATOM\n")
-        min_coords, _ = checkBounds(plates)
-        global_atom_id = 1
+        min_coords, _= checkBounds(plates, periodicity_conditions)
+        global_atom_id= 1
         for i_plate, plate in enumerate(plates):
-            residue_name = f"GRA{i_plate+1}"
-            atoms = plate.get_carbon_coords() + plate.get_oxide_coords()
+            residue_name= f"GRA{i_plate+1}"
+            atoms= plate.get_carbon_coords() + plate.get_oxide_coords()
             for atom in atoms:
-                x, y, z, name = atom[:4]
-                x_ang = (x - min_coords[0]) * 10
-                y_ang = (y - min_coords[1]) * 10
-                z_ang = (z - min_coords[2]) * 10
-                mol2_type = atom_type_dict.get(name, atom_type_dict["C"])
+                x, y, z, name= atom[:4]
+                x_ang= (x - min_coords[0]) * 10
+                y_ang= (y - min_coords[1]) * 10
+                z_ang= (z - min_coords[2]) * 10
+                mol2_type= atom_type_dict.get(name, atom_type_dict["C"])
                 if(mol2_type == atom_type_dict["C"]):
                     list_ox= plate.get_oxides_for_carbon(atom)
                     if(len(list_ox) != 0):
@@ -161,44 +161,44 @@ def writeMOL2(filename, plates, factor=1.0):
                         if(list_ox[0][3] == "OE"): mol2_type= atom_type_dict.get("CE")
                 f.write(f"{global_atom_id:>7} {name:<8} {x_ang:>8.4f} {y_ang:>8.4f} {z_ang:>8.4f} "
                         f"{mol2_type:<8} {i_plate+1:>3} {residue_name:<8} 0.0000\n")
-                global_atom_id += 1
+                global_atom_id+= 1
         
         f.write("@<TRIPOS>BOND\n")
         for i, bond in enumerate(bonds, 1):
-            ai, aj = bond
-            plate_idx_ai = 0
-            plate_idx_aj = 0
-            atom_count = 0
+            ai, aj= bond
+            plate_idx_ai= 0
+            plate_idx_aj= 0
+            atom_count= 0
             for i_plate, plate in enumerate(plates):
-                plate_atoms = len(plate.get_carbon_coords()) + len(plate.get_oxide_coords())
+                plate_atoms= len(plate.get_carbon_coords()) + len(plate.get_oxide_coords())
                 if ai - 1 < atom_count + plate_atoms:
-                    plate_idx_ai = i_plate
-                    local_idx_ai = (ai - 1) - atom_count
+                    plate_idx_ai= i_plate
+                    local_idx_ai= (ai - 1) - atom_count
                     break
-                atom_count += plate_atoms
-            atom_count = 0
+                atom_count+= plate_atoms
+            atom_count= 0
             for i_plate, plate in enumerate(plates):
-                plate_atoms = len(plate.get_carbon_coords()) + len(plate.get_oxide_coords())
+                plate_atoms= len(plate.get_carbon_coords()) + len(plate.get_oxide_coords())
                 if aj - 1 < atom_count + plate_atoms:
-                    plate_idx_aj = i_plate
-                    local_idx_aj = (aj - 1) - atom_count
+                    plate_idx_aj= i_plate
+                    local_idx_aj= (aj - 1) - atom_count
                     break
-                atom_count += plate_atoms
-            atom_ai = (plates[plate_idx_ai].get_carbon_coords() + plates[plate_idx_ai].get_oxide_coords())[local_idx_ai]
-            atom_aj = (plates[plate_idx_aj].get_carbon_coords() + plates[plate_idx_aj].get_oxide_coords())[local_idx_aj]
-            bond_type = "ar" if atom_ai[3].startswith("C") and atom_aj[3].startswith("C") else "1"
+                atom_count+= plate_atoms
+            atom_ai= (plates[plate_idx_ai].get_carbon_coords() + plates[plate_idx_ai].get_oxide_coords())[local_idx_ai]
+            atom_aj= (plates[plate_idx_aj].get_carbon_coords() + plates[plate_idx_aj].get_oxide_coords())[local_idx_aj]
+            bond_type= "ar" if atom_ai[3].startswith("C") and atom_aj[3].startswith("C") else "1"
             f.write(f"{i:>6} {ai:>4} {aj:>4} {bond_type}\n")
         
         f.write("@<TRIPOS>SUBSTRUCTURE\n")
-        global_atom_id = 1
+        global_atom_id= 1
         for i_plate, plate in enumerate(plates):
-            residue_name = f"GRA{i_plate+1}"
+            residue_name= f"GRA{i_plate+1}"
             f.write(f"{i_plate+1:>6} {residue_name:<8} {global_atom_id:>4} RESIDUE           1 X     GRA     2 ROOT\n")
-            global_atom_id += len(plate.get_carbon_coords()) + len(plate.get_oxide_coords())
+            global_atom_id+= len(plate.get_carbon_coords()) + len(plate.get_oxide_coords())
     
     print("File exported to " + filename)
 
-def writeTOP(filename, plates, duplicate_list, atom_types, progress_callback):
+def writeTOP(filename, plates, duplicate_list, atom_types, progress_callback, periodicity_conditions):
     list_carbons= ""
     for a_type in atom_types:
         sigma,epsilon= atom_types[a_type]["sigma"]/10, atom_types[a_type]["epsilon"]
@@ -233,6 +233,9 @@ def writeTOP(filename, plates, duplicate_list, atom_types, progress_callback):
         top.append(write_atoms_top(plate, i_plate+1))
 
         bonds= get_bonds_top(plate, plate.get_scale_factor(), progress_callback, i_plate+1, len(plates))
+        if(periodicity_conditions[0]): bonds+= get_bonds_periodicity(plate, 0)
+        if(periodicity_conditions[1]): bonds+= get_bonds_periodicity(plate, 1)
+
         if(len(bonds) > 0):
             top.append("\n[ bonds ]\n")
             top.append(write_bonds_top(bonds,"   1    1.4140e-01    2.8937e+05"))
@@ -246,7 +249,7 @@ def writeTOP(filename, plates, duplicate_list, atom_types, progress_callback):
             top.append(write_posres_top(plate))
 
         repetitions= duplicate_list[1].count(i_plate+1) + 1
-        molecules_count += " "+name_molecule.ljust(6)+f"       {repetitions:>5}\n"
+        molecules_count+= " "+name_molecule.ljust(6)+f"       {repetitions:>5}\n"
 
     top.append("\n\n[ system ]\nGraphene-GUI\n\n[ molecules ]\n; Compound        nmols\n"+molecules_count)
 
@@ -291,6 +294,36 @@ def change_name_oxides(plate, carbons, oxides):
             atoms.append(ox)
     return atoms
 
+def get_bonds_periodicity(plate, coordinate_index):
+    list_carbons_left, list_carbons_right= [], []
+    x_left_list, x_right_list= float('inf'), float('-inf')
+    epsilon= .01
+
+    list_carbons_plate= plate.get_carbon_coords()
+    for i,carbon in enumerate(list_carbons_plate):
+        if(carbon[coordinate_index]-epsilon > x_right_list):
+            list_carbons_right= [i]
+            x_right_list= carbon[coordinate_index]
+        elif(carbon[coordinate_index]+epsilon > x_right_list):
+            list_carbons_right.append(i)
+        if(carbon[coordinate_index]+epsilon < x_left_list):
+            list_carbons_left= [i]
+            x_left_list= carbon[coordinate_index]
+        elif(carbon[coordinate_index]-epsilon < x_left_list):
+            list_carbons_left.append(i)
+    
+    bonds= []
+    inverse_coordinate= 1 if coordinate_index == 0 else 0
+    for i in list_carbons_left:
+        closest_carbon_in_y= list_carbons_right[0]
+        min_dist_y= abs(list_carbons_plate[i][inverse_coordinate] - list_carbons_plate[closest_carbon_in_y][inverse_coordinate])
+        for j in list_carbons_right[1:]:
+            d= abs(list_carbons_plate[i][inverse_coordinate] - list_carbons_plate[j][inverse_coordinate])
+            if(d < min_dist_y):
+                min_dist_y= d
+                closest_carbon_in_y= j
+        bonds.append([i+1,closest_carbon_in_y+1])
+    return bonds
 
 def write_atoms_top(plate, i_molec):
     output= ";   nr  type  resi  res  atom  cgnr     charge      mass\n"
@@ -417,7 +450,7 @@ def write_angles_top(angles,plate):
         output+= str(ang[1]).rjust(7)
         output+= str(ang[2]).rjust(7)
         output+= "      1"
-        output+= str("{:.2f}".format(180)).rjust(14)
+        output+= str("{:.2f}".format(120)).rjust(14)
         output+= "    5.6233e+02\n"
     return output
 

@@ -15,9 +15,9 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QAbstractButton, QApplication, QDialog, QDialogButtonBox,
-    QDoubleSpinBox, QGridLayout, QHBoxLayout, QLabel,
-    QSizePolicy, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QAbstractButton, QApplication, QCheckBox, QDialog,
+    QDialogButtonBox, QDoubleSpinBox, QGridLayout, QHBoxLayout,
+    QLabel, QSizePolicy, QVBoxLayout, QWidget)
 
 class Ui_DialogCreate(object):
     def setupUi(self, dialog_create):
@@ -74,10 +74,12 @@ class Ui_DialogCreate(object):
 
         self.gridLayout_2 = QGridLayout()
         self.gridLayout_2.setObjectName(u"gridLayout_2")
+        self.gridLayout_x = QGridLayout()
+        self.gridLayout_x.setObjectName(u"gridLayout_x")
         self.label_4 = QLabel(self.widget)
         self.label_4.setObjectName(u"label_4")
 
-        self.gridLayout_2.addWidget(self.label_4, 0, 0, 1, 1)
+        self.gridLayout_x.addWidget(self.label_4, 0, 0, 1, 1)
 
         self.spin_center_x = QDoubleSpinBox(self.widget)
         self.spin_center_x.setObjectName(u"spin_center_x")
@@ -87,12 +89,17 @@ class Ui_DialogCreate(object):
         self.spin_center_x.setDecimals(2)
         self.spin_center_x.setSingleStep(1.000000000000000)
 
-        self.gridLayout_2.addWidget(self.spin_center_x, 0, 1, 1, 1)
+        self.gridLayout_x.addWidget(self.spin_center_x, 0, 1, 1, 1)
 
+
+        self.gridLayout_2.addLayout(self.gridLayout_x, 0, 0, 1, 1)
+
+        self.gridLayout_y = QGridLayout()
+        self.gridLayout_y.setObjectName(u"gridLayout_y")
         self.label_5 = QLabel(self.widget)
         self.label_5.setObjectName(u"label_5")
 
-        self.gridLayout_2.addWidget(self.label_5, 0, 2, 1, 1)
+        self.gridLayout_y.addWidget(self.label_5, 0, 0, 1, 1)
 
         self.spin_center_y = QDoubleSpinBox(self.widget)
         self.spin_center_y.setObjectName(u"spin_center_y")
@@ -102,12 +109,17 @@ class Ui_DialogCreate(object):
         self.spin_center_y.setDecimals(2)
         self.spin_center_y.setSingleStep(1.000000000000000)
 
-        self.gridLayout_2.addWidget(self.spin_center_y, 0, 3, 1, 1)
+        self.gridLayout_y.addWidget(self.spin_center_y, 0, 1, 1, 1)
 
+
+        self.gridLayout_2.addLayout(self.gridLayout_y, 0, 1, 1, 1)
+
+        self.gridLayout_z = QGridLayout()
+        self.gridLayout_z.setObjectName(u"gridLayout_z")
         self.label_6 = QLabel(self.widget)
         self.label_6.setObjectName(u"label_6")
 
-        self.gridLayout_2.addWidget(self.label_6, 0, 4, 1, 1)
+        self.gridLayout_z.addWidget(self.label_6, 0, 0, 1, 1)
 
         self.spin_center_z = QDoubleSpinBox(self.widget)
         self.spin_center_z.setObjectName(u"spin_center_z")
@@ -117,7 +129,29 @@ class Ui_DialogCreate(object):
         self.spin_center_z.setDecimals(2)
         self.spin_center_z.setSingleStep(1.000000000000000)
 
-        self.gridLayout_2.addWidget(self.spin_center_z, 0, 5, 1, 1)
+        self.gridLayout_z.addWidget(self.spin_center_z, 0, 1, 1, 1)
+
+
+        self.gridLayout_2.addLayout(self.gridLayout_z, 0, 2, 1, 1)
+
+        self.check_pbc_x = QCheckBox(self.widget)
+        self.check_pbc_x.setObjectName(u"check_pbc_x")
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.check_pbc_x.sizePolicy().hasHeightForWidth())
+        self.check_pbc_x.setSizePolicy(sizePolicy)
+        self.check_pbc_x.setMaximumSize(QSize(170, 30))
+
+        self.gridLayout_2.addWidget(self.check_pbc_x, 1, 0, 1, 1)
+
+        self.check_pbc_y = QCheckBox(self.widget)
+        self.check_pbc_y.setObjectName(u"check_pbc_y")
+        sizePolicy.setHeightForWidth(self.check_pbc_y.sizePolicy().hasHeightForWidth())
+        self.check_pbc_y.setSizePolicy(sizePolicy)
+        self.check_pbc_y.setMaximumSize(QSize(170, 30))
+
+        self.gridLayout_2.addWidget(self.check_pbc_y, 1, 1, 1, 1)
 
 
         self.verticalLayout_3.addLayout(self.gridLayout_2)
@@ -177,6 +211,8 @@ class Ui_DialogCreate(object):
         self.label_4.setText(QCoreApplication.translate("DialogCreate", u"x:", None))
         self.label_5.setText(QCoreApplication.translate("DialogCreate", u"y:", None))
         self.label_6.setText(QCoreApplication.translate("DialogCreate", u"z:", None))
+        self.check_pbc_x.setText(QCoreApplication.translate("DialogCreate", u"Periodic Boundary: x", None))
+        self.check_pbc_y.setText(QCoreApplication.translate("DialogCreate", u"Periodic Boundary: y", None))
         self.label_7.setText(QCoreApplication.translate("DialogCreate", u"Scale factor:", None))
         self.label_8.setText(QCoreApplication.translate("DialogCreate", u"%", None))
     # retranslateUi

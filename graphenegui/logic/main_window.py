@@ -65,6 +65,8 @@ class MainWindow(QMainWindow):
         self.rubberBand= QRubberBand(QRubberBand.Rectangle, self.ui.graphicsView.viewport())
         self.origin= QPoint()
 
+        self.periodicity_conditions= [0,0]
+
         load_css(self)
 
     def setup_connections(self):

@@ -80,80 +80,130 @@
                 <item>
                   <layout class="QGridLayout" name="gridLayout_2">
                     <item row="0" column="0">
-                      <widget class="QLabel" name="label_4">
-                        <property name="text">
-                          <string>x:</string>
-                        </property>
-                      </widget>
+                      <layout class="QGridLayout" name="gridLayout_x">
+                        <item row="0" column="0">
+                          <widget class="QLabel" name="label_4">
+                            <property name="text">
+                              <string>x:</string>
+                            </property>
+                          </widget>
+                        </item>
+                        <item row="0" column="1">
+                          <widget class="QDoubleSpinBox" name="spin_center_x">
+                            <property name="minimum">
+                              <double>0.000000000000000</double>
+                            </property>
+                            <property name="maximum">
+                              <double>1000.000000000000000</double>
+                            </property>
+                            <property name="value">
+                              <double>0.000000000000000</double>
+                            </property>
+                            <property name="decimals">
+                              <number>2</number>
+                            </property>
+                            <property name="singleStep">
+                              <double>1.000000000000000</double>
+                            </property>
+                          </widget>
+                        </item>
+                      </layout>
                     </item>
                     <item row="0" column="1">
-                      <widget class="QDoubleSpinBox" name="spin_center_x">
-                        <property name="minimum">
-                          <double>0.000000000000000</double>
-                        </property>
-                        <property name="maximum">
-                          <double>1000.000000000000000</double>
-                        </property>
-                        <property name="value">
-                          <double>0.000000000000000</double>
-                        </property>
-                        <property name="decimals">
-                          <number>2</number>
-                        </property>
-                        <property name="singleStep">
-                          <double>1.000000000000000</double>
-                        </property>
-                      </widget>
+                      <layout class="QGridLayout" name="gridLayout_y">
+                        <item row="0" column="0">
+                          <widget class="QLabel" name="label_5">
+                            <property name="text">
+                              <string>y:</string>
+                            </property>
+                          </widget>
+                        </item>
+                        <item row="0" column="1">
+                          <widget class="QDoubleSpinBox" name="spin_center_y">
+                            <property name="minimum">
+                              <double>0.000000000000000</double>
+                            </property>
+                            <property name="maximum">
+                              <double>1000.000000000000000</double>
+                            </property>
+                            <property name="value">
+                              <double>0.000000000000000</double>
+                            </property>
+                            <property name="decimals">
+                              <number>2</number>
+                            </property>
+                            <property name="singleStep">
+                              <double>1.000000000000000</double>
+                            </property>
+                          </widget>
+                        </item>
+                      </layout>
                     </item>
                     <item row="0" column="2">
-                      <widget class="QLabel" name="label_5">
+                      <layout class="QGridLayout" name="gridLayout_z">
+                        <item row="0" column="0">
+                          <widget class="QLabel" name="label_6">
+                            <property name="text">
+                              <string>z:</string>
+                            </property>
+                          </widget>
+                        </item>
+                        <item row="0" column="1">
+                          <widget class="QDoubleSpinBox" name="spin_center_z">
+                            <property name="minimum">
+                              <double>0.000000000000000</double>
+                            </property>
+                            <property name="maximum">
+                              <double>1000.000000000000000</double>
+                            </property>
+                            <property name="value">
+                              <double>0.000000000000000</double>
+                            </property>
+                            <property name="decimals">
+                              <number>2</number>
+                            </property>
+                            <property name="singleStep">
+                              <double>1.000000000000000</double>
+                            </property>
+                          </widget>
+                        </item>
+                      </layout>
+                    </item>
+                    <item row="1" column="0">
+                      <widget class="QCheckBox" name="check_pbc_x">
                         <property name="text">
-                          <string>y:</string>
+                          <string>Periodic Boundary: x</string>
+                        </property>
+                        <property name="sizePolicy">
+                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                            <horstretch>0</horstretch>
+                            <verstretch>0</verstretch>
+                          </sizepolicy>
+                        </property>
+                        <property name="maximumSize">
+                          <size>
+                            <width>170</width>
+                            <height>30</height>
+                          </size>
                         </property>
                       </widget>
                     </item>
-                    <item row="0" column="3">
-                      <widget class="QDoubleSpinBox" name="spin_center_y">
-                        <property name="minimum">
-                          <double>0.000000000000000</double>
-                        </property>
-                        <property name="maximum">
-                          <double>1000.000000000000000</double>
-                        </property>
-                        <property name="value">
-                          <double>0.000000000000000</double>
-                        </property>
-                        <property name="decimals">
-                          <number>2</number>
-                        </property>
-                        <property name="singleStep">
-                          <double>1.000000000000000</double>
-                        </property>
-                      </widget>
-                    </item>
-                    <item row="0" column="4">
-                      <widget class="QLabel" name="label_6">
+                    <item row="1" column="1">
+                      <widget class="QCheckBox" name="check_pbc_y">
                         <property name="text">
-                          <string>z:</string>
+                          <string>Periodic Boundary: y</string>
                         </property>
-                      </widget>
-                    </item>
-                    <item row="0" column="5">
-                      <widget class="QDoubleSpinBox" name="spin_center_z">
-                        <property name="minimum">
-                          <double>0.000000000000000</double>
+                        <property name="sizePolicy">
+                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                            <horstretch>0</horstretch>
+                            <verstretch>0</verstretch>
+                          </sizepolicy>
                         </property>
-                        <property name="maximum">
-                          <double>1000.000000000000000</double>
-                        </property>
-                        <property name="value">
-                          <double>0.000000000000000</double>
-                        </property>
-                        <property name="decimals">
-                          <number>2</number>
-                        </property>
-                        <property name="singleStep">
-                          <double>1.000000000000000</double>
+                        <property name="maximumSize">
+                          <size>
+                            <width>170</width>
+                            <height>30</height>
+                          </size>
                         </property>
                       </widget>
                     </item>

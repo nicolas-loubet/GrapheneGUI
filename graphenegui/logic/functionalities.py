@@ -12,14 +12,14 @@ from .export_formats import writeGRO, writeXYZ, writeTOP, writePDB, writeMOL2
 # ================================
 
 def load_css(main_window):
-    bg_color = "#3d3d3d" if main_window.is_dark_mode else "white"
-    widget_bg = "#2a2a2a" if main_window.is_dark_mode else "#f5f5f5"
-    text_color = "white" if main_window.is_dark_mode else "black"
-    ok_btn = "#2e7d32" if main_window.is_dark_mode else "lightgreen"
-    cancel_btn = "#d32f2f" if main_window.is_dark_mode else "lightcoral"
-    btn_bg = "#424242" if main_window.is_dark_mode else "#e0e0e0"
+    bg_color= "#3d3d3d" if main_window.is_dark_mode else "white"
+    widget_bg= "#2a2a2a" if main_window.is_dark_mode else "#f5f5f5"
+    text_color= "white" if main_window.is_dark_mode else "black"
+    ok_btn= "#2e7d32" if main_window.is_dark_mode else "lightgreen"
+    cancel_btn= "#d32f2f" if main_window.is_dark_mode else "lightcoral"
+    btn_bg= "#424242" if main_window.is_dark_mode else "#e0e0e0"
 
-    style = f"""
+    style= f"""
         QGraphicsView {{
             background-color: {bg_color};
         }}
@@ -70,11 +70,11 @@ def load_css(main_window):
 
 def manage_duplicates_for_deletion(main_window, index, index_would_be_removed):
     if index in main_window.plates_corresponding_to_duplicates[0]:
-        index_in_list = main_window.plates_corresponding_to_duplicates[0].index(index)
+        index_in_list= main_window.plates_corresponding_to_duplicates[0].index(index)
         main_window.plates_corresponding_to_duplicates[0].pop(index_in_list)
         main_window.plates_corresponding_to_duplicates[1].pop(index_in_list)
     elif index in main_window.plates_corresponding_to_duplicates[1]:
-        indexes_in_list = []
+        indexes_in_list= []
         for i in range(len(main_window.plates_corresponding_to_duplicates[1])):
             if main_window.plates_corresponding_to_duplicates[1][i] == index:
                 indexes_in_list.append(i)
@@ -83,9 +83,9 @@ def manage_duplicates_for_deletion(main_window, index, index_would_be_removed):
             main_window.plates_corresponding_to_duplicates[0].pop(indexes_in_list[0])
             main_window.plates_corresponding_to_duplicates[1].pop(indexes_in_list[0])
         else:
-            new_base = main_window.plates_corresponding_to_duplicates[0][indexes_in_list[0]]
+            new_base= main_window.plates_corresponding_to_duplicates[0][indexes_in_list[0]]
             for i in range(1, len(indexes_in_list)):
-                main_window.plates_corresponding_to_duplicates[1][indexes_in_list[i]] = new_base
+                main_window.plates_corresponding_to_duplicates[1][indexes_in_list[i]]= new_base
             main_window.plates_corresponding_to_duplicates[0].pop(indexes_in_list[0])
             main_window.plates_corresponding_to_duplicates[1].pop(indexes_in_list[0])
     else:
@@ -104,14 +104,14 @@ def manage_duplicates_for_deletion(main_window, index, index_would_be_removed):
 
 def evaluate_condition(x, y, z, i_atom, expr):
     if expr == "": return True
-    expr = expr.replace('and', ' and ').replace('or', ' or ').replace('not', ' not ')
+    expr= expr.replace('and', ' and ').replace('or', ' or ').replace('not', ' not ')
     return eval(expr, {'x': x, 'y': y, 'z': z, 'index': i_atom, 'and': lambda a, b: a and b, 'or': lambda a, b: a or b, 'not': lambda x: not x})
 
 def get_list_carbons_in_expr(plate, expr):
-    list_carbons_in_expression = []
+    list_carbons_in_expression= []
     for coord in plate.get_carbon_coords():
-        x, y, z, _, i_atom = coord[:5]
-        x, y, z = x * 10, y * 10, z * 10
+        x, y, z, _, i_atom= coord[:5]
+        x, y, z= x * 10, y * 10, z * 10
         if evaluate_condition(x, y, z, i_atom, expr):
             list_carbons_in_expression.append(coord)
     return list_carbons_in_expression
@@ -164,29 +164,30 @@ def put_oxides(main_window, list_carbons):
 # Top panel
 # ================================
 def create_plate(dialog, main_window):
-    width = dialog.spin_width.value()
-    height = dialog.spin_height.value()
-    center_x = dialog.spin_center_x.value()
-    center_y = dialog.spin_center_y.value()
-    center_z = dialog.spin_center_z.value()
-    factor = dialog.spin_scale.value()/100.0
+    width= dialog.spin_width.value()
+    height= dialog.spin_height.value()
+    center_x= dialog.spin_center_x.value()
+    center_y= dialog.spin_center_y.value()
+    center_z= dialog.spin_center_z.value()
+    factor= dialog.spin_scale.value()/100.0
+    main_window.periodicity_conditions= [dialog.check_pbc_x.isChecked(), dialog.check_pbc_y.isChecked()]
 
-    width_nm = width / 10
-    height_nm = height / 10
-    center_x_nm = center_x / 10
-    center_y_nm = center_y / 10
-    center_z_nm = center_z / 10
+    width_nm= width / 10
+    height_nm= height / 10
+    center_x_nm= center_x / 10
+    center_y_nm= center_y / 10
+    center_z_nm= center_z / 10
 
-    n_x = math.floor(width_nm / (2 * 0.1225 * factor))
-    n_y = math.floor(height_nm / (6 * 0.071 * factor))+1
+    n_x= math.floor(width_nm / (2 * 0.1225 * factor))
+    n_y= math.floor(height_nm / (6 * 0.071 * factor))+1
 
-    max_atoms = len(generatePatterns())
-    max_n_x_n_y = max_atoms // (2 * (2 * n_x + 1)) if n_x > 0 else 0
+    max_atoms= len(generatePatterns())
+    max_n_x_n_y= max_atoms // (2 * (2 * n_x + 1)) if n_x > 0 else 0
     if n_y > max_n_x_n_y:
         QMessageBox.critical(main_window, "Too large", f"The number of atoms is too large ({max_atoms}). Reduce the width or height.")
         return
 
-    plate = Graphene.create_from_params(n_x, n_y, center_x_nm, center_y_nm, center_z_nm, factor)
+    plate= Graphene.create_from_params(n_x, n_y, center_x_nm, center_y_nm, center_z_nm, factor, dialog.check_pbc_x.isChecked())
     main_window.plates.append(plate)
 
     main_window.ui.comboDrawings.addItem(f"Plate {len(main_window.plates)}")
@@ -199,19 +200,19 @@ def create_plate(dialog, main_window):
 
 def import_file(ext, file_name, main_window):
     if ext == ".gro":
-        new_plates = readGRO(file_name)
+        new_plates= readGRO(file_name)
     elif ext == ".xyz":
-        new_plates = readXYZ(file_name)
+        new_plates= readXYZ(file_name)
     elif ext == ".pdb":
-        new_plates = readPDB(file_name)
+        new_plates= readPDB(file_name)
     elif ext == ".mol2":
-        new_plates = readMOL2(file_name)
+        new_plates= readMOL2(file_name)
     else:
         raise ValueError(f"Not supported file extension: {ext}")
 
     for plate in new_plates:
         main_window.plates.append(plate)
-        idx = len(main_window.plates)
+        idx= len(main_window.plates)
         main_window.ui.comboDrawings.addItem(f"Plate {idx}")
         print(f"Importing coords: Plate {idx}")
 
@@ -226,21 +227,22 @@ class ExportTopWorker(QObject):
     finished= Signal()
     progress= Signal(int)
 
-    def __init__(self, file_name, plates, plates_duplicates, atom_types):
+    def __init__(self, file_name, plates, plates_duplicates, atom_types, periodicity_conditions):
         super().__init__()
         self.file_name= file_name
         self.plates= plates
         self.plates_duplicates= plates_duplicates
         self.atom_types= atom_types
+        self.periodicity_conditions= periodicity_conditions
 
     def run(self):
         def progress_callback(frac):
             self.progress.emit(int(frac*100))
 
-        writeTOP(self.file_name, self.plates, self.plates_duplicates, self.atom_types, progress_callback)
+        writeTOP(self.file_name, self.plates, self.plates_duplicates, self.atom_types, progress_callback, self.periodicity_conditions)
         self.finished.emit()
 
-def export_top(main_window, file_name, plates):
+def export_top(main_window, file_name, plates, periodicity_conditions):
     progress_dialog= QProgressDialog("Exporting TOP file...", None, 0, 100, main_window)
     progress_dialog.setWindowTitle("Exporting...")
     progress_dialog.setWindowModality(Qt.ApplicationModal)
@@ -249,12 +251,12 @@ def export_top(main_window, file_name, plates):
     progress_dialog.setValue(0)
     progress_dialog.show()
 
-    worker = ExportTopWorker(file_name, plates, main_window.plates_corresponding_to_duplicates, main_window.atom_types)
+    worker= ExportTopWorker(file_name, plates, main_window.plates_corresponding_to_duplicates, main_window.atom_types, periodicity_conditions)
 
     worker.progress.connect(progress_dialog.setValue, Qt.QueuedConnection)
     worker.finished.connect(progress_dialog.accept, Qt.QueuedConnection)
 
-    thread = QThread()
+    thread= QThread()
     worker.moveToThread(thread)
     worker.finished.connect(thread.quit)
     thread.started.connect(worker.run)
@@ -272,20 +274,20 @@ def export_top(main_window, file_name, plates):
 
     thread.start()
 
-    main_window._export_thread = thread
-    main_window._export_worker = worker
-    main_window._export_progress_dialog = progress_dialog
+    main_window._export_thread= thread
+    main_window._export_worker= worker
+    main_window._export_progress_dialog= progress_dialog
 
 def export_file(main_window):
-    filters = ("All Files (*);;GRO Files (*.gro);;PDB Files (*.pdb);;XYZ Files (*.xyz);;MOL2 Files (*.mol2);;TOP Files (*.top);;")
-    file_name, selected_filter = QFileDialog.getSaveFileName(main_window, "Export File", "", filters)
+    filters= ("All Files (*);;GRO Files (*.gro);;PDB Files (*.pdb);;XYZ Files (*.xyz);;MOL2 Files (*.mol2);;TOP Files (*.top);;")
+    file_name, selected_filter= QFileDialog.getSaveFileName(main_window, "Export File", "", filters)
 
     if not file_name:
         return
 
-    plates = main_window.plates
+    plates= main_window.plates
 
-    ext_map = {"GRO": ".gro", "PDB": ".pdb", "XYZ": ".xyz", "MOL2": ".mol2", "TOP": ".top"}
+    ext_map= {"GRO": ".gro", "PDB": ".pdb", "XYZ": ".xyz", "MOL2": ".mol2", "TOP": ".top"}
     if '.' not in file_name:
         for key, ext in ext_map.items():
             if key in selected_filter:
@@ -293,23 +295,23 @@ def export_file(main_window):
                 break
 
     if file_name.endswith(".top"):
-        export_top(main_window, file_name, plates)
+        export_top(main_window, file_name, plates, main_window.periodicity_conditions)
     elif file_name.endswith(".gro"):
-        writeGRO(file_name, plates)
+        writeGRO(file_name, plates, main_window.periodicity_conditions)
     elif file_name.endswith(".pdb"):
-        writePDB(file_name, plates)
+        writePDB(file_name, plates, main_window.periodicity_conditions)
     elif file_name.endswith(".xyz"):
-        writeXYZ(file_name, plates)
+        writeXYZ(file_name, plates, main_window.periodicity_conditions)
     elif file_name.endswith(".mol2"):
-        writeMOL2(file_name, plates)
+        writeMOL2(file_name, plates, main_window.periodicity_conditions)
     else:
         print("Unsupported file extension")
 
 def create_duplicate(main_window, dialog):
-    index_base = main_window.ui.comboDrawings.currentIndex()+1
+    index_base= main_window.ui.comboDrawings.currentIndex()+1
 
-    plate = main_window.plates[main_window.ui.comboDrawings.currentIndex()]
-    translation = [
+    plate= main_window.plates[main_window.ui.comboDrawings.currentIndex()]
+    translation= [
         dialog.spin_duplicate_x.value(),
         dialog.spin_duplicate_y.value(),
         dialog.spin_duplicate_z.value()
@@ -318,15 +320,15 @@ def create_duplicate(main_window, dialog):
         translation[i] *= .1  # Change to nm
     
     if dialog.radio_btn_absolute_pos.isChecked():
-        plate_actual_center = plate.get_geometric_center()
+        plate_actual_center= plate.get_geometric_center()
         for i in range(3):
             translation[i] -= plate_actual_center[i]
 
     main_window.plates.append(plate.duplicate(translation))
 
     while(index_base in main_window.plates_corresponding_to_duplicates[0]):
-        index_in_list = main_window.plates_corresponding_to_duplicates[0].index(index_base)
-        index_base = main_window.plates_corresponding_to_duplicates[1][index_in_list]
+        index_in_list= main_window.plates_corresponding_to_duplicates[0].index(index_base)
+        index_base= main_window.plates_corresponding_to_duplicates[1][index_in_list]
     
     main_window.plates_corresponding_to_duplicates[0].append(len(main_window.plates))
     main_window.plates_corresponding_to_duplicates[1].append(index_base)
@@ -336,7 +338,7 @@ def create_duplicate(main_window, dialog):
     main_window.ui.comboDrawings.setCurrentIndex(len(main_window.plates)-1)
 
 def delete_actual_plate(main_window):
-    index = main_window.ui.comboDrawings.currentIndex()
+    index= main_window.ui.comboDrawings.currentIndex()
     if index < 0: return
 
     manage_duplicates_for_deletion(main_window, index+1, True)
@@ -361,8 +363,8 @@ def remove_overlapping_atoms(atoms):
     to_remove_list= []
     for i in range(len(atoms)):
         for j in range(i+1, len(atoms)):
-            x1,y1,z1 = atoms[i][:3]
-            x2,y2,z2 = atoms[j][:3]
+            x1,y1,z1= atoms[i][:3]
+            x2,y2,z2= atoms[j][:3]
             if np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2) < .02:
                 to_remove_list.append(j)
     print(f"Removed {len(to_remove_list)} overlapping atoms")
