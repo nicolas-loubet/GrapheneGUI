@@ -12,41 +12,43 @@ from .export_formats import checkBounds
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.ui = Ui_MainWindow()
+        self.ui= Ui_MainWindow()
         self.ui.setupUi(self)
         
-        self.scene = QGraphicsScene()
+        self.scene= QGraphicsScene()
         self.ui.graphicsView.setScene(self.scene)
         
-        self.is_dark_mode = True
-        self.active_oxide_mode = None
-        self.first_carbon = None
-        self.z_mode = 2  # 0: z+, 1: z-, 2: z±
-        self.last_prob_oh = 66
-        self.last_prob_o = 34
-        self.plates = []
-        self.plates_corresponding_to_duplicates = [[], []]  # [duplicates, bases]
-        self.information_selected_atoms = []
+        self.is_dark_mode= True
+        self.active_oxide_mode= None
+        self.first_carbon= None
+        self.z_mode= 2  # 0: z+, 1: z-, 2: z±
+        self.last_prob_oh= 66
+        self.last_prob_o= 34
+        self.plates= []
+        self.plates_corresponding_to_duplicates= [[], []]  # [duplicates, bases]
+        self.information_selected_atoms= []
         
-        is_dark_mode_func = lambda: self.is_dark_mode
+        is_dark_mode_func= lambda: self.is_dark_mode
+        self.periodicity_conditions= [0,0]
 
-        self.renderer = Renderer(
+        self.renderer= Renderer(
             drawing_area=self.ui.graphicsView,
             ruler_x=self.ui.topRuler,
             ruler_y=self.ui.leftRuler,
             plates=self.plates,
             cb_plates=self.ui.comboDrawings,
-            is_dark_mode_func=is_dark_mode_func
+            is_dark_mode_func=is_dark_mode_func,
+            periodicity_conditions=self.periodicity_conditions
         )
 
         self.buttons_that_depend_of_having_a_plate(False)
         self.ui.radioZpm.setChecked(True)
 
-        self.atom_types = {
+        self.atom_types= {
             "ca": {"epsilon": 0.359824, "sigma": 3.39967}
         }
-        self.water_model = "TIP3P"
-        self.water_params = {
+        self.water_model= "TIP3P"
+        self.water_params= {
             "TIP3P": {"epsilon": 0.6364, "sigma": 3.15061},
             "TIP4P": {"epsilon": 0.6480, "sigma": 3.15365},
             "TIP4P/2005": {"epsilon": 0.7749, "sigma": 3.1589},
@@ -64,8 +66,6 @@ class MainWindow(QMainWindow):
 
         self.rubberBand= QRubberBand(QRubberBand.Rectangle, self.ui.graphicsView.viewport())
         self.origin= QPoint()
-
-        self.periodicity_conditions= [0,0]
 
         load_css(self)
 
@@ -95,7 +95,7 @@ class MainWindow(QMainWindow):
         
         self.ui.graphicsView.viewport().installEventFilter(self)
 
-        self.scene.mousePressEvent = self.handle_drawing_area_clicked
+        self.scene.mousePressEvent= self.handle_drawing_area_clicked
 
 
     # ================================
@@ -154,7 +154,7 @@ class MainWindow(QMainWindow):
                 if event.button() == Qt.LeftButton and not self.origin.isNull():
                     rect= QRect(self.origin, event.pos()).normalized()
                     self.rubberBand.hide()
-                    self.origin = QPoint()
+                    self.origin= QPoint()
                     self.select_carbons_in_rect(rect)
                     return True
 
@@ -166,7 +166,7 @@ class MainWindow(QMainWindow):
     # ================================
     @Slot()
     def handle_btn_create_clicked(self):
-        dialog = CreateDialog(self)
+        dialog= CreateDialog(self)
         if dialog.exec() != QDialog.Accepted: return
 
         try:
@@ -180,7 +180,7 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def handle_btn_duplicate_clicked(self):
-        dialog = DuplicateDialog(self)
+        dialog= DuplicateDialog(self)
         if dialog.exec() != QDialog.Accepted: return
 
         try:
@@ -195,12 +195,12 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def handle_btn_import_clicked(self):
-        filters = "All Files (*);;GRO Files (*.gro);;XYZ Files (*.xyz);;PDB Files (*.pdb);;MOL2 Files (*.mol2)"
-        file_name, _ = QFileDialog.getOpenFileName(self, "Import File", "", filters)
+        filters= "All Files (*);;GRO Files (*.gro);;XYZ Files (*.xyz);;PDB Files (*.pdb);;MOL2 Files (*.mol2)"
+        file_name, _= QFileDialog.getOpenFileName(self, "Import File", "", filters)
 
         if not file_name: return
 
-        ext = os.path.splitext(file_name)[1].lower()
+        ext= os.path.splitext(file_name)[1].lower()
         try:
             import_file(ext, file_name, self)
         except Exception as e:
@@ -212,14 +212,14 @@ class MainWindow(QMainWindow):
     
     @Slot()
     def handle_btn_cnt_clicked(self):
-        plate = self.plates[self.ui.comboDrawings.currentIndex()]
+        plate= self.plates[self.ui.comboDrawings.currentIndex()]
         if plate.get_is_CNT():
             plate.restore_plate()
             self.buttons_that_depend_of_having_a_plate(True)
         else:
-            atoms = plate.get_carbon_coords() + plate.get_oxide_coords()
+            atoms= plate.get_carbon_coords() + plate.get_oxide_coords()
 
-            _, bounds = checkBounds([plate])
+            _, bounds= checkBounds([plate], self.periodicity_conditions)
 
             dialog= CNTDialog(self)
             if dialog.exec() != QDialog.Accepted: return
@@ -230,7 +230,7 @@ class MainWindow(QMainWindow):
                 return
 
             self.renderer.set_roll_vector(roll_vec)
-            new_atoms = roll_atoms_as_CNT(atoms, roll_vec, plate.get_geometric_center())
+            new_atoms= roll_atoms_as_CNT(atoms, roll_vec, plate.get_geometric_center())
             plate.set_is_CNT(True)
             plate.set_atoms(new_atoms)
             self.buttons_that_depend_of_having_a_plate(False)
@@ -241,7 +241,7 @@ class MainWindow(QMainWindow):
         
     @Slot()
     def handle_btn_dark_light_mode_clicked(self):
-        self.is_dark_mode = not self.is_dark_mode
+        self.is_dark_mode= not self.is_dark_mode
         load_css(self)
         self.update_drawing_area()
         print(f"Switched to {'dark' if self.is_dark_mode else 'light'} mode")
@@ -251,12 +251,12 @@ class MainWindow(QMainWindow):
     # Drawing area, central panel
     # ================================
     def clicked_carbon_add_OH(self, plate, carbon, z_sign, i_atom):
-        cx, cy, cz = carbon[:3]
-        o_x = cx
-        o_y = cy
-        o_z = cz + z_sign * 0.149
-        h_x = cx + .093
-        h_z = o_z + z_sign * 0.032
+        cx, cy, cz= carbon[:3]
+        o_x= cx
+        o_y= cy
+        o_z= cz + z_sign * 0.149
+        h_x= cx + .093
+        h_z= o_z + z_sign * 0.032
 
         if not plate.is_position_occupied(o_x, o_y, o_z):
             plate.add_oxide(o_x, o_y, o_z, "OO", i_atom)
@@ -269,13 +269,13 @@ class MainWindow(QMainWindow):
             print("Position already occupied by an oxide")
 
     def clicked_carbon_add_O(self, plate, carbon, z_sign, i_atom):
-        adjacent_carbons = plate.carbons_adjacent(self.first_carbon)
+        adjacent_carbons= plate.carbons_adjacent(self.first_carbon)
         if carbon in adjacent_carbons:
-            c1_x, c1_y, c1_z = self.first_carbon[:3]
-            c2_x, c2_y = carbon[:2]
-            o_x = (c1_x + c2_x) / 2
-            o_y = (c1_y + c2_y) / 2
-            o_z = c1_z + z_sign * 0.126
+            c1_x, c1_y, c1_z= self.first_carbon[:3]
+            c2_x, c2_y= carbon[:2]
+            o_x= (c1_x + c2_x) / 2
+            o_y= (c1_y + c2_y) / 2
+            o_z= c1_z + z_sign * 0.126
 
             if not plate.is_position_occupied(o_x, o_y, o_z):
                 plate.add_oxide(o_x, o_y, o_z, "OE", i_atom)
@@ -286,32 +286,32 @@ class MainWindow(QMainWindow):
                 print("Position already occupied by an oxide")
         else:
             print("Second carbon is not adjacent to the first")
-        self.first_carbon = None
+        self.first_carbon= None
 
     def handle_drawing_area_clicked(self, event):
         if self.ui.comboDrawings.currentIndex() == -1 or not self.active_oxide_mode: return
 
         manage_duplicates_for_deletion(self, self.ui.comboDrawings.currentIndex()+1, False)
 
-        plate = self.plates[self.ui.comboDrawings.currentIndex()]
-        pos = event.scenePos()
-        x_nm, y_nm = self.renderer.pixel_to_nm(pos.x(), pos.y())
-        carbon = plate.get_nearest_carbon(x_nm, y_nm)
+        plate= self.plates[self.ui.comboDrawings.currentIndex()]
+        pos= event.scenePos()
+        x_nm, y_nm= self.renderer.pixel_to_nm(pos.x(), pos.y())
+        carbon= plate.get_nearest_carbon(x_nm, y_nm)
         if not carbon: return
 
-        i_atom = plate.get_number_atoms() + 1
-        z_sign = 1 if self.z_mode == 0 else -1 if self.z_mode == 1 else random.choice([-1, 1])
+        i_atom= plate.get_number_atoms() + 1
+        z_sign= 1 if self.z_mode == 0 else -1 if self.z_mode == 1 else random.choice([-1, 1])
 
         if self.active_oxide_mode == "OH":
             self.clicked_carbon_add_OH(plate, carbon, z_sign, i_atom)
         elif self.active_oxide_mode == "O":
             if self.first_carbon is None:
-                self.first_carbon = carbon
+                self.first_carbon= carbon
                 print("First carbon selected, click an adjacent carbon")
             else:
                 self.clicked_carbon_add_O(plate, carbon, z_sign, i_atom)
         elif self.active_oxide_mode == "Remove":
-            list_remove_ox = plate.get_oxides_for_carbon(carbon)
+            list_remove_ox= plate.get_oxides_for_carbon(carbon)
             for ox in list_remove_ox:
                 plate.remove_atom_oxide(ox)
             self.update_drawing_area()
@@ -332,20 +332,20 @@ class MainWindow(QMainWindow):
         selected= [c for c in plate.get_carbon_coords() if min_x <= c[0] <= max_x and min_y <= c[1] <= max_y]
 
         if selected:
-            self.renderer.highlighted_atoms = selected
-            self.information_selected_atoms = selected
+            self.renderer.highlighted_atoms= selected
+            self.information_selected_atoms= selected
             self.update_drawing_area()
             print(f"Selected {len(selected)} carbons in rectangle ({min_x:.2f},{min_y:.2f}) to ({max_x:.2f},{max_y:.2f}) nm")
         else:
             print("No carbons selected in the rectangle")
 
     def update_drawing_area(self):
-        active_index = self.ui.comboDrawings.currentIndex()
+        active_index= self.ui.comboDrawings.currentIndex()
         
         if active_index != -1 and self.plates and self.plates[active_index].get_number_atoms():
-            img = self.renderer.render_plate(self.plates[active_index], self.is_dark_mode)
+            img= self.renderer.render_plate(self.plates[active_index], self.is_dark_mode)
             self.renderer.update_view()
-            pixmap = QPixmap.fromImage(img)
+            pixmap= QPixmap.fromImage(img)
             self.scene.addPixmap(pixmap)
 
         self.ui.comboDrawings.setEnabled(active_index != -1)
@@ -359,7 +359,7 @@ class MainWindow(QMainWindow):
         if self.ui.comboDrawings.currentIndex() == -1: return
         manage_duplicates_for_deletion(self, self.ui.comboDrawings.currentIndex()+1, False)
 
-        plate = self.plates[self.ui.comboDrawings.currentIndex()]
+        plate= self.plates[self.ui.comboDrawings.currentIndex()]
         plate.remove_oxides()
         self.update_drawing_area()
         self.ui.spinRandom.setValue(0)
@@ -368,12 +368,12 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def handle_btn_change_prob_clicked(self):
-        dialog = ProbDialog(self)
+        dialog= ProbDialog(self)
         dialog.spin_prob_oh.setValue(self.last_prob_oh)
         dialog.spin_prob_o.setValue(self.last_prob_o)
         if dialog.exec() == QDialog.Accepted:
-            self.last_prob_oh = dialog.spin_prob_oh.value()
-            self.last_prob_o = dialog.spin_prob_o.value()
+            self.last_prob_oh= dialog.spin_prob_oh.value()
+            self.last_prob_o= dialog.spin_prob_o.value()
 
     def expr_changed(self):
         if self.ui.comboDrawings.currentIndex() == -1: return
@@ -461,7 +461,7 @@ class MainWindow(QMainWindow):
         carbons= self.renderer.highlighted_atoms
         if carbons:
             count= plate.add_oxydation_to_list_of_carbon(carbons, self.z_mode, 100)
-            self.renderer.highlighted_atoms = []
+            self.renderer.highlighted_atoms= []
             self.update_drawing_area()
             print(f"Forced OH oxidation applied ({count} carbons modified), that is {plate.get_oxide_count()/plate.get_number_atoms()*100:.2f}% of the selected part of the plate")
             self.set_oxide_mode(None)
@@ -515,8 +515,8 @@ class MainWindow(QMainWindow):
 
     def handle_radio_toggled(self, radio_button):
         if radio_button == self.ui.radioZp and radio_button.isChecked():
-            self.z_mode = 0
+            self.z_mode= 0
         elif radio_button == self.ui.radioZm and radio_button.isChecked():
-            self.z_mode = 1
+            self.z_mode= 1
         elif radio_button == self.ui.radioZpm and radio_button.isChecked():
-            self.z_mode = 2
+            self.z_mode= 2

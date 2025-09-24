@@ -7,33 +7,34 @@ import numpy as np
 import warnings
 
 class Renderer:
-    def __init__(self, drawing_area, ruler_x, ruler_y, plates, cb_plates, is_dark_mode_func):
-        self.drawing_area = drawing_area
-        self.ruler_x = ruler_x
-        self.ruler_y = ruler_y
-        self.plates = plates
-        self.cb_plates = cb_plates
-        self.is_dark_mode_func = is_dark_mode_func
+    def __init__(self, drawing_area, ruler_x, ruler_y, plates, cb_plates, is_dark_mode_func, periodicity_conditions):
+        self.drawing_area= drawing_area
+        self.ruler_x= ruler_x
+        self.ruler_y= ruler_y
+        self.plates= plates
+        self.cb_plates= cb_plates
+        self.is_dark_mode_func= is_dark_mode_func
+        self.periodicity_conditions= periodicity_conditions
 
-        self.scale = 1.0
-        self.center_x = 0.0
-        self.center_y = 0.0
-        self.min_x = 0.0
-        self.max_x = 0.0
-        self.min_y = 0.0
-        self.max_y = 0.0
-        self.limits = [0.0, 0.0, 0.0, 0.0]
+        self.scale= 1.0
+        self.center_x= 0.0
+        self.center_y= 0.0
+        self.min_x= 0.0
+        self.max_x= 0.0
+        self.min_y= 0.0
+        self.max_y= 0.0
+        self.limits= [0.0, 0.0, 0.0, 0.0]
 
         self.roll_vector= None
         self.highlighted_atoms= []
 
         self.drawing_area.setMouseTracking(True)
-        self.drawing_area.mouseMoveEvent = self.on_motion_notify
-        self.ruler_x.paintEvent = self.on_draw_ruler_x
-        self.ruler_y.paintEvent = self.on_draw_ruler_y
-        self.drawing_area.paintEvent = self.on_draw_drawing_area
+        self.drawing_area.mouseMoveEvent= self.on_motion_notify
+        self.ruler_x.paintEvent= self.on_draw_ruler_x
+        self.ruler_y.paintEvent= self.on_draw_ruler_y
+        self.drawing_area.paintEvent= self.on_draw_drawing_area
 
-        self.colors = {
+        self.colors= {
             "dark": {
                 "bg": QColor("#3d3d3d"),
                 "carbon": QColor("#00ffff"),
@@ -64,22 +65,22 @@ class Renderer:
     def pixel_to_nm(self, x_win, y_win):
         if not self.plates or self.cb_plates.currentIndex() == -1 or self.scale == 0: return None, None
 
-        width = float(self.drawing_area.width())
-        height = float(self.drawing_area.height())
-        x_nm = x_win / self.scale + self.center_x - width / (2.0 * self.scale)
-        y_nm = y_win / self.scale + self.center_y - height / (2.0 * self.scale)
+        width= float(self.drawing_area.width())
+        height= float(self.drawing_area.height())
+        x_nm= x_win / self.scale + self.center_x - width / (2.0 * self.scale)
+        y_nm= y_win / self.scale + self.center_y - height / (2.0 * self.scale)
         return x_nm, y_nm
 
     def on_motion_notify(self, event):
         if not self.plates or self.cb_plates.currentIndex() == -1:
             self.drawing_area.setToolTip("")
             return
-        x_px, y_px = self._event_pos_to_point(event)
-        x_nm, y_nm = self.pixel_to_nm(x_px, y_px)
+        x_px, y_px= self._event_pos_to_point(event)
+        x_nm, y_nm= self.pixel_to_nm(x_px, y_px)
         if x_nm is None:
             self.drawing_area.setToolTip("")
             return
-        plate = self.plates[self.cb_plates.currentIndex()]
+        plate= self.plates[self.cb_plates.currentIndex()]
         for coords in (plate.get_carbon_coords(), plate.get_oxide_coords()):
             for x_atom, y_atom, z_atom, name, *_ in coords:
                 if (x_nm - x_atom) ** 2 + (y_nm - y_atom) ** 2 < 0.01:
@@ -89,28 +90,28 @@ class Renderer:
 
     def update_plate_metrics(self):
         if not self.plates or self.cb_plates.currentIndex() == -1:
-            self.scale = 1.0
-            self.min_x = self.max_x = self.min_y = self.max_y = self.center_x = self.center_y = 0.0
-            self.limits = [0.0, 0.0, 0.0, 0.0]
+            self.scale= 1.0
+            self.min_x= self.max_x= self.min_y= self.max_y= self.center_x= self.center_y= 0.0
+            self.limits= [0.0, 0.0, 0.0, 0.0]
             return
-        plate = self.plates[self.cb_plates.currentIndex()]
-        width = max(1.0, float(self.drawing_area.width()))
-        height = max(1.0, float(self.drawing_area.height()))
-        carbon_coords = plate.get_carbon_coords()
+        plate= self.plates[self.cb_plates.currentIndex()]
+        width= max(1.0, float(self.drawing_area.width()))
+        height= max(1.0, float(self.drawing_area.height()))
+        carbon_coords= plate.get_carbon_coords()
         if not carbon_coords:
-            self.scale = 1.0
-            self.min_x = self.max_x = self.min_y = self.max_y = self.center_x = self.center_y = 0.0
-            self.limits = [0.0, 0.0, 0.0, 0.0]
+            self.scale= 1.0
+            self.min_x= self.max_x= self.min_y= self.max_y= self.center_x= self.center_y= 0.0
+            self.limits= [0.0, 0.0, 0.0, 0.0]
             return
-        x_coords, y_coords = zip(*[(c[0], c[1]) for c in carbon_coords])
-        self.min_x, self.max_x = min(x_coords), max(x_coords)
-        self.min_y, self.max_y = min(y_coords), max(y_coords)
-        plate_width = max(1e-6, self.max_x - self.min_x)
-        plate_height = max(1e-6, self.max_y - self.min_y)
-        self.limits = [self.min_x, self.max_x, self.min_y, self.max_y]
-        self.scale = max(1.0, min(width / (plate_width * 1.1), height / (plate_height * 1.1)))
-        self.center_x = (self.min_x + self.max_x) / 2.0
-        self.center_y = (self.min_y + self.max_y) / 2.0
+        x_coords, y_coords= zip(*[(c[0], c[1]) for c in carbon_coords])
+        self.min_x, self.max_x= min(x_coords), max(x_coords)
+        self.min_y, self.max_y= min(y_coords), max(y_coords)
+        plate_width= max(1e-6, self.max_x - self.min_x)
+        plate_height= max(1e-6, self.max_y - self.min_y)
+        self.limits= [self.min_x, self.max_x, self.min_y, self.max_y]
+        self.scale= max(1.0, min(width / (plate_width * 1.1), height / (plate_height * 1.1)))
+        self.center_x= (self.min_x + self.max_x) / 2.0
+        self.center_y= (self.min_y + self.max_y) / 2.0
 
     def _draw_plate(self, painter, plate, is_dark_mode):
         mode= "dark" if is_dark_mode else "light"
@@ -135,7 +136,7 @@ class Renderer:
             center= plate.get_geometric_center()
             x_ref, y_ref= carbons[0][0] - center[0], carbons[0][1] - center[1]
             R= np.sqrt((x_ref**2 + y_ref**2))
-            mins,bounds= checkBounds([plate])
+            mins,bounds= checkBounds([plate], self.periodicity_conditions)
 
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore', category=Warning)
@@ -174,12 +175,12 @@ class Renderer:
         bg_color= self.colors[mode]["bg"]
         try:
             if not self.plates or self.cb_plates.currentIndex() == -1:
-                pixmap = QPixmap(":/icons/img/svg/background.svg")
+                pixmap= QPixmap(":/icons/img/svg/background.svg")
                 if not pixmap.isNull():
-                    scaled_pixmap = pixmap.scaled(self.drawing_area.viewport().size(),
+                    scaled_pixmap= pixmap.scaled(self.drawing_area.viewport().size(),
                                                 Qt.KeepAspectRatio,
                                                 Qt.SmoothTransformation)
-                    point = QPointF(
+                    point= QPointF(
                         (self.drawing_area.viewport().width() - scaled_pixmap.width()) / 2,
                         (self.drawing_area.viewport().height() - scaled_pixmap.height()) / 2
                     )
@@ -193,23 +194,23 @@ class Renderer:
             if not self.plates or self.cb_plates.currentIndex() == -1:
                 painter.fillRect(self.drawing_area.viewport().rect(), bg_color)
                 return
-            width, height = float(self.drawing_area.viewport().width()), float(self.drawing_area.viewport().height())
+            width, height= float(self.drawing_area.viewport().width()), float(self.drawing_area.viewport().height())
             painter.save()
             painter.scale(self.scale, self.scale)
             painter.translate(width / (2.0 * self.scale) - self.center_x, height / (2.0 * self.scale) - self.center_y)
 
-            plate = self.plates[self.cb_plates.currentIndex()]
+            plate= self.plates[self.cb_plates.currentIndex()]
             self._draw_plate(painter, self.plates[self.cb_plates.currentIndex()], self.is_dark_mode_func())
             painter.restore()
 
             if plate.get_is_CNT():
-                svg_renderer = QSvgRenderer(":/icons/img/svg/lock.svg")
+                svg_renderer= QSvgRenderer(":/icons/img/svg/lock.svg")
                 if svg_renderer.isValid():
-                    icon_height = height / 5.0
-                    icon_width = icon_height * (svg_renderer.defaultSize().width() / svg_renderer.defaultSize().height())
-                    margin = 10
-                    icon_x = width - icon_width - margin
-                    icon_y = height - icon_height - margin
+                    icon_height= height / 5.0
+                    icon_width= icon_height * (svg_renderer.defaultSize().width() / svg_renderer.defaultSize().height())
+                    margin= 10
+                    icon_x= width - icon_width - margin
+                    icon_y= height - icon_height - margin
                     svg_renderer.render(painter, QRectF(icon_x, icon_y, icon_width, icon_height))
             
             self.ruler_x.update()
@@ -219,25 +220,25 @@ class Renderer:
                 painter.end()
 
     def on_draw_ruler_x(self, event):
-        painter = QPainter(self.ruler_x)
+        painter= QPainter(self.ruler_x)
         try:
             painter.setRenderHint(QPainter.TextAntialiasing)
             painter.fillRect(self.ruler_x.rect(), self.colors["dark" if self.is_dark_mode_func() else "light"]["bg"])
             if not self.plates or self.cb_plates.currentIndex() == -1: return
 
-            width, height = float(self.ruler_x.width()), float(self.ruler_x.height())
-            pixel_x_min = (self.min_x - self.center_x) * self.scale + width / 2.0
-            pixel_x_max = (self.max_x - self.center_x) * self.scale + width / 2.0
-            pen = QPen()
+            width, height= float(self.ruler_x.width()), float(self.ruler_x.height())
+            pixel_x_min= (self.min_x - self.center_x) * self.scale + width / 2.0
+            pixel_x_max= (self.max_x - self.center_x) * self.scale + width / 2.0
+            pen= QPen()
             pen.setWidth(2)
             painter.setPen(pen)
             painter.drawLine(pixel_x_min, 3.7 * height / 4.0, pixel_x_max, 3.7 * height / 4.0)
-            font = QFont()
+            font= QFont()
             font.setPointSize(10)
             painter.setFont(font)
             for x in range(int(self.limits[0] * 10), int(self.limits[1] * 10) + 1):
-                pixel_x = (x / 10.0 - self.center_x) * self.scale + width / 2.0
-                tick_height = 10 if x % 10 == 0 else 8 if x % 5 == 0 else 5
+                pixel_x= (x / 10.0 - self.center_x) * self.scale + width / 2.0
+                tick_height= 10 if x % 10 == 0 else 8 if x % 5 == 0 else 5
                 if x % 10 == 0:
                     painter.drawText(int(pixel_x - 15), int(0.6*height/4), 30, 20, Qt.AlignCenter, str(x))
                 painter.drawLine(pixel_x, 3.7 * height / 4.0, pixel_x, 3.7 * height / 4.0 - tick_height)
@@ -246,25 +247,25 @@ class Renderer:
                 painter.end()
 
     def on_draw_ruler_y(self, event):
-        painter = QPainter(self.ruler_y)
+        painter= QPainter(self.ruler_y)
         try:
             painter.setRenderHint(QPainter.TextAntialiasing)
             painter.fillRect(self.ruler_y.rect(), self.colors["dark" if self.is_dark_mode_func() else "light"]["bg"])
             if not self.plates or self.cb_plates.currentIndex() == -1: return
 
-            width, height = float(self.ruler_y.width()), float(self.ruler_y.height())
-            pixel_y_min = (self.min_y - self.center_y) * self.scale + height / 2.0
-            pixel_y_max = (self.max_y - self.center_y) * self.scale + height / 2.0
-            pen = QPen()
+            width, height= float(self.ruler_y.width()), float(self.ruler_y.height())
+            pixel_y_min= (self.min_y - self.center_y) * self.scale + height / 2.0
+            pixel_y_max= (self.max_y - self.center_y) * self.scale + height / 2.0
+            pen= QPen()
             pen.setWidth(2)
             painter.setPen(pen)
             painter.drawLine(3.7 * width / 4.0, pixel_y_min, 3.7 * width / 4.0, pixel_y_max)
-            font = QFont()
+            font= QFont()
             font.setPointSize(10)
             painter.setFont(font)
             for y in range(int(self.limits[2] * 10), int(self.limits[3] * 10) + 1):
-                pixel_y = (y / 10.0 - self.center_y) * self.scale + height / 2.0
-                tick_width = 10 if y % 10 == 0 else 8 if y % 5 == 0 else 5
+                pixel_y= (y / 10.0 - self.center_y) * self.scale + height / 2.0
+                tick_width= 10 if y % 10 == 0 else 8 if y % 5 == 0 else 5
                 if y % 10 == 0:
                     painter.drawText(int(0.1*width/4), int(pixel_y - 10), 30, 20, Qt.AlignCenter, str(y))
                 painter.drawLine(3.7 * width / 4.0, pixel_y, 3.7 * width / 4.0 - tick_width, pixel_y)
@@ -273,11 +274,11 @@ class Renderer:
                 painter.end()
 
     def render_plate(self, plate, is_dark_mode):
-        width, height = max(1, int(self.drawing_area.width())), max(1, int(self.drawing_area.height()))
-        image = QImage(width, height, QImage.Format_RGB32)
-        mode = "dark" if is_dark_mode else "light"
+        width, height= max(1, int(self.drawing_area.width())), max(1, int(self.drawing_area.height()))
+        image= QImage(width, height, QImage.Format_RGB32)
+        mode= "dark" if is_dark_mode else "light"
         image.fill(self.colors[mode]["bg"])
-        temp_painter = QPainter(image)
+        temp_painter= QPainter(image)
         try:
             temp_painter.setRenderHint(QPainter.Antialiasing)
             self.update_plate_metrics()
@@ -290,3 +291,7 @@ class Renderer:
             if temp_painter.isActive():
                 temp_painter.end()
         return image
+
+    def set_periodicity(self, periodicity_conditions):
+        self.periodicity_conditions= periodicity_conditions
+        

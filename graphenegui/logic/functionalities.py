@@ -171,6 +171,7 @@ def create_plate(dialog, main_window):
     center_z= dialog.spin_center_z.value()
     factor= dialog.spin_scale.value()/100.0
     main_window.periodicity_conditions= [dialog.check_pbc_x.isChecked(), dialog.check_pbc_y.isChecked()]
+    main_window.renderer.set_periodicity(main_window.periodicity_conditions)
 
     width_nm= width / 10
     height_nm= height / 10

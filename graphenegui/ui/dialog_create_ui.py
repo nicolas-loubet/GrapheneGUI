@@ -156,6 +156,11 @@ class Ui_DialogCreate(object):
 
         self.verticalLayout_3.addLayout(self.gridLayout_2)
 
+        self.label_9 = QLabel(self.widget)
+        self.label_9.setObjectName(u"label_9")
+
+        self.verticalLayout_3.addWidget(self.label_9)
+
         self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.label_7 = QLabel(self.widget)
@@ -213,6 +218,7 @@ class Ui_DialogCreate(object):
         self.label_6.setText(QCoreApplication.translate("DialogCreate", u"z:", None))
         self.check_pbc_x.setText(QCoreApplication.translate("DialogCreate", u"Periodic Boundary: x", None))
         self.check_pbc_y.setText(QCoreApplication.translate("DialogCreate", u"Periodic Boundary: y", None))
+        self.label_9.setText(QCoreApplication.translate("DialogCreate", u"- If you want to create a CNT, let those options off -", None))
         self.label_7.setText(QCoreApplication.translate("DialogCreate", u"Scale factor:", None))
         self.label_8.setText(QCoreApplication.translate("DialogCreate", u"%", None))
     # retranslateUi

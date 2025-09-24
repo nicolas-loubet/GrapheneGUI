@@ -210,6 +210,13 @@
                   </layout>
                 </item>
                 <item>
+                  <widget class="QLabel" name="label_9">
+                    <property name="text">
+                      <string>- If you want to create a CNT, let those options off -</string>
+                    </property>
+                  </widget>
+                </item>
+                <item>
                   <layout class="QHBoxLayout" name="horizontalLayout">
                     <item>
                       <widget class="QLabel" name="label_7">
