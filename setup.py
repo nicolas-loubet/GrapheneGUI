@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="GrapheneGUI",
-    version="3.3",
+    version="3.4",
     description="Qt-based graphical interface for creating and functionalizing graphene and graphene oxide plates",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
