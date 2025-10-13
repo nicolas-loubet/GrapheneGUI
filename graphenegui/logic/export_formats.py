@@ -120,7 +120,7 @@ def writePDB(filename, plates, periodicity_conditions):
     print("File exported to " + filename)
 
 def writeMOL2(filename, plates, periodicity_conditions):
-    atom_type_dict= {"C": "ca", "CO": "c3", "CE": "cx", "OO": "oh", "HO": "ho", "OE": "os"}
+    atom_type_dict= {"C": "ca", "CO": "c3", "CE": "c3", "OO": "oh", "HO": "ho", "OE": "os"}
     
     with open(filename, 'w') as f:
         total_atoms= sum(len(plate.get_carbon_coords()) + len(plate.get_oxide_coords()) for plate in plates)
@@ -434,7 +434,7 @@ def write_bonds_top(bonds,plate):
     epoxys, hydroxyls_O, hydroxyls_H= [],[],[]
     for o in oxides:
         if(o[3] == "OE"): epoxys.append(o[4])
-        elif(o[3] == "OH"): hydroxyls_O.append(o[4])
+        elif(o[3] == "OO"): hydroxyls_O.append(o[4])
         elif(o[3] == "HO"): hydroxyls_H.append(o[4])
 
     for b in bonds:
