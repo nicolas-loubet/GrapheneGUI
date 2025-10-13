@@ -238,7 +238,7 @@ def writeTOP(filename, plates, duplicate_list, atom_types, progress_callback, pe
 
         if(len(bonds) > 0):
             top.append("\n[ bonds ]\n")
-            top.append(write_bonds_top(bonds,"   1    1.4140e-01    2.8937e+05"))
+            top.append(write_bonds_top(bonds,plate))
             top.append("\n[ pairs ]\n")
             pairs,angles,dihedrals= get_pairs_angles_dihedrals(bonds,n_atoms,progress_callback, i_plate+1, len(plates))
             top.append(write_pairs_top(pairs))
@@ -400,7 +400,7 @@ def get_pairs_angles_dihedrals(bonds,n_atoms, progress_callback, number_present_
         for neighbor_1 in get_bounded(bonds,i):
             for neighbor_2 in get_bounded(bonds,neighbor_1):
                 if(i == neighbor_2): continue
-                if(not [i,neighbor_1,neighbor_2] in angles and not [neighbor_2,neighbor_1,i] in angles):
+                if(not already_exists([i,neighbor_1,neighbor_2],angles)):
                     angles.append([i,neighbor_1,neighbor_2])
                 for neighbor_3 in get_bounded(bonds,neighbor_2):
                     if(neighbor_1 == neighbor_3): continue
@@ -426,12 +426,25 @@ def already_exists(searched,list_values):
         if(val_s == val_s2): return True
     return False
 
-def write_bonds_top(bonds,frk):
+def write_bonds_top(bonds,plate):
     output= ";   ai     aj funct   r             k\n"
+
+    N_CARBONS= len(plate.get_carbon_coords())
+    oxides= plate.get_oxide_coords()
+    epoxys, hydroxyls_O, hydroxyls_H= [],[],[]
+    for o in oxides:
+        if(o[3] == "OE"): epoxys.append(o[4])
+        elif(o[3] == "OH"): hydroxyls_O.append(o[4])
+        elif(o[3] == "HO"): hydroxyls_H.append(o[4])
+
     for b in bonds:
+        d= 1.4140
+        if((b[0] in hydroxyls_H and b[1] in hydroxyls_O) or (b[0] in hydroxyls_O and b[1] in hydroxyls_H)): d= .98
+        elif(b[0] in hydroxyls_O or b[1] in hydroxyls_O): d= 1.47
+        elif(b[0] in epoxys or b[1] in epoxys): d= 1.45
         output+= str(b[0]).rjust(6)
         output+= str(b[1]).rjust(7)
-        output+= frk+"\n"
+        output+= f"   1  {d:8.4f}e-01    2.8937e+05\n"
     return output
 
 def write_pairs_top(pairs):
@@ -445,13 +458,33 @@ def write_pairs_top(pairs):
 
 def write_angles_top(angles,plate):
     output= ";   ai     aj     ak    funct   theta         cth\n"
+
+    N_CARBONS= len(plate.get_carbon_coords())
+    oxides= plate.get_oxide_coords()
+    epoxys, hydroxyls_O, hydroxyls_H= [],[],[]
+    for o in oxides:
+        if(o[3] == "OE"): epoxys.append(o[4])
+        elif(o[3] == "OO"): hydroxyls_O.append(o[4])
+        elif(o[3] == "HO"): hydroxyls_H.append(o[4])
+
     for ang in angles:
-        output+= str(ang[0]).rjust(6)
-        output+= str(ang[1]).rjust(7)
-        output+= str(ang[2]).rjust(7)
-        output+= "      1"
-        output+= str("{:.2f}".format(120)).rjust(14)
+        output+= f"{ang[0]:>6} {ang[1]:>6} {ang[2]:>6} {1:>6}"
+        angle= 120.0
+        for i in range(3):
+            if(ang[i] in epoxys):
+                carbons= plate.get_nearest_carbons_to_oxide(oxides[ang[i]-1-N_CARBONS])
+                carbons_numbers= [c[4] for c in carbons]
+                if(ang[(i+1)%3] in carbons_numbers and ang[(i+2)%3] in carbons_numbers): angle= 60.0
+            elif(ang[i] in hydroxyls_O):
+                for j in range(3):
+                    if(i == j): continue
+                    if(ang[j] in hydroxyls_H): angle= 108.6
+                if(angle == 120.0): angle= 90.0
+        output+= str("{:.2f}".format(angle)).rjust(14)
         output+= "    5.6233e+02\n"
+        if(angle < 61):
+            output+= f"{ang[1]:>6} {ang[2]:>6} {ang[0]:>6} {1:>6} {angle:13.2f}    5.6233e+02\n"
+            output+= f"{ang[2]:>6} {ang[0]:>6} {ang[1]:>6} {1:>6} {angle:13.2f}    5.6233e+02\n"
     return output
 
 def write_dihedrals_top(dihedrals):
