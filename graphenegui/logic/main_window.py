@@ -77,6 +77,7 @@ class MainWindow(QMainWindow):
         self.ui.btnImport.clicked.connect(self.handle_btn_import_clicked)
         self.ui.btnExport.clicked.connect(self.handle_btn_export_clicked)
         self.ui.btnCNT.clicked.connect(self.handle_btn_cnt_clicked)
+        self.ui.btnReduceExternal.clicked.connect(self.handle_btn_reduce_borders_clicked)
         self.ui.btnTheme.clicked.connect(self.handle_btn_dark_light_mode_clicked)
         self.ui.btnReduceAll.clicked.connect(self.handle_btn_reduce_clicked)
         self.ui.btnChangeProb.clicked.connect(self.handle_btn_change_prob_clicked)
@@ -122,6 +123,7 @@ class MainWindow(QMainWindow):
         self.ui.btnDelete.setEnabled(active)
         self.ui.btnExport.setEnabled(active)
         self.ui.btnCNT.setEnabled(active)
+        self.ui.btnReduceExternal.setEnabled(active)
         self.ui.btnReduceAll.setEnabled(active)
         self.ui.btnChangeProb.setEnabled(active)
         self.ui.spinRandom.setEnabled(active)
@@ -237,6 +239,14 @@ class MainWindow(QMainWindow):
             self.ui.btnExport.setEnabled(True)
             self.ui.btnDelete.setEnabled(True)
             self.ui.btnCNT.setEnabled(True)
+        self.update_drawing_area()
+
+    @Slot()
+    def handle_btn_reduce_borders_clicked(self):
+        plate= self.plates[self.ui.comboDrawings.currentIndex()]
+        plate.reduce_borders()
+        self.ui.btnCNT.setEnabled(False)
+        self.ui.btnReduceExternal.setEnabled(False)
         self.update_drawing_area()
         
     @Slot()

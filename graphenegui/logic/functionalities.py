@@ -197,6 +197,10 @@ def create_plate(dialog, main_window):
     load_css(main_window)
     main_window.update_drawing_area()
     main_window.buttons_that_depend_of_having_a_plate(True)
+
+    if dialog.check_pbc_x.isChecked() or dialog.check_pbc_y.isChecked():
+        main_window.ui.btnReduceExternal.setEnabled(False)
+
     print(f"Coords drawn: Plate {len(main_window.plates)}")
 
 def import_file(ext, file_name, main_window):

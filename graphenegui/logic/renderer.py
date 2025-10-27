@@ -38,6 +38,7 @@ class Renderer:
             "dark": {
                 "bg": QColor("#3d3d3d"),
                 "carbon": QColor("#00ffff"),
+                "hydrogen": QColor("#c0c0c0"),
                 "oxide_OO": QColor("#e71616"),
                 "oxide_OE": QColor("#e4bd19"),
                 "oxide_HO": QColor("#c8c8c8")
@@ -45,6 +46,7 @@ class Renderer:
             "light": {
                 "bg": QColor("#ffffff"),
                 "carbon": QColor("#000000"),
+                "hydrogen": QColor("#808080"),
                 "oxide_OO": QColor("#ff0000"),
                 "oxide_OE": QColor("#0000ff"),
                 "oxide_HO": QColor("#969696")
@@ -120,7 +122,7 @@ class Renderer:
         painter.fillRect(QRectF(-1000, -1000, 2000, 2000), colors["bg"])
         painter.setPen(Qt.NoPen)
 
-        carbons,oxides= plate.get_carbon_coords(),plate.get_oxide_coords()
+        carbons,oxides,hydrogens= plate.get_carbon_coords(),plate.get_oxide_coords(),plate.get_hydrogens_coords()
 
         if not plate.get_is_CNT():
             # Case 1: Flat graphene (original behavior)
@@ -131,6 +133,10 @@ class Renderer:
             for x, y, _, oxide_type, *_ in oxides:
                 painter.setBrush(colors[f"oxide_{oxide_type}"])
                 painter.drawEllipse(QPointF(x, y), 0.035, 0.035)
+
+            for x, y, *_ in hydrogens:
+                painter.setBrush(colors["hydrogen"])
+                painter.drawEllipse(QPointF(x, y), 0.03, 0.03)
         else:
             # Case 2: CNT (rolled)
             center= plate.get_geometric_center()

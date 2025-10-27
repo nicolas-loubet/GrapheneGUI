@@ -6,7 +6,7 @@ def readGRO(filename):
         natoms= int(f.readline().strip())
 
         plates= []
-        carbons, oxides= [], []
+        carbons, oxides, hydrogens= [], [], []
         for _ in range(natoms):
             line= f.readline()
             molecnum= int(line[0:5])
@@ -22,13 +22,15 @@ def readGRO(filename):
 
             if atomname.startswith("C"):
                 carbons.append([x, y, z, atomname, atomid, False, "ca"])
+            elif atomname.startswith("H") and not atomname.startswith("HO"):
+                hydrogens.append([x, y, z, atomname, atomid, False, "ha"])
             else:
                 atomname_without_numbers= atomname
                 while atomname_without_numbers[-1].isdigit():
                     atomname_without_numbers= atomname_without_numbers[:-1]
                 oxides.append([x, y, z, atomname_without_numbers, atomid, False, atomname_without_numbers])
 
-        plates.append(Graphene.create_from_coords(carbons, oxides))
+        plates.append(Graphene.create_from_coords(carbons, oxides, hydrogens))
     return plates
 
 def readXYZ(filename):

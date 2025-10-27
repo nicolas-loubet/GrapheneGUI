@@ -2,15 +2,16 @@ import random
 import numpy as np
 
 class Graphene:
-    def __init__(self, carbon_coords=None, oxide_coords=None, scale_factor=1.0):
+    def __init__(self, carbon_coords=None, oxide_coords=None, hydrogens_coords=None, scale_factor=1.0):
         self.carbon_coords= carbon_coords if carbon_coords is not None else []
         self.oxide_coords= oxide_coords if oxide_coords is not None else []
+        self.hydrogens_coords= hydrogens_coords if hydrogens_coords is not None else []
         self.scale_factor= scale_factor
         self.is_CNT= False
 
     @classmethod
-    def create_from_coords(cls, carbon_coords, oxide_coords):
-        plate= cls(carbon_coords, oxide_coords)
+    def create_from_coords(cls, carbon_coords, oxide_coords, hydrogens_coords=None):
+        plate= cls(carbon_coords, oxide_coords, hydrogens_coords)
         neighbors= plate.carbons_adjacent(plate.carbon_coords[0])
         distance= plate.distance_2D(plate.carbon_coords[0][0], plate.carbon_coords[0][1], neighbors[0][0], neighbors[0][1])
         factor= distance / 0.141588
@@ -54,15 +55,17 @@ class Graphene:
                 coords.append([dx * n_x * 2 + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
                 i_atom+= 1
 
-        return cls(coords, [])
+        return cls(coords, [], [])
 
     def duplicate(self, translations):
-        carbons,oxides= [],[]
+        carbons,oxides,hydrogens= [],[],[]
         for c in self.carbon_coords:
             carbons.append([c[0] + translations[0], c[1] + translations[1], c[2] + translations[2], c[3], c[4], c[5], c[6]])
         for o in self.oxide_coords:
             oxides.append([o[0] + translations[0], o[1] + translations[1], o[2] + translations[2], o[3], o[4], o[5], o[6]])
-        return Graphene.create_from_coords(carbons,oxides)
+        for h in self.hydrogens_coords:
+            hydrogens.append([h[0] + translations[0], h[1] + translations[1], h[2] + translations[2], h[3], h[4], h[5], h[6]])
+        return Graphene.create_from_coords(carbons,oxides,hydrogens)
 
     def add_carbon(self, x, y, z, atom_name, atom_index, modified=False, atom_type="ca"):
         self.carbon_coords.append([x, y, z, atom_name, atom_index, modified, atom_type])
@@ -83,11 +86,12 @@ class Graphene:
     def set_is_CNT(self, is_CNT):
         self.is_CNT= is_CNT
         if is_CNT:
-            self.backup_not_CNT= [self.carbon_coords.copy(), self.oxide_coords.copy()]
+            self.backup_not_CNT= [self.carbon_coords.copy(), self.oxide_coords.copy(), self.hydrogens_coords.copy()]
 
     def restore_plate(self):
         self.carbon_coords= self.backup_not_CNT[0]
         self.oxide_coords= self.backup_not_CNT[1]
+        self.hydrogens_coords= self.backup_not_CNT[2]
         self.is_CNT= False
     
     def get_is_CNT(self):
@@ -99,6 +103,9 @@ class Graphene:
     def get_oxide_coords(self):
         return self.oxide_coords
     
+    def get_hydrogens_coords(self):
+        return self.hydrogens_coords
+
     def get_scale_factor(self):
         return self.scale_factor
 
@@ -110,7 +117,7 @@ class Graphene:
         return count
     
     def get_number_atoms(self):
-        return len(self.carbon_coords)+len(self.oxide_coords)
+        return len(self.carbon_coords)+len(self.oxide_coords)+len(self.hydrogens_coords)
     
     def remove_oxides(self):
         ox= self.oxide_coords
@@ -273,6 +280,33 @@ class Graphene:
             if c[:6] == carbon[:6]:
                 self.carbon_coords[i][6]= new_type
                 break
+
+    def reduce_borders(self):
+        min_coors, max_coords= [float("inf"), float("inf")], [float("-inf"), float("-inf")]
+        n_Hs= 0
+        patterns= generatePatterns("H")
+        for c in self.carbon_coords:
+            min_coors= [min(min_coors[i], c[i]) for i in range(2)]
+            max_coords= [max(max_coords[i], c[i]) for i in range(2)]
+        min_coors[0]+= .001
+        min_coors[1]+= .001
+        max_coords[0]-= .001
+        max_coords[1]-= .001
+        for c in self.carbon_coords:
+            xc,yc= c[:2]
+            if xc > min_coors[0] and xc < max_coords[0] and yc > min_coors[1] and yc < max_coords[1]: continue
+            adj_carbons= self.carbons_adjacent(c)
+            if len(adj_carbons) != 2: continue
+            
+            x1, y1= adj_carbons[0][:2]
+            x2, y2= adj_carbons[1][:2]
+            xv1,yv1= xc-x1, yc-y1
+            xv3,yv3= 2*xc-x1-x2, 2*yc-y1-y2
+            f= ( ((xv1*xv1 + yv1*yv1) / (xv3*xv3 + yv3*yv3)) ** .5 ) * .7676
+            x3, y3= xc+f*xv3, yc+f*yv3
+
+            self.hydrogens_coords.append([x3, y3, c[2], patterns[n_Hs], n_Hs+1, c[5], "ha"])
+            n_Hs+= 1
 
 
 def generatePatterns(initial_character="C"):
