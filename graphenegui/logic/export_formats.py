@@ -133,7 +133,7 @@ def writePDB(filename, plates, periodicity_conditions):
     print("File exported to " + filename)
 
 def writeMOL2(filename, plates, periodicity_conditions):
-    atom_type_dict= {"C": "ca", "CO": "c3", "CE": "c3", "OO": "oh", "HO": "ho", "OE": "os"}
+    atom_type_dict= {"C": "ca", "CO": "c3", "CE": "cx", "OO": "oh", "HO": "ho", "OE": "os"}
     
     with open(filename, 'w') as f:
         total_atoms= sum(plate.get_number_atoms() for plate in plates)
@@ -160,7 +160,7 @@ def writeMOL2(filename, plates, periodicity_conditions):
         global_atom_id= 1
         for i_plate, plate in enumerate(plates):
             residue_name= f"GRA{i_plate+1}"
-            atoms= plate.get_carbon_coords() + plate.get_oxide_coords()
+            atoms= plate.get_carbon_coords() + plate.get_oxide_coords() + plate.get_hydrogens_coords()
             for atom in atoms:
                 x, y, z, name= atom[:4]
                 x_ang= (x - min_coords[0]) * 10
