@@ -1,4 +1,3 @@
-import graphenegui.ui.resources_rc  # Used to register resources
 from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtGui import QIcon
 from .logic.main_window import MainWindow
@@ -30,9 +29,14 @@ def show_error_dialog(exc_type, exc_value, exc_traceback):
 
 def main():
     app = QApplication([])
-    app.setWindowIcon(QIcon(":/icons/img/svg/icon.svg"))
+
+    import graphenegui.ui.resources_rc  # Registra recursos después de QApplication
+
+    svg_icon = QIcon(":/icons/img/svg/icon.svg")
+    icon = svg_icon if not svg_icon.isNull() else QIcon(":/icons/img/png/icon.png")
+    app.setWindowIcon(icon)
     window = MainWindow()
-    window.setWindowIcon(QIcon(":/icons/img/svg/icon.svg"))
+    window.setWindowIcon(icon)
     window.show()
     app.exec()
 

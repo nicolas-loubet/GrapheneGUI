@@ -181,18 +181,30 @@ class Renderer:
         bg_color= self.colors[mode]["bg"]
         try:
             if not self.plates or self.cb_plates.currentIndex() == -1:
-                pixmap= QPixmap(":/icons/img/svg/background.svg")
-                if not pixmap.isNull():
-                    scaled_pixmap= pixmap.scaled(self.drawing_area.viewport().size(),
-                                                Qt.KeepAspectRatio,
-                                                Qt.SmoothTransformation)
-                    point= QPointF(
-                        (self.drawing_area.viewport().width() - scaled_pixmap.width()) / 2,
-                        (self.drawing_area.viewport().height() - scaled_pixmap.height()) / 2
-                    )
-                    painter.drawPixmap(point, scaled_pixmap)
+                svg_renderer= QSvgRenderer(":/icons/img/svg/background.svg")
+                if svg_renderer.isValid():
+                    vp= self.drawing_area.viewport()
+                    svg_size= svg_renderer.defaultSize()
+                    vp_size= vp.size()
+                    scale= min(vp_size.width() / svg_size.width(), vp_size.height() / svg_size.height())
+                    w= svg_size.width() * scale
+                    h= svg_size.height() * scale
+                    x= (vp_size.width() - w) / 2
+                    y= (vp_size.height() - h) / 2
+                    svg_renderer.render(painter, QRectF(x, y, w, h))
                 else:
-                    painter.fillRect(self.drawing_area.viewport().rect(), bg_color)
+                    pixmap= QPixmap(":/icons/img/png/background.png")
+                    if not pixmap.isNull():
+                        scaled_pixmap= pixmap.scaled(self.drawing_area.viewport().size(),
+                                                    Qt.KeepAspectRatio,
+                                                    Qt.SmoothTransformation)
+                        point= QPointF(
+                            (self.drawing_area.viewport().width() - scaled_pixmap.width()) / 2,
+                            (self.drawing_area.viewport().height() - scaled_pixmap.height()) / 2
+                        )
+                        painter.drawPixmap(point, scaled_pixmap)
+                    else:
+                        painter.fillRect(self.drawing_area.viewport().rect(), bg_color)
                 return
 
             painter.setRenderHint(QPainter.Antialiasing)

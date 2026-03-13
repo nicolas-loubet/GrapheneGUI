@@ -16,5 +16,21 @@
     <file>img/svg/oh.svg</file>
     <file>img/svg/o.svg</file>
     <file>img/svg/remove_one.svg</file>
+    <file>img/png/icon.png</file>
+    <file>img/png/background.png</file>
+    <file>img/png/create.png</file>
+    <file>img/png/duplicate.png</file>
+    <file>img/png/delete.png</file>
+    <file>img/png/import.png</file>
+    <file>img/png/export.png</file>
+    <file>img/png/cnt.png</file>
+    <file>img/png/reduce_H.png</file>
+    <file>img/png/lock.png</file>
+    <file>img/png/dark_light_mode.png</file>
+    <file>img/png/reduce.png</file>
+    <file>img/png/prob.png</file>
+    <file>img/png/oh.png</file>
+    <file>img/png/o.png</file>
+    <file>img/png/remove_one.png</file>
   </qresource>
 </RCC>

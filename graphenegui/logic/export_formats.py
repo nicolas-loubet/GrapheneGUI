@@ -136,7 +136,7 @@ def writeMOL2(filename, plates, periodicity_conditions):
     atom_type_dict= {"C": "ca", "CO": "c3", "CE": "c3", "OO": "oh", "HO": "ho", "OE": "os"}
     
     with open(filename, 'w') as f:
-        total_atoms= sum(plate.get_total_atoms() for plate in plates)
+        total_atoms= sum(plate.get_number_atoms() for plate in plates)
         bonds= []
         for i_plate, plate in enumerate(plates):
             plate_bonds= get_bonds_top(plate, plate.get_scale_factor())
