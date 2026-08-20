@@ -31,6 +31,7 @@ def readGRO(filename):
                 oxides.append([x, y, z, atomname_without_numbers, atomid, False, atomname_without_numbers])
 
         plates.append(Graphene.create_from_coords(carbons, oxides, hydrogens))
+    print("File read from " + filename)
     return plates
 
 def readXYZ(filename):
@@ -59,13 +60,10 @@ def readXYZ(filename):
             else:
                 raise Exception("Unknown atom type: " + atomname)
 
-        print("Create")
-        print(len(carbons), len(oxides))
         plate= Graphene.create_from_coords(carbons, oxides)
-        print("Change")
         change_name_carbons_oxidized(plate)
-        print("Done")
 
+    print("File read from " + filename)
     return [plate]
 
 def change_name_carbons_oxidized(plate):
@@ -155,7 +153,6 @@ def readMOL2(filename):
                 if internal_type.startswith("C"):
                     carbons.append([x, y, z, internal_type, atom_id, False, "ca"])
                 else:
-                    print(internal_type)
                     oxides.append([x, y, z, internal_type, atom_id, False, internal_type])
         
         if carbons or oxides:

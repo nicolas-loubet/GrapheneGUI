@@ -132,18 +132,30 @@ def writePDB(filename, plates, periodicity_conditions):
     
     print("File exported to " + filename)
 
-# Cargas parciales por tipo de átomo (misma fuente que usa write_atoms_top para el .top)
-CHARGE_TABLE= {
-    "CE": 0.18,
-    "CO": 0.18,
-    "OE": -0.36,
-    "OO": -0.57,
-    "HO": 0.39,
-    "H":  0.00,
+# Parámetros AMBER/GAFF por tipo de átomo: [tipo_top, carga_parcial, masa].
+# Única fuente de verdad para cargas: la usan tanto write_atoms_top (.top) como writeMOL2 (.mol2).
+ATOM_PARAMS_TOP= {
+    "CE": ["c",0.18,12.01],
+    "CO": ["c",0.18,12.01],
+    "OE": ["os",-0.36,15.9994],
+    "OO": ["oh",-0.57,15.9994],
+    "HO": ["ho",0.39,1.008],
+    "H":  ["hc",0.00,1.008]
 }
+CHARGE_TABLE= {k: v[1] for k, v in ATOM_PARAMS_TOP.items()}
 
 def get_partial_charge(type_code):
     return CHARGE_TABLE.get(type_code[:2], 0.0)
+
+def locate_global_atom(plates, global_id):
+    """Dado un id de átomo global (1-indexado) devuelve (índice de placa, índice local dentro de esa placa)."""
+    atom_count= 0
+    for i_plate, plate in enumerate(plates):
+        plate_atoms= plate.get_number_atoms()
+        if global_id - 1 < atom_count + plate_atoms:
+            return i_plate, (global_id - 1) - atom_count
+        atom_count+= plate_atoms
+    raise ValueError(f"Atom id {global_id} out of range for the given plates")
 
 def writeMOL2(filename, plates, periodicity_conditions):
     atom_type_dict= {"C": "ca", "CO": "c3", "CE": "cx", "OO": "oh", "HO": "ho", "OE": "os"}
@@ -204,26 +216,10 @@ def writeMOL2(filename, plates, periodicity_conditions):
         f.write("@<TRIPOS>BOND\n")
         for i, bond in enumerate(bonds, 1):
             ai, aj= bond
-            plate_idx_ai= 0
-            plate_idx_aj= 0
-            atom_count= 0
-            for i_plate, plate in enumerate(plates):
-                plate_atoms= plate.get_number_atoms()
-                if ai - 1 < atom_count + plate_atoms:
-                    plate_idx_ai= i_plate
-                    local_idx_ai= (ai - 1) - atom_count
-                    break
-                atom_count+= plate_atoms
-            atom_count= 0
-            for i_plate, plate in enumerate(plates):
-                plate_atoms= plate.get_number_atoms()
-                if aj - 1 < atom_count + plate_atoms:
-                    plate_idx_aj= i_plate
-                    local_idx_aj= (aj - 1) - atom_count
-                    break
-                atom_count+= plate_atoms
+            plate_idx_ai, local_idx_ai= locate_global_atom(plates, ai)
+            plate_idx_aj, local_idx_aj= locate_global_atom(plates, aj)
             atom_ai= (plates[plate_idx_ai].get_carbon_coords() + plates[plate_idx_ai].get_oxide_coords() + plates[plate_idx_ai].get_hydrogens_coords())[local_idx_ai]
-            atom_aj= (plates[plate_idx_aj].get_carbon_coords() + plates[plate_idx_aj].get_oxide_coords() + plates[plate_idx_ai].get_hydrogens_coords())[local_idx_aj]
+            atom_aj= (plates[plate_idx_aj].get_carbon_coords() + plates[plate_idx_aj].get_oxide_coords() + plates[plate_idx_aj].get_hydrogens_coords())[local_idx_aj]
             bond_type= "ar" if (atom_ai[3].startswith("C") and atom_aj[3].startswith("C") or
                                 atom_ai[3].startswith("C") and atom_aj[3].startswith("H") or
                                 atom_ai[3].startswith("H") and atom_aj[3].startswith("C")) else "1"
@@ -373,14 +369,7 @@ def write_atoms_top(plate, i_molec):
     atoms= change_name_oxides(plate, plate.get_carbon_coords(), plate.get_oxide_coords())
     atoms+= plate.get_hydrogens_coords()
 
-    atom_type_dict= {
-        "CE": ["c",0.18,12.01],
-        "CO": ["c",0.18,12.01],
-        "OE": ["os",-0.36,15.9994],
-        "OO": ["oh",-0.57,15.9994],
-        "HO": ["ho",0.39,1.008],
-        "H":  ["hc",0.00,1.008]
-    }
+    atom_type_dict= ATOM_PARAMS_TOP
     
     q_tot= 0.0
     for i,atom in enumerate(atoms):
