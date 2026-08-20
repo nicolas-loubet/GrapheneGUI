@@ -57,15 +57,15 @@ class Graphene:
 
         return cls(coords, [], [])
 
+    def _translated(self, coords, translations):
+        dx, dy, dz= translations
+        return [[c[0]+dx, c[1]+dy, c[2]+dz, c[3], c[4], c[5], c[6]] for c in coords]
+
     def duplicate(self, translations):
-        carbons,oxides,hydrogens= [],[],[]
-        for c in self.carbon_coords:
-            carbons.append([c[0] + translations[0], c[1] + translations[1], c[2] + translations[2], c[3], c[4], c[5], c[6]])
-        for o in self.oxide_coords:
-            oxides.append([o[0] + translations[0], o[1] + translations[1], o[2] + translations[2], o[3], o[4], o[5], o[6]])
-        for h in self.hydrogens_coords:
-            hydrogens.append([h[0] + translations[0], h[1] + translations[1], h[2] + translations[2], h[3], h[4], h[5], h[6]])
-        return Graphene.create_from_coords(carbons,oxides,hydrogens)
+        carbons= self._translated(self.carbon_coords, translations)
+        oxides= self._translated(self.oxide_coords, translations)
+        hydrogens= self._translated(self.hydrogens_coords, translations)
+        return Graphene.create_from_coords(carbons, oxides, hydrogens)
 
     def add_carbon(self, x, y, z, atom_name, atom_index, modified=False, atom_type="ca"):
         self.carbon_coords.append([x, y, z, atom_name, atom_index, modified, atom_type])
@@ -246,19 +246,21 @@ class Graphene:
         return oxides_to_remove
     
     def recheck_ox_indexes(self):
-        prev_ox= self.oxide_coords
+        original_ox= self.oxide_coords
         self.oxide_coords= []
         i_atom= len(self.carbon_coords)
 
-        for i in range(len(prev_ox)):
-            if prev_ox[i][3] == "OO":
-                if i+1 < len(prev_ox) and prev_ox[i+1][3] == "HO": continue
+        fixed_ox= []
+        for i, ox in enumerate(original_ox):
+            fixed_ox.append(ox)
+            if ox[3] == "OO":
+                has_paired_h= i+1 < len(original_ox) and original_ox[i+1][3] == "HO"
+                if not has_paired_h:
+                    z_dir= 1 if ox[2] > self.carbon_coords[0][2] else -1
+                    new_ox= [ox[0]+.093, ox[1], ox[2]+z_dir*.032, "HO", -1, ox[5], ox[6]]
+                    fixed_ox.append(new_ox)
 
-                z_dir= 1 if prev_ox[i][2] > self.carbon_coords[0][2] else -1
-                new_ox= [prev_ox[i][0]+.093, prev_ox[i][1], prev_ox[i][2]+z_dir*.032, "HO", -1, prev_ox[i][5], prev_ox[i][6]]
-                prev_ox= prev_ox[:i+1] + [new_ox] + prev_ox[i+1:]
-
-        for ox in prev_ox:
+        for ox in fixed_ox:
             i_atom+= 1
             self.add_oxide(ox[0], ox[1], ox[2], ox[3], i_atom, ox[5])
 
