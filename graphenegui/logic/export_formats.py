@@ -176,21 +176,26 @@ def writeMOL2(filename, plates, periodicity_conditions):
             atoms= plate.get_carbon_coords() + plate.get_oxide_coords() + plate.get_hydrogens_coords()
             for atom in atoms:
                 x, y, z, name= atom[:4]
+                atom_type_field= atom[6]
                 x_ang= (x - min_coords[0]) * 10
                 y_ang= (y - min_coords[1]) * 10
                 z_ang= (z - min_coords[2]) * 10
-                mol2_type= atom_type_dict.get(name, atom_type_dict["C"])
-                charge_type= name  # por defecto: oxides (OO/HO/OE) y bordes (H..) usan su propio nombre
-                if(mol2_type == atom_type_dict["C"]):
-                    charge_type= "C"  # carbono sp2 sin oxidar, carga 0.0
-                    list_ox= plate.get_oxides_for_carbon(atom)
-                    if(len(list_ox) != 0):
-                        if(list_ox[0][3] == "OO"):
-                            mol2_type= atom_type_dict.get("CO")
-                            charge_type= "CO"
-                        if(list_ox[0][3] == "OE"):
-                            mol2_type= atom_type_dict.get("CE")
-                            charge_type= "CE"
+                if(atom_type_field == "ha"):
+                    mol2_type= "ha"  # hidrógeno de borde (reduce_borders), no confundir con carbono
+                    charge_type= "H"
+                else:
+                    mol2_type= atom_type_dict.get(name, atom_type_dict["C"])
+                    charge_type= name  # por defecto: oxides (OO/HO/OE) usan su propio nombre
+                    if(mol2_type == atom_type_dict["C"]):
+                        charge_type= "C"  # carbono sp2 sin oxidar, carga 0.0
+                        list_ox= plate.get_oxides_for_carbon(atom)
+                        if(len(list_ox) != 0):
+                            if(list_ox[0][3] == "OO"):
+                                mol2_type= atom_type_dict.get("CO")
+                                charge_type= "CO"
+                            if(list_ox[0][3] == "OE"):
+                                mol2_type= atom_type_dict.get("CE")
+                                charge_type= "CE"
                 charge= get_partial_charge(charge_type)
                 f.write(f"{global_atom_id:>7} {name:<8} {x_ang:>8.4f} {y_ang:>8.4f} {z_ang:>8.4f} "
                         f"{mol2_type:<8} {i_plate+1:>3} {residue_name:<8} {charge:>7.4f}\n")
