@@ -132,6 +132,19 @@ def writePDB(filename, plates, periodicity_conditions):
     
     print("File exported to " + filename)
 
+# Cargas parciales por tipo de átomo (misma fuente que usa write_atoms_top para el .top)
+CHARGE_TABLE= {
+    "CE": 0.18,
+    "CO": 0.18,
+    "OE": -0.36,
+    "OO": -0.57,
+    "HO": 0.39,
+    "H":  0.00,
+}
+
+def get_partial_charge(type_code):
+    return CHARGE_TABLE.get(type_code[:2], 0.0)
+
 def writeMOL2(filename, plates, periodicity_conditions):
     atom_type_dict= {"C": "ca", "CO": "c3", "CE": "cx", "OO": "oh", "HO": "ho", "OE": "os"}
     
@@ -152,7 +165,7 @@ def writeMOL2(filename, plates, periodicity_conditions):
         f.write("@<TRIPOS>MOLECULE\n")
         f.write("GrapheneGUI\n")
         f.write(f"{total_atoms:>6} {len(bonds):>6} {total_residues:>6}    0    0\n")
-        f.write("SMALL\nNO_CHARGES\n\n")
+        f.write("SMALL\nUSER_CHARGES\n\n")
         f.write("File created by GrapheneGUI\n")
         
         f.write("@<TRIPOS>ATOM\n")
@@ -167,13 +180,20 @@ def writeMOL2(filename, plates, periodicity_conditions):
                 y_ang= (y - min_coords[1]) * 10
                 z_ang= (z - min_coords[2]) * 10
                 mol2_type= atom_type_dict.get(name, atom_type_dict["C"])
+                charge_type= name  # por defecto: oxides (OO/HO/OE) y bordes (H..) usan su propio nombre
                 if(mol2_type == atom_type_dict["C"]):
+                    charge_type= "C"  # carbono sp2 sin oxidar, carga 0.0
                     list_ox= plate.get_oxides_for_carbon(atom)
                     if(len(list_ox) != 0):
-                        if(list_ox[0][3] == "OO"): mol2_type= atom_type_dict.get("CO")
-                        if(list_ox[0][3] == "OE"): mol2_type= atom_type_dict.get("CE")
+                        if(list_ox[0][3] == "OO"):
+                            mol2_type= atom_type_dict.get("CO")
+                            charge_type= "CO"
+                        if(list_ox[0][3] == "OE"):
+                            mol2_type= atom_type_dict.get("CE")
+                            charge_type= "CE"
+                charge= get_partial_charge(charge_type)
                 f.write(f"{global_atom_id:>7} {name:<8} {x_ang:>8.4f} {y_ang:>8.4f} {z_ang:>8.4f} "
-                        f"{mol2_type:<8} {i_plate+1:>3} {residue_name:<8} 0.0000\n")
+                        f"{mol2_type:<8} {i_plate+1:>3} {residue_name:<8} {charge:>7.4f}\n")
                 global_atom_id+= 1
         
         f.write("@<TRIPOS>BOND\n")
