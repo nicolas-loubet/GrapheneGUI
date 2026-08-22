@@ -22,12 +22,16 @@ setup(
         ],
     },
     install_requires=[
-        "PySide6>=6.0.0",
         "numpy>=1.19.0",
+        "PyYAML>=6.0",
     ],
+    extras_require={
+        "gui": ["PySide6>=6.0.0"],
+    },
     entry_points={
         "console_scripts": [
-            "graphene-gui=graphenegui.__main__:main"
+            "graphene-gui=graphenegui.__main__:main",
+            "graphene-gui-cli=graphenegui.logic.cli:main",
         ]
     },
     classifiers=[

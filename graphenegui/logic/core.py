@@ -125,10 +125,10 @@ def apply_oxidation(plate, list_carbons, z_mode, prob_oh):
 # Geometría de placa
 # ================================
 
-def compute_plate_grid(width_mm, height_mm, factor):
+def compute_plate_grid(width_ang, height_ang, factor):
     """Convierte ancho/alto (como los spinboxes del diálogo 'Create', en Å) a la grilla n_x, n_y."""
-    width_nm= width_mm / 10
-    height_nm= height_mm / 10
+    width_nm= width_ang / 10
+    height_nm= height_ang / 10
     n_x= math.floor(width_nm / (2 * 0.1225 * factor))
     n_y= math.floor(height_nm / (6 * 0.071 * factor)) + 1
     return n_x, n_y
@@ -191,6 +191,19 @@ def roll_atoms_as_CNT(atoms, roll_vec, center=[0,0,0]):
         new_atoms[i][:3]= np.array(new_atoms[i][:3], dtype=float) - displacement
 
     return remove_overlapping_atoms(new_atoms)
+
+
+def apply_cnt(plate, roll_vec, center=None):
+    """Enrolla la placa como CNT, replicando main_window.handle_btn_cnt_clicked: mismo orden
+    (set_is_CNT ANTES de set_atoms, si no restore_plate() queda roto) y sin hidrógenos de
+    borde (ese flujo es excluyente con reduce_borders en la GUI). Muta la placa in-place."""
+    if center is None:
+        center= plate.get_geometric_center()
+    atoms= plate.get_carbon_coords() + plate.get_oxide_coords()
+    new_atoms= roll_atoms_as_CNT(atoms, roll_vec, center)
+    plate.set_is_CNT(True)
+    plate.set_atoms(new_atoms)
+    return plate
 
 
 # ================================
