@@ -1,12 +1,36 @@
 from .graphene import Graphene
 
+class _PlateAccumulator:
+    """Junta átomos por número de molécula y va cerrando/abriendo placas a
+    medida que ese número sube. Común a readGRO/readPDB/readMOL2."""
+    def __init__(self, track_hydrogens=False):
+        self.plates= []
+        self.carbons= []
+        self.oxides= []
+        self.hydrogens= [] if track_hydrogens else None
+        self.track_hydrogens= track_hydrogens
+        self.current_molec= 0
+
+    def start_new_plate_if_needed(self, molec_num):
+        if molec_num > self.current_molec:
+            self.close_plate()
+            self.current_molec= molec_num
+
+    def close_plate(self, force=False):
+        if not (force or self.carbons or self.oxides): return
+        if self.track_hydrogens:
+            self.plates.append(Graphene.create_from_coords(self.carbons, self.oxides, self.hydrogens))
+            self.hydrogens= []
+        else:
+            self.plates.append(Graphene.create_from_coords(self.carbons, self.oxides))
+        self.carbons, self.oxides= [], []
+
 def readGRO(filename):
     with open(filename, 'r') as f:
         f.readline()
         natoms= int(f.readline().strip())
 
-        plates= []
-        carbons, oxides, hydrogens= [], [], []
+        acc= _PlateAccumulator(track_hydrogens=True)
         for _ in range(natoms):
             line= f.readline()
             molecnum= int(line[0:5])
@@ -16,23 +40,21 @@ def readGRO(filename):
             y= float(line[28:36])
             z= float(line[36:44])
 
-            if molecnum > len(plates)+1:
-                plates.append(Graphene.create_from_coords(carbons, oxides))
-                carbons, oxides= [], []
+            acc.start_new_plate_if_needed(molecnum)
 
             if atomname.startswith("C"):
-                carbons.append([x, y, z, atomname, atomid, False, "ca"])
+                acc.carbons.append([x, y, z, atomname, atomid, False, "ca"])
             elif atomname.startswith("H") and not atomname.startswith("HO"):
-                hydrogens.append([x, y, z, atomname, atomid, False, "ha"])
+                acc.hydrogens.append([x, y, z, atomname, atomid, False, "ha"])
             else:
                 atomname_without_numbers= atomname
                 while atomname_without_numbers[-1].isdigit():
                     atomname_without_numbers= atomname_without_numbers[:-1]
-                oxides.append([x, y, z, atomname_without_numbers, atomid, False, atomname_without_numbers])
+                acc.oxides.append([x, y, z, atomname_without_numbers, atomid, False, atomname_without_numbers])
 
-        plates.append(Graphene.create_from_coords(carbons, oxides, hydrogens))
+        acc.close_plate(force=True)
     print("File read from " + filename)
-    return plates
+    return acc.plates
 
 def readXYZ(filename):
     with open(filename, 'r') as f:
@@ -79,9 +101,7 @@ def change_name_carbons_oxidized(plate):
         
 def readPDB(filename):
     with open(filename, 'r') as f:
-        plates= []
-        carbons, oxides= [], []
-        current_molec= 0
+        acc= _PlateAccumulator()
         
         for line in f:
             if line.startswith("ATOM"):
@@ -93,33 +113,26 @@ def readPDB(filename):
                 y= float(line[38:46].strip()) / 10.0
                 z= float(line[46:54].strip()) / 10.0
                 
-                if molec_num > current_molec:
-                    if carbons or oxides:
-                        plates.append(Graphene.create_from_coords(carbons, oxides))
-                        carbons, oxides= [], []
-                    current_molec= molec_num
+                acc.start_new_plate_if_needed(molec_num)
                 
                 if atom_name.startswith("C"):
-                    carbons.append([x, y, z, atom_name, atom_id, False, "ca"])
+                    acc.carbons.append([x, y, z, atom_name, atom_id, False, "ca"])
                 elif atom_name[:2] in ("OO", "HO", "OE"):
-                    oxides.append([x, y, z, atom_name[:2], atom_id, False, atom_name[:2]])
+                    acc.oxides.append([x, y, z, atom_name[:2], atom_id, False, atom_name[:2]])
                 else:
                     raise Exception("Unknown atom type: " + atom_name)
         
-        if carbons or oxides:
-            plates.append(Graphene.create_from_coords(carbons, oxides))
+        acc.close_plate()
         
-        for plate in plates:
+        for plate in acc.plates:
             change_name_carbons_oxidized(plate)
     
     print("File read from " + filename)
-    return plates
+    return acc.plates
 
 def readMOL2(filename):
     with open(filename, 'r') as f:
-        plates= []
-        carbons, oxides= [], []
-        current_molec= 0
+        acc= _PlateAccumulator()
         current_section= None
         
         atom_type_map= {"ca": "C", "c3": "CO", "cx": "CE", "oh": "OO", "ho": "HO", "os": "OE"}
@@ -143,24 +156,17 @@ def readMOL2(filename):
                 
                 internal_type= atom_type_map.get(mol2_type, "C")
                 
-                if residue_num > current_molec:
-                    if carbons or oxides:
-                        plate= Graphene.create_from_coords(carbons, oxides)
-                        plates.append(plate)
-                        carbons, oxides= [], []
-                    current_molec= residue_num
+                acc.start_new_plate_if_needed(residue_num)
                 
                 if internal_type.startswith("C"):
-                    carbons.append([x, y, z, internal_type, atom_id, False, "ca"])
+                    acc.carbons.append([x, y, z, internal_type, atom_id, False, "ca"])
                 else:
-                    oxides.append([x, y, z, internal_type, atom_id, False, internal_type])
+                    acc.oxides.append([x, y, z, internal_type, atom_id, False, internal_type])
         
-        if carbons or oxides:
-            plate= Graphene.create_from_coords(carbons, oxides)
-            plates.append(plate)
+        acc.close_plate()
         
-        for plate in plates:
+        for plate in acc.plates:
             change_name_carbons_oxidized(plate)
     
     print("File read from " + filename)
-    return plates
+    return acc.plates
