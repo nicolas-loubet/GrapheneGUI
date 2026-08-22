@@ -2,7 +2,7 @@
 
 **Graphene GUI** is a Qt (PySide6)-based graphical interface for creating and functionalizing graphene and graphene oxide slabs. It allows rapid construction, modification, and export of graphene structures for molecular simulations.
 
-### Versión: 4.5
+### Versión: 5.0
 
 ## 🧪 Purpose
 
@@ -21,19 +21,19 @@ The program's goal is to facilitate and accelerate the creation of customized gr
   - `.top` (topology for GROMACS)
   - `.mol2` (MOL2 format for computational chemistry)
 - Convert graphene to CNT (zigzag or armchair)
+- Headless (CLI) mode: create, oxidize, roll into CNT, duplicate, and export
+  driven by a YAML config file or one-off command-line overrides — no GUI needed.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
 - Python ≥ 3.6
-- [PySide6](https://pypi.org/project/PySide6/)
 - NumPy
+- [PyYAML](https://pypi.org/project/PyYAML/) (needed for the headless CLI)
+- [PySide6](https://pypi.org/project/PySide6/) (needed only for the graphical app — skip it if you only use the headless CLI)
 
 ## Installation on Linux
-
-### Option 1: Using pip (recommended if possible)
-
 
 1. Clone the repository:
 
@@ -41,72 +41,41 @@ The program's goal is to facilitate and accelerate the creation of customized gr
 git clone https://github.com/nicolas-loubet/GrapheneGUI.git && cd GrapheneGUI/
 ```
 
-2. Install requirements:
+2. Install the package (Python 3.8+):
 
-Make sure you have Python 3.8+ installed.
+```bash
+pip install ".[gui]"
+```
+
+> Only using the headless CLI and don't need the graphical app? `pip install .` (without `[gui]`) skips the PySide6 dependency.
+
+If you get an `error: externally-managed-environment` (Ubuntu 23.04+, Debian 12+, and other modern distros restrict system-wide pip installs per PEP 668), create a virtual environment first and install into that instead:
+
+```bash
+python3 -m venv graphene-gui-env && source graphene-gui-env/bin/activate && pip install ".[gui]"
+```
+
+3. Run it:
+
+```bash
+graphene-gui        # graphical app
+graphene-gui-cli    # headless CLI
+```
+
+You can also install straight from GitHub without cloning first:
+
+```bash
+pip install "git+https://github.com/nicolas-loubet/GrapheneGUI.git#egg=GrapheneGUI[gui]"
+```
+
+### Running without installing
+
+If you'd rather not install the package at all, just clone (or download) the
+repository, install the dependencies, and run the module directly:
 
 ```bash
 pip install -r requirements.txt
-```
-
-> **Note:** If you find an error at this point, try option 2.
-
-3. Install the package using pip:
-
-```bash
-pip install .
-```
-
-4. After installation, run the program using:
-
-```bash
-graphene-gui
-```
-
-Alternatively, install directly from GitHub:
-
-```bash
-pip install git+https://github.com/nicolas-loubet/GrapheneGUI.git
-```
-
-And run with:
-
-```bash
-python3 main.py
-```
-
-### Option 2: If you get the "externally-managed-environment" error
-
-On modern Linux distributions (Ubuntu 23.04+, Debian 12+, etc.), the system Python is externally managed according to PEP 668.
-This means pip cannot install packages system-wide to avoid breaking the OS.
-
-If you see an error like:
-
-```bash
-error: externally-managed-environment
-× This environment is externally managed
-```
-
-You have some safe alternatives. I recommend creating a virtual environment.
-
-This is the most flexible option and works everywhere.
-
-```bash
-python3 -m venv graphene-gui-env && source graphene-gui-env/bin/activate && pip install git+https://github.com/nicolas-loubet/GrapheneGUI.git
-```
-
-Then you just run it with
-
-```bash
-graphene-gui
-```
-
-### Option 3: Manual running
-
-Also, you can just download the repository and run it:
-
-```bash
-python3 main.py
+python3 -m graphenegui
 ```
 
 
@@ -171,6 +140,25 @@ python -m graphenegui
 5. Export the system using the `Export` dialog and select .gro, .pdb, .xyz, .mol2, or .top.
 
 
+## 🖥️ Headless mode (CLI)
+
+Since v5.0, GrapheneGUI can also run without opening any window, driven by a
+YAML config file and/or one-off overrides on the command line. Useful for
+scripting and batch runs.
+
+```bash
+graphene-gui-cli -c config.yaml
+graphene-gui-cli -c config.yaml --set plate.factor=1.2 --set export.output_dir=./output
+```
+
+It supports the same building blocks as the graphical app: plate creation,
+oxidation by expression, CNT rolling, duplicates (multi-plate systems),
+custom atom types, and export to any of the supported formats.
+
+See [`headless_config_example.yaml`](headless_config_example.yaml) in the
+repo for the full config schema and an example of every section.
+
+
 ## 📁 File Formats
 - .gro: Atom positions and box for GROMACS.
 
@@ -194,6 +182,9 @@ python -m graphenegui
   - CE, CO → Carbon sp3
   - OE, OO → Oxygen
   - HO → Hydrogen
+
+- `.mol2` export includes real per-atom partial charges (AMBER/GAFF-style, the
+  same values used to build the `.top`), not a placeholder 0.0.
 
 
 ## 📜 License
