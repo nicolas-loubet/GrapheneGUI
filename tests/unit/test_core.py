@@ -65,13 +65,15 @@ class TestDuplicatesBookkeeping(unittest.TestCase):
         # corrimiento de índices) queda registrada como duplicado de la que era 2 (ahora 1)
         self.assertEqual(duplicates_list, [[2], [1]])
 
-    def test_manage_duplicates_for_deletion_noop_when_index_unrelated(self):
-        """⚠️ Comportamiento ACTUAL, marcado como posible bug en el TODO: si se borra una
-        placa que no participa de ninguna relación de duplicados, la función no corre los
-        índices de las demás (el 'if/elif/else: return' corta antes de llegar al shift)."""
+    def test_manage_duplicates_for_deletion_shifts_even_when_index_unrelated(self):
+        """FIX: antes, si se borraba una placa que no participaba de ninguna relacion
+        de duplicados, la funcion no corria los indices de las demas (el 'if/elif/else:
+        return' cortaba antes de llegar al shift). Ahora corre siempre - aca la placa 1
+        (sin relacion con nada) se borra, y las placas 2 y 3 (con relacion entre si)
+        bajan un lugar cada una."""
         duplicates_list= [[3], [2]]
         core.manage_duplicates_for_deletion(duplicates_list, 1, index_would_be_removed=True)
-        self.assertEqual(duplicates_list, [[3], [2]])  # no cambia nada, aunque se borró la placa 1
+        self.assertEqual(duplicates_list, [[2], [1]])
 
     def test_compute_duplicate_translation_relative(self):
         t= core.compute_duplicate_translation(10, 0, 0, absolute=False, plate_center=[5, 5, 5])
@@ -169,6 +171,40 @@ class TestUnsupportedExtensions(unittest.TestCase):
         plate= Graphene.create_from_params(2, 2, 0, 0, 0, 1.0, False)
         with self.assertRaises(ValueError):
             core.export_plates("whatever.foo", [plate], [False, False])
+
+
+class TestApplyOxidationExplicit(unittest.TestCase):
+    def setUp(self):
+        self.plate= Graphene.create_from_params(3, 3, 0, 0, 0, 1.0, False)
+
+    def test_adds_exact_atoms_without_recomputation(self):
+        n_before= self.plate.get_number_atoms()
+        oxide_atoms= [
+            (0.0, 0.71, 0.149, "OO"),
+            (0.093, 0.71, 0.181, "HO"),
+        ]
+        added= core.apply_oxidation_explicit(self.plate, oxide_atoms)
+        self.assertEqual(added, 1)  # cuenta el OO, no el HO que lo acompaña
+        self.assertEqual(self.plate.get_number_atoms(), n_before + 2)
+
+        oxides= self.plate.get_oxide_coords()
+        self.assertEqual((oxides[-2][0], oxides[-2][1], oxides[-2][2], oxides[-2][3]), (0.0, 0.71, 0.149, "OO"))
+        self.assertEqual((oxides[-1][0], oxides[-1][1], oxides[-1][2], oxides[-1][3]), (0.093, 0.71, 0.181, "HO"))
+
+    def test_empty_list_is_noop(self):
+        n_before= self.plate.get_number_atoms()
+        added= core.apply_oxidation_explicit(self.plate, [])
+        self.assertEqual(added, 0)
+        self.assertEqual(self.plate.get_number_atoms(), n_before)
+
+    def test_does_not_touch_existing_oxides(self):
+        carbons= self.plate.get_carbon_coords()
+        self.plate.add_oxydation_to_list_of_carbon(carbons[:2], z_mode=2, prob_oh=100)
+        n_oxides_before= len(self.plate.get_oxide_coords())
+
+        core.apply_oxidation_explicit(self.plate, [(0.5, 0.5, 0.149, "OO"), (0.593, 0.5, 0.181, "HO")])
+
+        self.assertEqual(len(self.plate.get_oxide_coords()), n_oxides_before + 2)
 
 
 if __name__ == "__main__":

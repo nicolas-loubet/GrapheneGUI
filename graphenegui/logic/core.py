@@ -37,9 +37,11 @@ def manage_duplicates_for_deletion(duplicates_list, index, index_would_be_remove
                 duplicates_list[1][indexes_in_list[i]]= new_base
             duplicates_list[0].pop(indexes_in_list[0])
             duplicates_list[1].pop(indexes_in_list[0])
-    else:
-        return
 
+    # Nota: si index no participa de ninguna relación de duplicados (ni como root ni
+    # como duplicado), no hay nada que popear arriba — pero el shift de abajo tiene
+    # que correr igual, porque borrar CUALQUIER placa corre la numeración de todas
+    # las que están después. Antes había un "else: return" acá que lo cortaba.
     if index_would_be_removed:
         for i in range(len(duplicates_list[0])):
             for j in range(2):
@@ -119,6 +121,23 @@ def apply_oxidation(plate, list_carbons, z_mode, prob_oh):
     """Aplica la oxidación sobre la placa y devuelve la cantidad de oxidaciones hechas."""
     if not list_carbons: return 0
     return plate.add_oxydation_to_list_of_carbon(list_carbons, z_mode, prob_oh)
+
+def apply_oxidation_explicit(plate, oxide_atoms):
+    """Modo 'hard replica': agrega exactamente estos átomos de óxido ya resueltos
+    (posición + tipo), SIN volver a elegir al azar OO vs OE como hace
+    add_oxydation_to_list_of_carbon. Pensado para reproducir una sesión real tal
+    cual quedó, no una sesión "parecida".
+    oxide_atoms es una lista de (x, y, z, oxide_type) en nm — el mismo formato que
+    devuelve plate.get_oxide_coords() sin el índice ni el flag 'modified'.
+    Devuelve la cantidad de sitios de oxidación agregados (cuenta OO/OE, no los
+    HO que los acompañan, igual que add_oxydation_to_list_of_carbon)."""
+    added= 0
+    for x, y, z, oxide_type in oxide_atoms:
+        i_atom= plate.get_number_atoms() + 1
+        plate.add_oxide(x, y, z, oxide_type, i_atom)
+        if oxide_type != "HO":
+            added+= 1
+    return added
 
 
 # ================================

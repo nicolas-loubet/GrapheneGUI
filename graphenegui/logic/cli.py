@@ -40,6 +40,22 @@ def build_plate(cfg):
 def apply_oxidations(plate, cfg):
     z_mode_map= {"+z": 0, "-z": 1, "random": 2}
     for step in cfg.get("oxidation", []):
+        mode= step.get("mode", "soft")
+
+        if mode == "hard":
+            oxides= step.get("oxides")
+            if not oxides:
+                sys.exit("oxidation step with mode: hard needs a non-empty 'oxides' list")
+            # cada entrada es [x, y, z, type] en Å (mismas unidades que el resto del
+            # config); se convierte a nm, que es lo que usa Graphene internamente.
+            oxide_atoms= [(x/10, y/10, z/10, t) for x, y, z, t in oxides]
+            done= core.apply_oxidation_explicit(plate, oxide_atoms)
+            print(f"  oxidized {done} sites (hard replica, {len(oxides)} oxide atoms)")
+            continue
+
+        if mode != "soft":
+            sys.exit(f"Unknown oxidation mode: {mode!r} (expected 'soft' or 'hard')")
+
         expr= step.get("expression", "")
         prob_oh= step.get("prob_oh", 100)
         fraction= step.get("fraction", 1.0)

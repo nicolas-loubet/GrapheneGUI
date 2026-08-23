@@ -126,6 +126,89 @@ export:
             self.assertTrue(os.path.exists(top_path))
             self.assertIn("ca2", open(top_path).read())
 
+    def _hard_replica_config(self, output_dir, name):
+        return f"""
+plate:
+  width: 40
+  height: 40
+  factor: 1.0
+
+oxidation:
+  - mode: hard
+    oxides:
+      - [0.000, 7.100, 1.49, "OO"]
+      - [0.930, 7.100, 1.81, "HO"]
+      - [24.500, 0.000, 1.49, "OO"]
+      - [25.430, 0.000, 1.81, "HO"]
+
+export:
+  formats: [mol2]
+  output_dir: {output_dir}
+  name: {name}
+"""
+
+    def test_hard_replica_is_deterministic_across_runs(self):
+        """Correr el mismo config hard replica dos veces tiene que dar exactamente
+        el mismo archivo, sin ningún elemento de azar de por medio."""
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path= os.path.join(tmp, "config.yaml")
+            with open(config_path, "w") as f:
+                f.write(self._hard_replica_config(os.path.join(tmp, "out1"), "run"))
+            cli.main(["-c", config_path])
+
+            with open(config_path, "w") as f:
+                f.write(self._hard_replica_config(os.path.join(tmp, "out2"), "run"))
+            cli.main(["-c", config_path])
+
+            content1= open(os.path.join(tmp, "out1", "run.mol2")).read()
+            content2= open(os.path.join(tmp, "out2", "run.mol2")).read()
+            self.assertEqual(content1, content2)
+
+    def test_hard_replica_oxidizes_exact_count(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path= os.path.join(tmp, "config.yaml")
+            output_dir= os.path.join(tmp, "out")
+            with open(config_path, "w") as f:
+                f.write(self._hard_replica_config(output_dir, "hard"))
+            cli.main(["-c", config_path])
+
+            plates_read= inf.readMOL2(os.path.join(output_dir, "hard.mol2"))
+            self.assertEqual(plates_read[0].get_oxide_count(), 2)  # 2 sitios OO, no cuenta los HO
+
+    def test_hard_replica_missing_oxides_exits(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path= os.path.join(tmp, "config.yaml")
+            with open(config_path, "w") as f:
+                f.write(f"""
+plate:
+  width: 30
+  height: 30
+oxidation:
+  - mode: hard
+export:
+  formats: [mol2]
+  output_dir: {os.path.join(tmp, "out")}
+""")
+            with self.assertRaises(SystemExit):
+                cli.main(["-c", config_path])
+
+    def test_unknown_oxidation_mode_exits(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path= os.path.join(tmp, "config.yaml")
+            with open(config_path, "w") as f:
+                f.write(f"""
+plate:
+  width: 30
+  height: 30
+oxidation:
+  - mode: bogus
+export:
+  formats: [mol2]
+  output_dir: {os.path.join(tmp, "out")}
+""")
+            with self.assertRaises(SystemExit):
+                cli.main(["-c", config_path])
+
 
 if __name__ == "__main__":
     unittest.main()
