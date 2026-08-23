@@ -74,5 +74,33 @@ class TestGroRoundTrip(unittest.TestCase):
         self.assertEqual(plates_read[0].get_number_atoms(), n_before)
 
 
+class TestXyzRoundTrip(unittest.TestCase):
+    def test_roundtrip_preserves_atom_count(self):
+        plate= Graphene.create_from_params(3, 3, 0, 0, 0, 1.0, False)
+        n_before= plate.get_number_atoms()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path= os.path.join(tmp, "roundtrip.xyz")
+            ef.writeXYZ(path, [plate], [False, False])
+            plates_read= inf.readXYZ(path)
+
+        self.assertEqual(len(plates_read), 1)
+        self.assertEqual(plates_read[0].get_number_atoms(), n_before)
+
+
+class TestPdbRoundTrip(unittest.TestCase):
+    def test_roundtrip_preserves_atom_count(self):
+        plate= Graphene.create_from_params(3, 3, 0, 0, 0, 1.0, False)
+        n_before= plate.get_number_atoms()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path= os.path.join(tmp, "roundtrip.pdb")
+            ef.writePDB(path, [plate], [False, False])
+            plates_read= inf.readPDB(path)
+
+        self.assertEqual(len(plates_read), 1)
+        self.assertEqual(plates_read[0].get_number_atoms(), n_before)
+
+
 if __name__ == "__main__":
     unittest.main()

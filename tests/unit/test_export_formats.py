@@ -62,5 +62,58 @@ class TestWriteMol2Charges(unittest.TestCase):
         self.assertTrue(any(abs(c) > 1e-9 for c in charges))  # ya no todo 0.0000
 
 
+class TestCheckBounds(unittest.TestCase):
+    def test_periodicity_adds_expected_margin(self):
+        plate= Graphene.create_from_params(4, 4, 0, 0, 0, 1.0, False)
+        _, bounds_flat= ef.checkBounds([plate], [False, False])
+        _, bounds_px= ef.checkBounds([plate], [True, False])
+        _, bounds_py= ef.checkBounds([plate], [False, True])
+
+        self.assertAlmostEqual(bounds_px[0] - bounds_flat[0], 0.1225 * plate.get_scale_factor(), places=6)
+        self.assertAlmostEqual(bounds_py[1] - bounds_flat[1], 0.142 * plate.get_scale_factor(), places=6)
+
+    def test_bounds_are_positive_for_nonempty_plate(self):
+        plate= Graphene.create_from_params(4, 4, 0, 0, 0, 1.0, False)
+        _, bounds= ef.checkBounds([plate], [False, False])
+        self.assertGreater(bounds[0], 0)
+        self.assertGreater(bounds[1], 0)
+
+
+class TestMol2BondTypes(unittest.TestCase):
+    def test_pure_carbon_plate_has_only_aromatic_bonds(self):
+        plate= Graphene.create_from_params(3, 3, 0, 0, 0, 1.0, False)
+        with tempfile.TemporaryDirectory() as tmp:
+            path= os.path.join(tmp, "bonds.mol2")
+            ef.writeMOL2(path, [plate], [False, False])
+            content= open(path).read()
+
+        bond_block= content.split("@<TRIPOS>BOND")[1].split("@<TRIPOS>SUBSTRUCTURE")[0]
+        bond_types= {line.split()[-1] for line in bond_block.strip().splitlines()}
+        self.assertEqual(bond_types, {"ar"})  # todo C-C en una placa sin oxidar
+
+
+class TestWriteTopSmoke(unittest.TestCase):
+    """No tengo a la vista el cuerpo completo de writeTOP (secciones bonds/angles/
+    dihedrals), así que este es un smoke test superficial: confirma que exporta sin
+    explotar y que un atom_type custom llega al archivo. Si falla, puede ser una señal
+    de que atom_types no está conectado como asumo — avisar, no asumir que es un bug mío."""
+    def test_top_export_with_custom_atom_type(self):
+        plate= Graphene.create_from_params(3, 3, 0, 0, 0, 1.0, False)
+        carbons= plate.get_carbon_coords()
+        plate.add_oxydation_to_list_of_carbon(list(carbons), z_mode=2, prob_oh=100)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path= os.path.join(tmp, "test.top")
+            from graphenegui.logic import core
+            core.export_plates(path, [plate], [False, False],
+                                atom_types={"ca2": {"epsilon": 0.3, "sigma": 3.2}},
+                                duplicates_list=[[], []])
+            self.assertTrue(os.path.exists(path))
+            content= open(path).read()
+
+        self.assertGreater(len(content), 0)
+        self.assertIn("ca2", content)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -219,7 +219,11 @@ def load_plates_from_file(ext, file_name):
 def export_plates(file_name, plates, periodicity_conditions, atom_types=None, duplicates_list=None, progress_callback=None):
     """Despacha a la función de export correcta según la extensión de file_name."""
     if file_name.endswith(".top"):
-        writeTOP(file_name, plates, duplicates_list or [[], []], atom_types or {}, progress_callback, periodicity_conditions)
+        # writeTOP llama a progress_callback sin chequear None (siempre le llega uno
+        # real desde la GUI, vía ExportTopWorker) — desde acá (headless/tests) puede
+        # no venir ninguno, así que le damos un no-op por defecto.
+        callback= progress_callback or (lambda fraction: None)
+        writeTOP(file_name, plates, duplicates_list or [[], []], atom_types or {}, callback, periodicity_conditions)
     elif file_name.endswith(".gro"):
         writeGRO(file_name, plates, periodicity_conditions)
     elif file_name.endswith(".pdb"):

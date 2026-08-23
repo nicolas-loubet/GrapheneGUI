@@ -121,5 +121,55 @@ class TestApplyCNT(unittest.TestCase):
         self.assertEqual(plate.get_number_atoms(), n_before)
 
 
+class TestEvaluateCondition(unittest.TestCase):
+    def test_empty_expression_is_always_true(self):
+        self.assertTrue(core.evaluate_condition(1, 2, 3, 1, ""))
+
+    def test_simple_comparison(self):
+        self.assertTrue(core.evaluate_condition(10, 0, 0, 1, "x > 5"))
+        self.assertFalse(core.evaluate_condition(10, 0, 0, 1, "x > 50"))
+
+    def test_and_operator(self):
+        self.assertTrue(core.evaluate_condition(10, 2, 0, 1, "x > 5 and y < 5"))
+        self.assertFalse(core.evaluate_condition(10, 8, 0, 1, "x > 5 and y < 5"))
+
+    def test_or_operator(self):
+        self.assertTrue(core.evaluate_condition(10, 100, 0, 1, "x > 5 or y < 5"))   # cumple por x
+        self.assertTrue(core.evaluate_condition(0, 1, 0, 1, "x > 5 or y < 5"))      # cumple por y
+        self.assertFalse(core.evaluate_condition(0, 100, 0, 1, "x > 5 or y < 5"))   # no cumple ninguna
+
+    def test_not_operator(self):
+        self.assertTrue(core.evaluate_condition(1, 1, 0, 1, "not x > 5"))
+        self.assertFalse(core.evaluate_condition(10, 1, 0, 1, "not x > 5"))
+
+    def test_index_variable(self):
+        self.assertTrue(core.evaluate_condition(0, 0, 0, 7, "index > 5"))
+
+
+class TestGetListCarbonsInExpr(unittest.TestCase):
+    def test_filters_by_expression(self):
+        plate= Graphene.create_from_params(4, 4, 0, 0, 0, 1.0, False)
+        all_carbons= plate.get_carbon_coords()
+        filtered= core.get_list_carbons_in_expr(plate, "x > 0")
+        self.assertLess(len(filtered), len(all_carbons))
+        self.assertGreater(len(filtered), 0)
+
+    def test_empty_expression_returns_all(self):
+        plate= Graphene.create_from_params(3, 3, 0, 0, 0, 1.0, False)
+        filtered= core.get_list_carbons_in_expr(plate, "")
+        self.assertEqual(len(filtered), len(plate.get_carbon_coords()))
+
+
+class TestUnsupportedExtensions(unittest.TestCase):
+    def test_load_plates_from_file_unsupported_extension(self):
+        with self.assertRaises(ValueError):
+            core.load_plates_from_file(".foo", "whatever.foo")
+
+    def test_export_plates_unsupported_extension(self):
+        plate= Graphene.create_from_params(2, 2, 0, 0, 0, 1.0, False)
+        with self.assertRaises(ValueError):
+            core.export_plates("whatever.foo", [plate], [False, False])
+
+
 if __name__ == "__main__":
     unittest.main()
