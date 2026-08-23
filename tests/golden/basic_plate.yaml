@@ -1,7 +1,7 @@
-# Config determinístico, pensado para tests de "golden file" (comparar el
-# export contra un archivo de referencia ya generado y revisado a mano).
-# Por ahora es solo el config de ejemplo — la comparación en sí todavía no
-# está armada, ver TODO.
+# Config determinístico para tests de "golden file" (comparar el export
+# contra los archivos de referencia basic_plate.mol2/.gro, ya generados y
+# revisados). Es determinístico porque prob_oh=100 + fraction=1.0 + z_mode
+# fijo no dependen de la semilla del random. Ver test_golden.py.
 
 plate:
   width: 40

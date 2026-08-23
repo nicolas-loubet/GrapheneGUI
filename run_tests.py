@@ -5,6 +5,7 @@ Uso:
     python3 run_tests.py                # todo
     python3 run_tests.py --unit         # solo unitarios (graphene/core/export/import)
     python3 run_tests.py --integration  # solo end-to-end del CLI headless
+    python3 run_tests.py --golden       # solo comparación contra los golden files
 """
 import argparse
 import sys
@@ -17,6 +18,7 @@ def main():
     parser= argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--unit", action="store_true", help="Solo el conjunto de tests unitarios")
     parser.add_argument("--integration", action="store_true", help="Solo el conjunto de tests de integración (CLI)")
+    parser.add_argument("--golden", action="store_true", help="Solo la comparación contra los golden files")
     parser.add_argument("-v", "--verbose", action="store_true")
     args= parser.parse_args()
 
@@ -24,6 +26,8 @@ def main():
         suite= suites.unit_suite()
     elif args.integration:
         suite= suites.integration_suite()
+    elif args.golden:
+        suite= suites.golden_suite()
     else:
         suite= suites.full_suite()
 
