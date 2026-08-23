@@ -224,6 +224,15 @@ def apply_cnt(plate, roll_vec, center=None):
     plate.set_atoms(new_atoms)
     return plate
 
+def reduce_borders(plate):
+    """Agrega hidrógenos de borde a los carbonos periféricos (los que no tienen los 3
+    vecinos completos). Envuelve Graphene.reduce_borders() -ya es pura, sin Qt- para que
+    el headless tenga la misma API por función que el resto de las operaciones de este
+    módulo. Mutuamente excluyente con CNT (ver apply_cnt: no incluye hidrógenos de
+    borde al enrollar), igual que en la GUI."""
+    plate.reduce_borders()
+    return plate
+
 
 # ================================
 # Import / Export

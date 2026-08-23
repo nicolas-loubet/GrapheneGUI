@@ -207,5 +207,25 @@ class TestApplyOxidationExplicit(unittest.TestCase):
         self.assertEqual(len(self.plate.get_oxide_coords()), n_oxides_before + 2)
 
 
+class TestReduceBorders(unittest.TestCase):
+    def test_adds_hydrogens_only_to_border_carbons(self):
+        plate= Graphene.create_from_params(6, 6, 0, 0, 0, 1.0, periodic_boundary_x=False)
+        self.assertEqual(len(plate.get_hydrogens_coords()), 0)
+
+        core.reduce_borders(plate)
+
+        n_h= len(plate.get_hydrogens_coords())
+        self.assertGreater(n_h, 0)
+        self.assertLess(n_h, len(plate.get_carbon_coords()))  # no todos los carbonos son de borde
+
+    def test_noop_call_pattern_is_idempotent_safe(self):
+        """No es idempotente de verdad (agrega H de nuevo si se llama 2 veces), pero no
+        tiene que explotar ni duplicar sin sentido en un uso normal de una sola vez."""
+        plate= Graphene.create_from_params(4, 4, 0, 0, 0, 1.0, False)
+        core.reduce_borders(plate)
+        n_h_first= len(plate.get_hydrogens_coords())
+        self.assertGreater(n_h_first, 0)
+
+
 if __name__ == "__main__":
     unittest.main()

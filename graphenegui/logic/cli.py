@@ -81,6 +81,14 @@ def apply_cnt(plate, cfg, periodicity_conditions):
     return plate
 
 
+def apply_reduce_borders(plate, cfg):
+    if not cfg.get("reduce_borders", False):
+        return plate
+    core.reduce_borders(plate)
+    print(f"  reduced borders ({len(plate.get_hydrogens_coords())} H atoms added)")
+    return plate
+
+
 def build_atom_types(cfg):
     atom_types= {}
     for entry in cfg.get("atom_types", []):
@@ -170,6 +178,10 @@ def main(argv=None):
     if not cfg:
         sys.exit("No config given. Use -c config.yaml and/or --set section.field=value")
 
+    if cfg.get("reduce_borders", False) and cfg.get("cnt", {}).get("enabled", False):
+        sys.exit("reduce_borders and cnt are mutually exclusive: can't roll a CNT after "
+                  "adding border hydrogens (same restriction as the GUI)")
+
     plate= build_plate(cfg)
 
     periodicity_conditions= [
@@ -178,6 +190,7 @@ def main(argv=None):
     ]
 
     apply_oxidations(plate, cfg)
+    apply_reduce_borders(plate, cfg)
     apply_cnt(plate, cfg, periodicity_conditions)
     atom_types= build_atom_types(cfg)
     plates, duplicates_list= build_duplicates(plate, cfg)

@@ -209,6 +209,30 @@ export:
             with self.assertRaises(SystemExit):
                 cli.main(["-c", config_path])
 
+    def test_reduce_borders_adds_hydrogens_to_export(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output_dir= os.path.join(tmp, "out")
+            cli.main([
+                "--set", "plate.width=40",
+                "--set", "plate.height=40",
+                "--set", "reduce_borders=true",
+                "--set", f"export.output_dir={output_dir}",
+                "--set", "export.name=borders",
+                "--set", "export.formats=[gro]",
+            ])
+            plates_read= inf.readGRO(os.path.join(output_dir, "borders.gro"))
+            self.assertGreater(len(plates_read[0].get_hydrogens_coords()), 0)
+
+    def test_reduce_borders_and_cnt_are_mutually_exclusive(self):
+        with self.assertRaises(SystemExit):
+            cli.main([
+                "--set", "plate.width=40",
+                "--set", "plate.height=40",
+                "--set", "reduce_borders=true",
+                "--set", "cnt.enabled=true",
+                "--set", "cnt.vector=[10, 0]",
+            ])
+
 
 if __name__ == "__main__":
     unittest.main()
