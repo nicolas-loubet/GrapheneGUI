@@ -3,6 +3,7 @@ import random
 from .other_dialogs import CreateDialog, DuplicateDialog, ProbDialog, CNTDialog, AtomTypeDialog
 from .renderer import Renderer
 from .functionalities import *
+from .recorder import SessionRecorder
 from PySide6.QtWidgets import QMainWindow, QMessageBox, QGraphicsScene, QDialog, QFileDialog, QRubberBand
 from PySide6.QtCore import Slot, QEvent, QPoint, QRect, Qt, QSize
 from PySide6.QtGui import QPixmap
@@ -27,6 +28,9 @@ class MainWindow(QMainWindow):
         self.plates= []
         self.plates_corresponding_to_duplicates= [[], []]  # [duplicates, bases]
         self.information_selected_atoms= []
+
+        self.session_recorder= SessionRecorder()
+        self._recorder_names= []  # índice-alineado con self.plates; None = no trackeable (importada o duplicada, ver TODO)
         
         is_dark_mode_func= lambda: self.is_dark_mode
         self.periodicity_conditions= [0,0]
@@ -235,6 +239,11 @@ class MainWindow(QMainWindow):
             new_atoms= roll_atoms_as_CNT(atoms, roll_vec, plate.get_geometric_center())
             plate.set_is_CNT(True)
             plate.set_atoms(new_atoms)
+
+            name= self._recorder_names[self.ui.comboDrawings.currentIndex()]
+            if name is not None:
+                self.session_recorder.record_cnt(name, roll_vec)
+
             self.buttons_that_depend_of_having_a_plate(False)
             self.ui.btnExport.setEnabled(True)
             self.ui.btnDelete.setEnabled(True)
@@ -245,6 +254,11 @@ class MainWindow(QMainWindow):
     def handle_btn_reduce_borders_clicked(self):
         plate= self.plates[self.ui.comboDrawings.currentIndex()]
         plate.reduce_borders()
+
+        name= self._recorder_names[self.ui.comboDrawings.currentIndex()]
+        if name is not None:
+            self.session_recorder.record_reduce_borders(name)
+
         self.ui.btnCNT.setEnabled(False)
         self.ui.btnReduceExternal.setEnabled(False)
         self.update_drawing_area()
@@ -269,9 +283,11 @@ class MainWindow(QMainWindow):
         h_z= o_z + z_sign * 0.032
 
         if not plate.is_position_occupied(o_x, o_y, o_z):
+            oxide_count_before= len(plate.get_oxide_coords())
             plate.add_oxide(o_x, o_y, o_z, "OO", i_atom)
             i_atom += 1
             plate.add_oxide(h_x, o_y, h_z, "HO", i_atom)
+            record_new_oxides(self, self.ui.comboDrawings.currentIndex(), oxide_count_before)
             self.update_drawing_area()
             print(f"Added O at ({o_x*10:.2f}, {o_y*10:.2f}, {o_z*10:.2f}) and H at ({h_x:.3f}, {o_y:.3f}, {h_z:.3f})")
             print(f"Actual oxidation rate: {(plate.get_oxide_count()/len(plate.get_carbon_coords()))*100:.2f}%")
@@ -288,7 +304,9 @@ class MainWindow(QMainWindow):
             o_z= c1_z + z_sign * 0.126
 
             if not plate.is_position_occupied(o_x, o_y, o_z):
+                oxide_count_before= len(plate.get_oxide_coords())
                 plate.add_oxide(o_x, o_y, o_z, "OE", i_atom)
+                record_new_oxides(self, self.ui.comboDrawings.currentIndex(), oxide_count_before)
                 self.update_drawing_area()
                 print(f"Added O at ({o_x*10:.2f}, {o_y*10:.2f}, {o_z*10:.2f})")
                 print(f"Actual oxidation rate: {(plate.get_oxide_count()/len(plate.get_carbon_coords()))*100:.2f}%")
@@ -322,8 +340,11 @@ class MainWindow(QMainWindow):
                 self.clicked_carbon_add_O(plate, carbon, z_sign, i_atom)
         elif self.active_oxide_mode == "Remove":
             list_remove_ox= plate.get_oxides_for_carbon(carbon)
+            name= self._recorder_names[self.ui.comboDrawings.currentIndex()]
             for ox in list_remove_ox:
                 plate.remove_atom_oxide(ox)
+                if name is not None:
+                    self.session_recorder.record_oxidation_removed(name, [ox[0]*10, ox[1]*10, ox[2]*10, ox[3]])
             self.update_drawing_area()
             plate.recheck_ox_indexes()
             print(f"{len(list_remove_ox)} atom{'s' if len(list_remove_ox) != 1 else ''} removed")
@@ -371,6 +392,11 @@ class MainWindow(QMainWindow):
 
         plate= self.plates[self.ui.comboDrawings.currentIndex()]
         plate.remove_oxides()
+
+        name= self._recorder_names[self.ui.comboDrawings.currentIndex()]
+        if name is not None:
+            self.session_recorder.record_oxidation_cleared(name)
+
         self.update_drawing_area()
         self.ui.spinRandom.setValue(0)
         self.ui.entryVMD.setText("")
@@ -418,6 +444,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, "Error", "Type name cannot be empty.")
                 return
             self.atom_types[name]= {"epsilon": data["epsilon"], "sigma": data["sigma"]}
+            self.session_recorder.record_atom_type(name, data["epsilon"], data["sigma"])
             self.ui.comboCType.addItem(name)
             self.ui.comboCType.setCurrentText(name)
             print(f"Added new carbon type '{name}' with epsilon={data['epsilon']}, sigma={data['sigma']}")
@@ -470,7 +497,9 @@ class MainWindow(QMainWindow):
         plate= self.plates[self.ui.comboDrawings.currentIndex()]
         carbons= self.renderer.highlighted_atoms
         if carbons:
+            oxide_count_before= len(plate.get_oxide_coords())
             count= plate.add_oxydation_to_list_of_carbon(carbons, self.z_mode, 100)
+            record_new_oxides(self, self.ui.comboDrawings.currentIndex(), oxide_count_before)
             self.renderer.highlighted_atoms= []
             self.update_drawing_area()
             print(f"Forced OH oxidation applied ({count} carbons modified), that is {plate.get_oxide_count()/plate.get_number_atoms()*100:.2f}% of the selected part of the plate")
@@ -493,7 +522,9 @@ class MainWindow(QMainWindow):
         plate= self.plates[self.ui.comboDrawings.currentIndex()]
         carbons= self.renderer.highlighted_atoms if self.renderer.highlighted_atoms else []
         if carbons:
+            oxide_count_before= len(plate.get_oxide_coords())
             count= plate.add_oxydation_to_list_of_carbon(carbons, self.z_mode, 0)
+            record_new_oxides(self, self.ui.comboDrawings.currentIndex(), oxide_count_before)
             self.renderer.highlighted_atoms= []
             self.update_drawing_area()
             print(f"Forced O (epoxy) oxidation applied ({count} carbons modified), that is {plate.get_oxide_count()/plate.get_number_atoms()*100:.2f}% of the selected part of the plate")
