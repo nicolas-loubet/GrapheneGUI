@@ -11,6 +11,12 @@ class TestPlateRegistration(unittest.TestCase):
         self.assertEqual([name1, name2], ["plate1", "plate2"])
         self.assertEqual(rec.known_plates(), ["plate1", "plate2"])
 
+    def test_has_plate(self):
+        rec= SessionRecorder()
+        rec.record_plate_created({"width": 40, "height": 40}, name="base")
+        self.assertTrue(rec.has_plate("base"))
+        self.assertFalse(rec.has_plate("nope"))
+
     def test_record_plate_created_explicit_name(self):
         rec= SessionRecorder()
         name= rec.record_plate_created({"width": 40, "height": 40}, name="base")

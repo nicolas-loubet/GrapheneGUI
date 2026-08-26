@@ -45,6 +45,9 @@ class SessionRecorder:
     def known_plates(self):
         return list(self._plate_order)
 
+    def has_plate(self, name):
+        return name in self._plates
+
     def _steps_for(self, plate_name):
         if plate_name not in self._plates:
             raise ValueError(f"Unknown plate: {plate_name!r} (¿se registró con record_plate_created?)")

@@ -1,10 +1,10 @@
 import unittest
 
-from tests.unit import test_graphene, test_core, test_export_formats, test_import_formats, test_recorder
+from tests.unit import test_graphene, test_core, test_export_formats, test_import_formats, test_recorder, test_plate_registry
 from tests.integration import test_cli_headless
 from tests.golden import test_golden
 
-_UNIT_MODULES= (test_graphene, test_core, test_export_formats, test_import_formats, test_recorder)
+_UNIT_MODULES= (test_graphene, test_core, test_export_formats, test_import_formats, test_recorder, test_plate_registry)
 _INTEGRATION_MODULES= (test_cli_headless,)
 _GOLDEN_MODULES= (test_golden,)
 

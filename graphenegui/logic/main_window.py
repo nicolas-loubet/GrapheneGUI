@@ -4,6 +4,7 @@ from .other_dialogs import CreateDialog, DuplicateDialog, ProbDialog, CNTDialog,
 from .renderer import Renderer
 from .functionalities import *
 from .recorder import SessionRecorder
+from .plate_registry import PlateRegistry
 from PySide6.QtWidgets import QMainWindow, QMessageBox, QGraphicsScene, QDialog, QFileDialog, QRubberBand
 from PySide6.QtCore import Slot, QEvent, QPoint, QRect, Qt, QSize
 from PySide6.QtGui import QPixmap
@@ -25,12 +26,10 @@ class MainWindow(QMainWindow):
         self.z_mode= 2  # 0: z+, 1: z-, 2: z±
         self.last_prob_oh= 66
         self.last_prob_o= 34
-        self.plates= []
-        self.plates_corresponding_to_duplicates= [[], []]  # [duplicates, bases]
+        self.plates= PlateRegistry()  # reemplaza la lista plana + plates_corresponding_to_duplicates
         self.information_selected_atoms= []
 
         self.session_recorder= SessionRecorder()
-        self._recorder_names= []  # índice-alineado con self.plates; None = no trackeable (importada o duplicada, ver TODO)
         
         is_dark_mode_func= lambda: self.is_dark_mode
         self.periodicity_conditions= [0,0]
@@ -240,9 +239,9 @@ class MainWindow(QMainWindow):
             plate.set_is_CNT(True)
             plate.set_atoms(new_atoms)
 
-            name= self._recorder_names[self.ui.comboDrawings.currentIndex()]
-            if name is not None:
-                self.session_recorder.record_cnt(name, roll_vec)
+            plate_id= self.plates.id_at(self.ui.comboDrawings.currentIndex())
+            if self.session_recorder.has_plate(plate_id):
+                self.session_recorder.record_cnt(plate_id, roll_vec)
 
             self.buttons_that_depend_of_having_a_plate(False)
             self.ui.btnExport.setEnabled(True)
@@ -255,9 +254,9 @@ class MainWindow(QMainWindow):
         plate= self.plates[self.ui.comboDrawings.currentIndex()]
         plate.reduce_borders()
 
-        name= self._recorder_names[self.ui.comboDrawings.currentIndex()]
-        if name is not None:
-            self.session_recorder.record_reduce_borders(name)
+        plate_id= self.plates.id_at(self.ui.comboDrawings.currentIndex())
+        if self.session_recorder.has_plate(plate_id):
+            self.session_recorder.record_reduce_borders(plate_id)
 
         self.ui.btnCNT.setEnabled(False)
         self.ui.btnReduceExternal.setEnabled(False)
@@ -319,8 +318,6 @@ class MainWindow(QMainWindow):
     def handle_drawing_area_clicked(self, event):
         if self.ui.comboDrawings.currentIndex() == -1 or not self.active_oxide_mode: return
 
-        manage_duplicates_for_deletion(self, self.ui.comboDrawings.currentIndex()+1, False)
-
         plate= self.plates[self.ui.comboDrawings.currentIndex()]
         pos= event.scenePos()
         x_nm, y_nm= self.renderer.pixel_to_nm(pos.x(), pos.y())
@@ -340,11 +337,12 @@ class MainWindow(QMainWindow):
                 self.clicked_carbon_add_O(plate, carbon, z_sign, i_atom)
         elif self.active_oxide_mode == "Remove":
             list_remove_ox= plate.get_oxides_for_carbon(carbon)
-            name= self._recorder_names[self.ui.comboDrawings.currentIndex()]
+            plate_id= self.plates.id_at(self.ui.comboDrawings.currentIndex())
+            trackeable= self.session_recorder.has_plate(plate_id)
             for ox in list_remove_ox:
                 plate.remove_atom_oxide(ox)
-                if name is not None:
-                    self.session_recorder.record_oxidation_removed(name, [ox[0]*10, ox[1]*10, ox[2]*10, ox[3]])
+                if trackeable:
+                    self.session_recorder.record_oxidation_removed(plate_id, [ox[0]*10, ox[1]*10, ox[2]*10, ox[3]])
             self.update_drawing_area()
             plate.recheck_ox_indexes()
             print(f"{len(list_remove_ox)} atom{'s' if len(list_remove_ox) != 1 else ''} removed")
@@ -388,14 +386,13 @@ class MainWindow(QMainWindow):
     @Slot()
     def handle_btn_reduce_clicked(self):
         if self.ui.comboDrawings.currentIndex() == -1: return
-        manage_duplicates_for_deletion(self, self.ui.comboDrawings.currentIndex()+1, False)
 
         plate= self.plates[self.ui.comboDrawings.currentIndex()]
         plate.remove_oxides()
 
-        name= self._recorder_names[self.ui.comboDrawings.currentIndex()]
-        if name is not None:
-            self.session_recorder.record_oxidation_cleared(name)
+        plate_id= self.plates.id_at(self.ui.comboDrawings.currentIndex())
+        if self.session_recorder.has_plate(plate_id):
+            self.session_recorder.record_oxidation_cleared(plate_id)
 
         self.update_drawing_area()
         self.ui.spinRandom.setValue(0)

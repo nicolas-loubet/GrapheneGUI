@@ -15,6 +15,14 @@ from .export_formats import writeGRO, writeXYZ, writeTOP, writePDB, writeMOL2
 # Duplicados (bookkeeping de placas)
 # ================================
 
+# ⚠️ DEPRECADO: main_window/functionalities ya no usan estas 3 funciones — el
+# bookkeeping de duplicados por posición (main_window.plates_corresponding_to_duplicates)
+# se reemplazó por graphenegui/logic/plate_registry.py (PlateRegistry), que identifica
+# placas por un id estable en vez de por índice, y DERIVA si dos placas siguen siendo
+# copias idénticas comparando átomos en vez de mantener un flag que hay que invalidar
+# a mano (esa invalidación manual, repartida en varios handlers, era la fuente real de
+# los bugs). Se dejan sin tocar acá solo para no romper los tests existentes que las
+# ejercitan directamente — candidatas a borrar en una limpieza futura.
 def manage_duplicates_for_deletion(duplicates_list, index, index_would_be_removed):
     """duplicates_list es [lista_de_duplicados, lista_de_originales] (mismo formato
     que main_window.plates_corresponding_to_duplicates)."""
