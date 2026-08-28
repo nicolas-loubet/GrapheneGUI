@@ -3,7 +3,9 @@ import tempfile
 import unittest
 
 from graphenegui.logic import cli
+from graphenegui.logic import core as core_module
 from graphenegui.logic import import_formats as inf
+from graphenegui.logic.graphene import Graphene
 
 
 class TestCliEndToEnd(unittest.TestCase):
@@ -58,6 +60,192 @@ export:
     def test_no_args_exits(self):
         with self.assertRaises(SystemExit):
             cli.main([])
+
+
+class TestMultiPlateSchema(unittest.TestCase):
+    """Etapa 8: cli.main detecta 'plates' (lista) y usa el camino nuevo. El schema
+    plano de siempre (sin 'plates') sigue exactamente igual — ver TestCliEndToEnd."""
+
+    def _write_config(self, tmp, plates_yaml, extra_yaml=""):
+        config_path= os.path.join(tmp, "config.yaml")
+        output_dir= os.path.join(tmp, "out")
+        with open(config_path, "w") as f:
+            f.write(f"""
+{plates_yaml}
+{extra_yaml}
+export:
+  formats: [gro]
+  output_dir: {output_dir}
+  name: multi
+""")
+        return config_path, output_dir
+
+    def test_two_independent_plates_export_together(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path, output_dir= self._write_config(tmp, """
+plates:
+  - name: a
+    create:
+      width: 30
+      height: 30
+  - name: b
+    create:
+      width: 20
+      height: 20
+""")
+            cli.main(["-c", config_path])
+            plates_read= inf.readGRO(os.path.join(output_dir, "multi.gro"))
+            self.assertEqual(len(plates_read), 2)
+
+    def test_soft_oxidation_step(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path, output_dir= self._write_config(tmp, """
+plates:
+  - name: a
+    create:
+      width: 30
+      height: 30
+    steps:
+      - type: oxidation
+        mode: soft
+        expression: ""
+        fraction: 1.0
+        prob_oh: 100
+        z_mode: "+z"
+""")
+            cli.main(["-c", config_path])
+            plates_read= inf.readGRO(os.path.join(output_dir, "multi.gro"))
+            self.assertGreater(plates_read[0].get_oxide_count(), 0)
+
+    def test_hard_oxidation_step_with_real_coordinates(self):
+        # Coordenadas de un carbono REAL de esta placa (no inventadas) — si no,
+        # get_nearest_carbons_to_oxide no encuentra ningún carbono cerca (mismo bug
+        # preexistente de distance_2D que documentamos con el ejemplo CNT).
+        n_x, n_y= core_module.compute_plate_grid(30, 30, 1.0)
+        probe= Graphene.create_from_params(n_x, n_y, 0, 0, 0, 1.0, False)
+        cx, cy, cz= probe.get_carbon_coords()[0][:3]
+        oo= [cx*10, cy*10, (cz+0.149)*10, "OO"]
+        ho= [(cx+0.093)*10, cy*10, (cz+0.181)*10, "HO"]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path, output_dir= self._write_config(tmp, f"""
+plates:
+  - name: a
+    create:
+      width: 30
+      height: 30
+    steps:
+      - type: oxidation
+        mode: hard
+        oxides:
+          - {oo}
+          - {ho}
+""")
+            cli.main(["-c", config_path])
+            plates_read= inf.readGRO(os.path.join(output_dir, "multi.gro"))
+            self.assertEqual(plates_read[0].get_oxide_count(), 1)
+
+    def test_cnt_step_must_be_last(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path, _= self._write_config(tmp, """
+plates:
+  - name: a
+    create:
+      width: 30
+      height: 30
+    steps:
+      - type: cnt
+        vector: [10, 0]
+      - type: reduce_borders
+""")
+            with self.assertRaises(SystemExit):
+                cli.main(["-c", config_path])
+
+    def test_reduce_borders_and_cnt_same_plate_exits(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path, _= self._write_config(tmp, """
+plates:
+  - name: a
+    create:
+      width: 30
+      height: 30
+    steps:
+      - type: reduce_borders
+      - type: cnt
+        vector: [10, 0]
+""")
+            with self.assertRaises(SystemExit):
+                cli.main(["-c", config_path])
+
+    def test_missing_plate_name_exits(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path, _= self._write_config(tmp, """
+plates:
+  - create:
+      width: 30
+      height: 30
+""")
+            with self.assertRaises(SystemExit):
+                cli.main(["-c", config_path])
+
+    def test_duplicate_plate_name_exits(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path, _= self._write_config(tmp, """
+plates:
+  - name: a
+    create:
+      width: 30
+      height: 30
+  - name: a
+    create:
+      width: 20
+      height: 20
+""")
+            with self.assertRaises(SystemExit):
+                cli.main(["-c", config_path])
+
+    def test_duplicates_reference_by_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path, output_dir= self._write_config(tmp, """
+plates:
+  - name: a
+    create:
+      width: 30
+      height: 30
+  - name: b
+    create:
+      width: 20
+      height: 20
+""", extra_yaml="""
+duplicates:
+  - source: b
+    translation: [0, 0, 34]
+""")
+            cli.main(["-c", config_path])
+            plates_read= inf.readGRO(os.path.join(output_dir, "multi.gro"))
+            self.assertEqual(len(plates_read), 3)  # a, b, duplicado de b
+
+    def test_duplicate_unknown_source_exits(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path, _= self._write_config(tmp, """
+plates:
+  - name: a
+    create:
+      width: 30
+      height: 30
+""", extra_yaml="""
+duplicates:
+  - source: nope
+    translation: [0, 0, 34]
+""")
+            with self.assertRaises(SystemExit):
+                cli.main(["-c", config_path])
+
+    def test_empty_plates_list_exits(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path, _= self._write_config(tmp, "plates: []")
+            with self.assertRaises(SystemExit):
+                cli.main(["-c", config_path])
 
     def test_cnt_successful_roll(self):
         with tempfile.TemporaryDirectory() as tmp:
