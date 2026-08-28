@@ -1,4 +1,8 @@
+import os
+import tempfile
 import unittest
+
+import yaml
 
 from graphenegui.logic.recorder import SessionRecorder
 
@@ -145,6 +149,43 @@ class TestToDict(unittest.TestCase):
         rec.record_plate_created({"width": 30, "height": 30}, name="b")
         names= [p["name"] for p in rec.to_dict()["plates"]]
         self.assertEqual(names, ["a", "b"])
+
+
+class TestYamlSerialization(unittest.TestCase):
+    def setUp(self):
+        self.rec= SessionRecorder()
+        self.rec.record_plate_created({"width": 40, "height": 40}, name="base")
+        self.rec.record_oxidation_hard("base", [[0.0, 7.1, 1.49, "OO"], [0.93, 7.1, 1.81, "HO"]])
+        self.rec.record_duplicate("base", [0, 0, 34], absolute=False)
+        self.rec.record_atom_type("ca2", 0.3, 3.2)
+
+    def test_to_yaml_roundtrips_to_same_dict(self):
+        text= self.rec.to_yaml(export_formats=["mol2", "top"], output_dir="./out", export_name="session")
+        loaded= yaml.safe_load(text)
+        self.assertEqual(loaded, self.rec.to_dict(export_formats=["mol2", "top"], output_dir="./out", export_name="session"))
+
+    def test_to_yaml_has_explanatory_header(self):
+        text= self.rec.to_yaml()
+        self.assertIn("graphene-gui-cli", text)
+
+    def test_save_writes_file_matching_to_yaml(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path= os.path.join(tmp, "session.yaml")
+            returned= self.rec.save(path, export_name="session")
+            self.assertEqual(returned, path)
+            self.assertTrue(os.path.exists(path))
+            with open(path) as f:
+                content= f.read()
+            self.assertEqual(content, self.rec.to_yaml(export_name="session"))
+
+    def test_save_empty_recorder_still_produces_valid_yaml(self):
+        empty= SessionRecorder()
+        with tempfile.TemporaryDirectory() as tmp:
+            path= os.path.join(tmp, "empty.yaml")
+            empty.save(path)
+            with open(path) as f:
+                loaded= yaml.safe_load(f)
+            self.assertEqual(loaded["plates"], [])
 
 
 if __name__ == "__main__":

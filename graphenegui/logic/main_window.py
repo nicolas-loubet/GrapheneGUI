@@ -7,7 +7,7 @@ from .recorder import SessionRecorder
 from .plate_registry import PlateRegistry
 from PySide6.QtWidgets import QMainWindow, QMessageBox, QGraphicsScene, QDialog, QFileDialog, QRubberBand
 from PySide6.QtCore import Slot, QEvent, QPoint, QRect, Qt, QSize
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QPixmap, QShortcut, QKeySequence
 from ..ui.main_ui import Ui_MainWindow
 from .export_formats import checkBounds
 
@@ -43,6 +43,12 @@ class MainWindow(QMainWindow):
             is_dark_mode_func=is_dark_mode_func,
             periodicity_conditions=self.periodicity_conditions
         )
+
+        # "Guardar trabajo" (Etapa 7): botón real en la toolbar (btnSaveWork) + este
+        # atajo de teclado como alternativa rápida. Ctrl+Shift+S para no pisar un
+        # futuro Ctrl+S de "guardar archivo".
+        self.save_work_shortcut= QShortcut(QKeySequence("Ctrl+Shift+S"), self)
+        self.save_work_shortcut.activated.connect(self.handle_btn_save_work_clicked)
 
         self.buttons_that_depend_of_having_a_plate(False)
         self.ui.radioZpm.setChecked(True)
@@ -92,6 +98,7 @@ class MainWindow(QMainWindow):
         self.ui.btnAddOxidation.clicked.connect(self.handle_btn_add_oxidation_clicked)
         self.ui.comboCType.currentIndexChanged.connect(self.handle_ctype_changed)
         self.ui.btnAddCType.clicked.connect(self.handle_btn_add_ctype_clicked)
+        self.ui.btnSaveWork.clicked.connect(self.handle_btn_save_work_clicked)
         
         self.ui.radioZp.toggled.connect(lambda: self.handle_radio_toggled(self.ui.radioZp))
         self.ui.radioZm.toggled.connect(lambda: self.handle_radio_toggled(self.ui.radioZm))
@@ -445,6 +452,10 @@ class MainWindow(QMainWindow):
             self.ui.comboCType.addItem(name)
             self.ui.comboCType.setCurrentText(name)
             print(f"Added new carbon type '{name}' with epsilon={data['epsilon']}, sigma={data['sigma']}")
+
+    def handle_btn_save_work_clicked(self):
+        """Etapa 7: conectado a btnSaveWork (toolbar) y a Ctrl+Shift+S."""
+        save_work(self)
 
     @Slot(int)
     def handle_ctype_changed(self, index):

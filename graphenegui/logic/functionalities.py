@@ -310,3 +310,28 @@ def remove_overlapping_atoms(atoms):
 
 def roll_atoms_as_CNT(atoms, roll_vec, center=[0,0,0]):
     return core.roll_atoms_as_CNT(atoms, roll_vec, center)
+
+
+# ================================
+# Guardar trabajo (Etapa 7)
+# ================================
+def save_work(main_window):
+    """Vuelca la sesión grabada por session_recorder a un YAML reproducible con
+    graphene-gui-cli (todavía no lo lee tal cual, ver TODO Etapa 8)."""
+    if main_window.session_recorder.is_empty():
+        QMessageBox.information(main_window, "Nothing to save",
+                                 "There's nothing recorded yet — create a plate first.")
+        return
+
+    file_name, _= QFileDialog.getSaveFileName(main_window, "Save Work", "",
+                                               "YAML Files (*.yaml *.yml);;All Files (*)")
+    if not file_name:
+        return
+    if not file_name.endswith((".yaml", ".yml")):
+        file_name += ".yaml"
+
+    main_window.session_recorder.save(file_name, export_formats=["mol2", "top"],
+                                       output_dir="./output", export_name="graphene")
+
+    QMessageBox.information(main_window, "Saved", f"Session saved to:\n{file_name}")
+    print(f"Session saved to {file_name}")

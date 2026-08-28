@@ -5,8 +5,10 @@ multi-placa diseñado en la Etapa 1 (ver headless_config_multiplate_example.yaml
 en la raíz del proyecto).
 
 No sabe nada de Qt ni de main_window — solo junta datos. La Etapa 5 conecta
-sus métodos a los puntos reales de la GUI; la Etapa 6 vuelca to_dict() a YAML.
+sus métodos a los puntos reales de la GUI; to_yaml()/save() (Etapa 6) vuelcan
+to_dict() a un archivo YAML de verdad.
 """
+import yaml
 
 
 class SessionRecorder:
@@ -144,3 +146,22 @@ class SessionRecorder:
                 "name": export_name,
             },
         }
+
+    def to_yaml(self, export_formats=None, output_dir=".", export_name="graphene"):
+        """Arma el YAML completo (mismo schema que to_dict()) como texto, listo para
+        guardar en un archivo o mostrar en un preview antes de guardar."""
+        data= self.to_dict(export_formats=export_formats, output_dir=output_dir, export_name=export_name)
+        header= (
+            "# Generado por \"Guardar trabajo\".\n"
+            "# Pensado para reproducirse con: graphene-gui-cli -c este_archivo.yaml\n"
+            "# (cli.py todavía no lee este schema multi-placa tal cual — ver TODO Etapa 8)\n"
+        )
+        return header + yaml.safe_dump(data, sort_keys=False, default_flow_style=False, allow_unicode=True)
+
+    def save(self, file_path, export_formats=None, output_dir=".", export_name="graphene"):
+        """Escribe to_yaml() en file_path. Devuelve file_path, para poder encadenar
+        (ej. mostrarlo en un mensaje de confirmación)."""
+        content= self.to_yaml(export_formats=export_formats, output_dir=output_dir, export_name=export_name)
+        with open(file_path, "w") as f:
+            f.write(content)
+        return file_path
