@@ -58,5 +58,41 @@ class TestRecheckOxIndexes(unittest.TestCase):
         self.assertEqual(types, ["OO", "HO", "OO", "HO"])
 
 
+class TestGetNearestCarbonsToOxideAfterCNT(unittest.TestCase):
+    """Regresión Etapa 10: get_nearest_carbons_to_oxide usaba distance_2D con
+    umbral 0.1, que funciona en plano (el offset carbono->óxido es puramente en
+    Z) pero fallaba tras un CNT (ese mismo offset pasa a ser radial, ~0.149 nm,
+    por encima del viejo umbral) -> lista vacía -> IndexError en
+    change_name_oxides. Ahora usa distance_3D con umbral 0.17."""
+
+    def test_every_oo_and_oe_still_finds_a_carbon_after_cnt(self):
+        from graphenegui.logic import core
+
+        plate= Graphene.create_from_params(6, 6, 0, 0, 0, 1.0, False)
+        carbons= plate.get_carbon_coords()
+        plate.add_oxydation_to_list_of_carbon(carbons[:10], z_mode=2, prob_oh=66)
+
+        core.apply_cnt(plate, [1.5, 0])
+
+        oo_oe= [ox for ox in plate.get_oxide_coords() if ox[3] in ("OO", "OE")]
+        self.assertGreater(len(oo_oe), 0)  # que el test realmente ejercite algo
+        for ox in oo_oe:
+            near= plate.get_nearest_carbons_to_oxide(ox)
+            self.assertGreater(len(near), 0, f"sin carbono encontrado para {ox[3]} en {ox[:3]}")
+
+    def test_does_not_match_a_wrong_neighbor_carbon(self):
+        """El umbral 0.17 tiene que quedar por debajo de la distancia a un
+        carbono vecino equivocado (~0.206 nm) — si no, podría "encontrar" el
+        carbono de al lado en vez del real."""
+        plate= Graphene.create_from_params(4, 4, 0, 0, 0, 1.0, False)
+        carbon= plate.get_carbon_coords()[10]
+        plate.add_oxydation_to_list_of_carbon([carbon], z_mode=0, prob_oh=100)  # fuerza OO
+        oo= next(ox for ox in plate.get_oxide_coords() if ox[3] == "OO")
+
+        near= plate.get_nearest_carbons_to_oxide(oo)
+        self.assertEqual(len(near), 1)
+        self.assertEqual(near[0][4], carbon[4])  # es el carbono correcto, no un vecino
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -210,10 +210,19 @@ class Graphene:
                 nearest_carbon= carbon
         return nearest_carbon
 
-    def get_nearest_carbons_to_oxide(self, ox):
+    def get_nearest_carbons_to_oxide(self, ox, threshold=0.17):
+        """Umbral en 3D (no 2D): en una placa plana, el offset carbono->óxido es
+        puramente perpendicular a la lámina (eje Z, ~0.149 nm para OO, ~0.144 nm
+        para OE) — con distance_2D eso da ~0 y siempre matcheaba bien. Pero al
+        enrollar en CNT, ese mismo offset perpendicular pasa a ser RADIAL (en x,y),
+        no en Z, así que distance_2D quedaba en ~0.149 nm — por encima del viejo
+        umbral de 0.1 — y esto devolvía una lista vacía (crash en change_name_oxides).
+        0.17 en 3D cubre los offsets reales (~0.144-0.149) con margen, y queda bien
+        por debajo de la distancia a un carbono vecino equivocado (~0.206 nm) —
+        funciona igual en plano y en CNT, sin depender de la orientación."""
         output= []
         for carbon in self.carbon_coords:
-            if self.distance_2D(ox[0],ox[1],carbon[0],carbon[1]) < 0.1:
+            if self.distance_3D(ox[0], ox[1], ox[2], carbon[0], carbon[1], carbon[2]) < threshold:
                 output.append(carbon)
         return output
 
