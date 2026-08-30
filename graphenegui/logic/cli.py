@@ -14,76 +14,22 @@ from pathlib import Path
 
 import yaml
 
-from .graphene import Graphene
 from . import core
 
 
-def build_plate_from_create(create_cfg):
-    """El mismo cálculo que build_plate(), pero recibiendo directamente el dict
-    'create' de una entrada de 'plates' (schema multi-placa, Etapa 1) en vez de
-    todo el cfg. Comparten exactamente la misma lógica."""
-    width= create_cfg.get("width", 100)      # Å
-    height= create_cfg.get("height", 100)    # Å
-    factor= create_cfg.get("factor", 1.0)
-    center= create_cfg.get("center", [0, 0, 0])  # Å
-    periodic_x= create_cfg.get("periodic_boundary_x", False)
-
-    n_x, n_y= core.compute_plate_grid(width, height, factor)
-    fits, max_atoms= core.check_plate_size(n_x, n_y)
-    if not fits:
-        sys.exit(f"Plate too large ({max_atoms} atom names available in the naming scheme). Reduce width/height.")
-
-    center_x_nm, center_y_nm, center_z_nm= [c / 10 for c in center]
-    plate= Graphene.create_from_params(n_x, n_y, center_x_nm, center_y_nm, center_z_nm, factor, periodic_x)
-    print(f"Plate built: {n_x}x{n_y} ({plate.get_number_atoms()} atoms)")
-    return plate
-
-
 def build_plate(cfg):
-    return build_plate_from_create(cfg.get("plate", {}))
-
-
-def _validate_cnt_vector(vector):
-    if not vector or len(vector) != 2 or (vector[0] == 0 and vector[1] == 0):
-        sys.exit("cnt vector is missing or invalid (expected [x, y], not [0, 0])")
-
-
-def apply_oxidation_step(plate, step):
-    """Un solo step de oxidación (mode: soft o hard). Compartido entre el schema
-    plano (apply_oxidations) y el multi-placa (apply_step)."""
-    mode= step.get("mode", "soft")
-
-    if mode == "hard":
-        oxides= step.get("oxides")
-        if not oxides:
-            sys.exit("oxidation step with mode: hard needs a non-empty 'oxides' list")
-        # cada entrada es [x, y, z, type] en Å (mismas unidades que el resto del
-        # config); se convierte a nm, que es lo que usa Graphene internamente.
-        oxide_atoms= [(x/10, y/10, z/10, t) for x, y, z, t in oxides]
-        done= core.apply_oxidation_explicit(plate, oxide_atoms)
-        print(f"  oxidized {done} sites (hard replica, {len(oxides)} oxide atoms)")
-        return
-
-    if mode != "soft":
-        sys.exit(f"Unknown oxidation mode: {mode!r} (expected 'soft' or 'hard')")
-
-    z_mode_map= {"+z": 0, "-z": 1, "random": 2}
-    expr= step.get("expression", "")
-    prob_oh= step.get("prob_oh", 100)
-    fraction= step.get("fraction", 1.0)
-    z_mode= z_mode_map.get(step.get("z_mode", "random"), 2)
-
-    selected= core.select_atoms(plate, expr, fraction, z_mode, prob_oh)
-    if not selected:
-        print(f"  oxidation step skipped (nothing matched): {expr!r}")
-        return
-    done= core.apply_oxidation(plate, selected, z_mode, prob_oh)
-    print(f"  oxidized {done} sites (expression: {expr!r})")
+    try:
+        return core.build_plate_from_create(cfg.get("plate", {}))
+    except ValueError as e:
+        sys.exit(str(e))
 
 
 def apply_oxidations(plate, cfg):
     for step in cfg.get("oxidation", []):
-        apply_oxidation_step(plate, step)
+        try:
+            core.apply_oxidation_step(plate, step)
+        except ValueError as e:
+            sys.exit(str(e))
 
 
 def apply_cnt(plate, cfg, periodicity_conditions):
@@ -91,8 +37,11 @@ def apply_cnt(plate, cfg, periodicity_conditions):
     if not cnt_cfg.get("enabled", False):
         return plate
     vector= cnt_cfg.get("vector")
-    _validate_cnt_vector(vector)
-    core.apply_cnt(plate, vector)
+    try:
+        core.validate_cnt_vector(vector)
+        core.apply_cnt(plate, vector)
+    except ValueError as e:
+        sys.exit(str(e))
     print(f"  rolled into CNT (vector={vector})")
     return plate
 
@@ -105,118 +54,16 @@ def apply_reduce_borders(plate, cfg):
     return plate
 
 
-# ================================
-# Schema multi-placa (Etapa 8) — plates: [...] con steps ordenados por placa
-# ================================
+def build_atom_types(cfg):
+    return core.build_atom_types(cfg)
 
-def apply_oxidation_removed_step(plate, step):
-    x, y, z, oxide_type= step["oxide"]
-    x, y, z= x/10, y/10, z/10  # Å -> nm
-    for ox in plate.get_oxide_coords():
-        if ox[3] == oxide_type and abs(ox[0]-x) < 1e-6 and abs(ox[1]-y) < 1e-6 and abs(ox[2]-z) < 1e-6:
-            plate.remove_atom_oxide(ox)
-            print(f"  removed oxide atom ({oxide_type} at {step['oxide'][:3]})")
-            return
-    sys.exit(f"oxidation_removed step: no matching oxide atom found at {step['oxide']}")
-
-def apply_step(plate, step):
-    """Un step de la secuencia ordenada de una placa (schema multi-placa)."""
-    step_type= step.get("type")
-    if step_type == "oxidation":
-        apply_oxidation_step(plate, step)
-    elif step_type == "oxidation_removed":
-        apply_oxidation_removed_step(plate, step)
-    elif step_type == "oxidation_cleared":
-        removed= plate.remove_oxides()
-        print(f"  cleared all oxidation ({len(removed)} oxide atoms removed)")
-    elif step_type == "reduce_borders":
-        core.reduce_borders(plate)
-        print(f"  reduced borders ({len(plate.get_hydrogens_coords())} H atoms added)")
-    elif step_type == "cnt":
-        vector= step.get("vector")
-        _validate_cnt_vector(vector)
-        core.apply_cnt(plate, vector)
-        print(f"  rolled into CNT (vector={vector})")
-    else:
-        sys.exit(f"Unknown step type: {step_type!r}")
-
-def validate_steps(plate_name, steps):
-    """Mismas restricciones que la GUI: reduce_borders y cnt son excluyentes entre
-    sí, y una vez enrollada en CNT no se puede seguir editando la placa (en la GUI
-    esto pasa porque buttons_that_depend_of_having_a_plate(False) deshabilita todo
-    después de aplicar CNT)."""
-    types= [s.get("type") for s in steps]
-    if "reduce_borders" in types and "cnt" in types:
-        sys.exit(f"plate {plate_name!r}: reduce_borders and cnt are mutually exclusive "
-                  "(same restriction as the GUI)")
-    if "cnt" in types and types.index("cnt") != len(types) - 1:
-        sys.exit(f"plate {plate_name!r}: 'cnt' must be the last step (same restriction "
-                  "as the GUI: further edits are disabled after rolling into a CNT)")
-
-def build_duplicates_multi(plates_by_name, cfg):
-    """Como build_duplicates(), pero 'source' referencia cualquier placa ya
-    construida por nombre, no siempre 'la' placa base."""
-    order= list(plates_by_name.keys())
-    all_plates= [plates_by_name[name] for name in order]
-    name_to_position= {name: i for i, name in enumerate(order)}
-
-    duplicates_list= [[], []]
-    for entry in cfg.get("duplicates", []):
-        source_name= entry["source"]
-        if source_name not in plates_by_name:
-            sys.exit(f"duplicates: unknown source plate {source_name!r}")
-        source_plate= plates_by_name[source_name]
-        dx, dy, dz= entry["translation"]
-        absolute= entry.get("absolute", False)
-        translation= core.compute_duplicate_translation(dx, dy, dz, absolute, source_plate.get_geometric_center())
-        all_plates.append(source_plate.duplicate(translation))
-        duplicates_list[0].append(len(all_plates))
-        duplicates_list[1].append(name_to_position[source_name] + 1)
-        print(f"  duplicate of {source_name!r} added (translation={entry['translation']}, absolute={absolute})")
-
-    return all_plates, duplicates_list
 
 def run_multiplate(cfg):
-    plates_cfg= cfg.get("plates", [])
-    if not plates_cfg:
-        sys.exit("'plates' is present but empty — nothing to build")
-
-    # Nota: periodic_boundary_x/y vive dentro de cada placa (create), pero
-    # export/checkBounds solo soportan UNA periodicidad global para todo el
-    # sistema (igual que main_window.periodicity_conditions en la GUI). Se toma
-    # la de la PRIMERA placa. Si esto no te alcanza, avisar para revisarlo.
-    first_create= plates_cfg[0].get("create", {})
-    periodicity_conditions= [
-        first_create.get("periodic_boundary_x", False),
-        first_create.get("periodic_boundary_y", False),
-    ]
-
-    plates_by_name= {}
-    for plate_cfg in plates_cfg:
-        name= plate_cfg.get("name")
-        if not name:
-            sys.exit("Every entry in 'plates' needs a 'name'")
-        if name in plates_by_name:
-            sys.exit(f"Duplicate plate name in config: {name!r}")
-
-        plate= build_plate_from_create(plate_cfg.get("create", {}))
-        plates_by_name[name]= plate
-
-        steps= plate_cfg.get("steps", [])
-        validate_steps(name, steps)
-        for step in steps:
-            apply_step(plate, step)
-
-    plates, duplicates_list= build_duplicates_multi(plates_by_name, cfg)
-    atom_types= build_atom_types(cfg)
+    try:
+        plates_by_name, plates, duplicates_list, atom_types, periodicity_conditions= core.build_session_from_config(cfg)
+    except ValueError as e:
+        sys.exit(str(e))
     export_all(plates, duplicates_list, atom_types, cfg, periodicity_conditions)
-
-
-def build_atom_types(cfg):
-    atom_types= {}
-    for entry in cfg.get("atom_types", []):
-        atom_types[entry["name"]]= {"epsilon": entry["epsilon"], "sigma": entry["sigma"]}
-    return atom_types
 
 
 def build_duplicates(base_plate, cfg):

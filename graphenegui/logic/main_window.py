@@ -50,6 +50,10 @@ class MainWindow(QMainWindow):
         self.save_work_shortcut= QShortcut(QKeySequence("Ctrl+Shift+S"), self)
         self.save_work_shortcut.activated.connect(self.handle_btn_save_work_clicked)
 
+        # "Abrir trabajo" (Etapa 9): mismo patrón, botón real (btnOpenWork) + atajo.
+        self.open_work_shortcut= QShortcut(QKeySequence("Ctrl+Shift+O"), self)
+        self.open_work_shortcut.activated.connect(self.handle_btn_open_work_clicked)
+
         self.buttons_that_depend_of_having_a_plate(False)
         self.ui.radioZpm.setChecked(True)
 
@@ -99,6 +103,7 @@ class MainWindow(QMainWindow):
         self.ui.comboCType.currentIndexChanged.connect(self.handle_ctype_changed)
         self.ui.btnAddCType.clicked.connect(self.handle_btn_add_ctype_clicked)
         self.ui.btnSaveWork.clicked.connect(self.handle_btn_save_work_clicked)
+        self.ui.btnOpenWork.clicked.connect(self.handle_btn_open_work_clicked)
         
         self.ui.radioZp.toggled.connect(lambda: self.handle_radio_toggled(self.ui.radioZp))
         self.ui.radioZm.toggled.connect(lambda: self.handle_radio_toggled(self.ui.radioZm))
@@ -456,6 +461,10 @@ class MainWindow(QMainWindow):
     def handle_btn_save_work_clicked(self):
         """Etapa 7: conectado a btnSaveWork (toolbar) y a Ctrl+Shift+S."""
         save_work(self)
+
+    def handle_btn_open_work_clicked(self):
+        """Etapa 9: conectado a btnOpenWork (toolbar) y a Ctrl+Shift+O."""
+        open_work(self)
 
     @Slot(int)
     def handle_ctype_changed(self, index):

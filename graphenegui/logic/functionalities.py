@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import QMessageBox, QFileDialog, QProgressDialog
 from PySide6.QtCore import Qt, QThread, Signal, QObject
+import yaml
 from .graphene import Graphene
 from . import core
 
@@ -317,7 +318,8 @@ def roll_atoms_as_CNT(atoms, roll_vec, center=[0,0,0]):
 # ================================
 def save_work(main_window):
     """Vuelca la sesión grabada por session_recorder a un YAML reproducible con
-    graphene-gui-cli (todavía no lo lee tal cual, ver TODO Etapa 8)."""
+    graphene-gui-cli -c archivo.yaml (schema multi-placa de la Etapa 1, que
+    cli.py ya sabe leer desde la Etapa 8)."""
     if main_window.session_recorder.is_empty():
         QMessageBox.information(main_window, "Nothing to save",
                                  "There's nothing recorded yet — create a plate first.")
@@ -335,3 +337,87 @@ def save_work(main_window):
 
     QMessageBox.information(main_window, "Saved", f"Session saved to:\n{file_name}")
     print(f"Session saved to {file_name}")
+
+
+def open_work(main_window):
+    """Etapa 9: abre un YAML de sesión (schema multi-placa) y reconstruye las
+    placas en la GUI, usando la MISMA función que usa el headless
+    (core.build_session_from_config) — no se reimplementa el parseo.
+
+    Cada placa nombrada se re-registra en el recorder con un único paso 'hard'
+    que refleja el estado final de óxidos (no el historial paso a paso original),
+    para que 'Guardar trabajo' siga funcionando después de abrir una sesión.
+    Los duplicados se re-registran en el PlateRegistry, pero — mismo gap
+    documentado desde la Etapa 5 — no quedan trackeables para ediciones
+    posteriores, porque el schema todavía no les da su propia secuencia de steps."""
+    file_name, _= QFileDialog.getOpenFileName(main_window, "Open Work", "",
+                                               "YAML Files (*.yaml *.yml);;All Files (*)")
+    if not file_name:
+        return
+
+    try:
+        with open(file_name) as f:
+            cfg= yaml.safe_load(f) or {}
+    except (OSError, yaml.YAMLError) as e:
+        QMessageBox.critical(main_window, "Error", f"Couldn't read {file_name}:\n{e}")
+        return
+
+    if "plates" not in cfg:
+        QMessageBox.critical(main_window, "Error",
+                              "This file doesn't look like a multi-plate session YAML (missing 'plates').")
+        return
+
+    try:
+        plates_by_name, all_plates, _, atom_types, _= core.build_session_from_config(cfg)
+    except ValueError as e:
+        QMessageBox.critical(main_window, "Error", f"Couldn't load session:\n{e}")
+        return
+
+    names_in_order= list(plates_by_name.keys())
+    registry_id_by_config_name= {}
+
+    for i, name in enumerate(names_in_order):
+        plate= plates_by_name[name]
+        plate_id= main_window.plates.add(plate)
+        registry_id_by_config_name[name]= plate_id
+
+        create_cfg= cfg["plates"][i].get("create", {})
+        main_window.session_recorder.record_plate_created(create_cfg, name=plate_id)
+
+        oxide_coords= plate.get_oxide_coords()
+        if oxide_coords:
+            oxide_atoms= [[x*10, y*10, z*10, t] for x, y, z, t, *_ in oxide_coords]
+            main_window.session_recorder.record_oxidation_hard(plate_id, oxide_atoms)
+
+        main_window.ui.comboDrawings.addItem(f"Plate {len(main_window.plates)}")
+
+    for i, entry in enumerate(cfg.get("duplicates", [])):
+        source_name= entry["source"]
+        source_id= registry_id_by_config_name.get(source_name)
+        dup_plate= all_plates[len(names_in_order) + i]
+
+        if source_id is not None:
+            source_plate= plates_by_name[source_name]
+            dx, dy, dz= entry["translation"]
+            absolute= entry.get("absolute", False)
+            translation= core.compute_duplicate_translation(dx, dy, dz, absolute, source_plate.get_geometric_center())
+            main_window.plates.add(dup_plate, duplicate_of=source_id, translation=translation)
+            if main_window.session_recorder.has_plate(source_id):
+                main_window.session_recorder.record_duplicate(source_id, entry["translation"], absolute)
+        else:
+            main_window.plates.add(dup_plate)
+
+        main_window.ui.comboDrawings.addItem(f"Plate {len(main_window.plates)}")
+
+    for name, params in atom_types.items():
+        main_window.atom_types[name]= params
+        main_window.ui.comboCType.addItem(name)
+        main_window.session_recorder.record_atom_type(name, params["epsilon"], params["sigma"])
+
+    if len(main_window.plates) > 0:
+        main_window.ui.comboDrawings.setCurrentIndex(len(main_window.plates) - 1)
+        main_window.buttons_that_depend_of_having_a_plate(True)
+        main_window.update_drawing_area()
+
+    n_dup= len(cfg.get("duplicates", []))
+    print(f"{len(names_in_order)} plate(s) + {n_dup} duplicate(s) loaded from {file_name}")
