@@ -9,6 +9,7 @@ import numpy as np
 from .graphene import Graphene, generatePatterns
 from .import_formats import readGRO, readXYZ, readPDB, readMOL2
 from .export_formats import writeGRO, writeXYZ, writeTOP, writePDB, writeMOL2
+from .plate_registry import PlateRegistry
 
 
 # ================================
@@ -383,33 +384,21 @@ def validate_steps(plate_name, steps):
         raise ValueError(f"plate {plate_name!r}: 'cnt' must be the last step (same restriction "
                           "as the GUI: further edits are disabled after rolling into a CNT)")
 
-def build_duplicates_multi(plates_by_name, cfg):
-    """Como build_duplicates (schema plano), pero 'source' referencia cualquier
-    placa ya construida por nombre, no siempre 'la' placa base."""
-    order= list(plates_by_name.keys())
-    all_plates= [plates_by_name[name] for name in order]
-    name_to_position= {name: i for i, name in enumerate(order)}
-
-    duplicates_list= [[], []]
-    for entry in cfg.get("duplicates", []):
-        source_name= entry["source"]
-        if source_name not in plates_by_name:
-            raise ValueError(f"duplicates: unknown source plate {source_name!r}")
-        source_plate= plates_by_name[source_name]
-        dx, dy, dz= entry["translation"]
-        absolute= entry.get("absolute", False)
-        translation= compute_duplicate_translation(dx, dy, dz, absolute, source_plate.get_geometric_center())
-        all_plates.append(source_plate.duplicate(translation))
-        duplicates_list[0].append(len(all_plates))
-        duplicates_list[1].append(name_to_position[source_name] + 1)
-        print(f"  duplicate of {source_name!r} added (translation={entry['translation']}, absolute={absolute})")
-
-    return all_plates, duplicates_list
-
 def build_session_from_config(cfg):
-    """Construye TODAS las placas de un schema multi-placa (cfg['plates']),
-    aplicando sus steps en orden, y arma la lista de duplicados. Devuelve
-    (plates_by_name, plates, duplicates_list, atom_types, periodicity_conditions).
+    """Construye TODAS las placas de un schema multi-placa (cfg['plates']). Cada
+    entrada es una placa nueva (con 'create') O un duplicado de una placa YA
+    procesada más arriba en la lista (con 'duplicate_of' + 'translation'), y en
+    cualquiera de los dos casos puede tener su propia secuencia de 'steps' — así
+    un duplicado se puede seguir editando igual que cualquier otra placa (Etapa 11:
+    antes 'duplicates' era una sección aparte sin steps propios, y cualquier
+    edición posterior sobre un duplicado se perdía).
+
+    Devuelve (plates_by_name, plates, duplicates_list, atom_types,
+    periodicity_conditions). duplicates_list se DERIVA comparando átomos (arma un
+    PlateRegistry interno y reusa resolve_duplicate_groups en vez de reimplementar
+    la comparación) — si un duplicado se editó vía sus steps y ya no coincide con
+    su fuente, sale solo del grupo, igual que en la GUI.
+
     Levanta ValueError ante cualquier problema — no decide cómo mostrarlo, eso es
     trabajo de quien llama (cli.py hace sys.exit, la GUI muestra un QMessageBox).
     Compartida por cli.py (headless) y main_window.py (GUI, Etapa 9)."""
@@ -417,17 +406,20 @@ def build_session_from_config(cfg):
     if not plates_cfg:
         raise ValueError("'plates' is present but empty — nothing to build")
 
-    # Nota: periodic_boundary_x/y vive dentro de cada placa (create), pero
-    # export/checkBounds solo soportan UNA periodicidad global para todo el
+    # Nota: periodic_boundary_x/y vive dentro de cada placa que tenga 'create',
+    # pero export/checkBounds solo soportan UNA periodicidad global para todo el
     # sistema (igual que main_window.periodicity_conditions en la GUI). Se toma
-    # la de la PRIMERA placa.
-    first_create= plates_cfg[0].get("create", {})
+    # la de la PRIMERA placa que tenga 'create' (un duplicado no tiene el suyo).
+    first_create= next((p.get("create", {}) for p in plates_cfg if "create" in p), {})
     periodicity_conditions= [
         first_create.get("periodic_boundary_x", False),
         first_create.get("periodic_boundary_y", False),
     ]
 
+    registry= PlateRegistry()
     plates_by_name= {}
+    name_to_id= {}
+
     for plate_cfg in plates_cfg:
         name= plate_cfg.get("name")
         if not name:
@@ -435,15 +427,32 @@ def build_session_from_config(cfg):
         if name in plates_by_name:
             raise ValueError(f"Duplicate plate name in config: {name!r}")
 
-        plate= build_plate_from_create(plate_cfg.get("create", {}))
+        if "duplicate_of" in plate_cfg:
+            source_name= plate_cfg["duplicate_of"]
+            if source_name not in plates_by_name:
+                raise ValueError(f"plate {name!r}: unknown source plate {source_name!r} "
+                                  "(a duplicate must come after its source in 'plates')")
+            source_plate= plates_by_name[source_name]
+            dx, dy, dz= plate_cfg["translation"]
+            absolute= plate_cfg.get("absolute", False)
+            translation= compute_duplicate_translation(dx, dy, dz, absolute, source_plate.get_geometric_center())
+            plate= source_plate.duplicate(translation)
+            plate_id= registry.add(plate, duplicate_of=name_to_id[source_name], translation=translation)
+            print(f"  duplicate of {source_name!r} added (translation={plate_cfg['translation']}, absolute={absolute})")
+        else:
+            plate= build_plate_from_create(plate_cfg.get("create", {}))
+            plate_id= registry.add(plate)
+
         plates_by_name[name]= plate
+        name_to_id[name]= plate_id
 
         steps= plate_cfg.get("steps", [])
         validate_steps(name, steps)
         for step in steps:
             apply_step(plate, step)
 
-    plates, duplicates_list= build_duplicates_multi(plates_by_name, cfg)
+    plates= list(registry)
+    duplicates_list= registry.resolve_duplicate_groups()
     atom_types= build_atom_types(cfg)
 
     return plates_by_name, plates, duplicates_list, atom_types, periodicity_conditions

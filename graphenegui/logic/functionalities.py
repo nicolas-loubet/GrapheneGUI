@@ -267,16 +267,21 @@ def create_duplicate(main_window, dialog):
         source_plate.get_geometric_center()
     )
 
-    main_window.plates.add(source_plate.duplicate(translation), duplicate_of=source_id, translation=translation)
+    new_plate_id= main_window.plates.add(source_plate.duplicate(translation), duplicate_of=source_id, translation=translation)
 
+    # Etapa 11: el duplicado usa el MISMO id que le asignó el registry como nombre
+    # en el recorder — así queda trackeable para ediciones posteriores (oxidar,
+    # CNT, etc.) igual que cualquier placa creada de cero. Antes esto no pasaba,
+    # y cualquier edición sobre un duplicado se perdía silenciosamente.
     if main_window.session_recorder.has_plate(source_id):
         main_window.session_recorder.record_duplicate(
             source_id,
             [dialog.spin_duplicate_x.value(), dialog.spin_duplicate_y.value(), dialog.spin_duplicate_z.value()],
             dialog.radio_btn_absolute_pos.isChecked(),
+            name=new_plate_id,
         )
-    # el duplicado en sí no es trackeable todavía (no tiene su propia secuencia de
-    # steps en el schema) — ver TODO Etapa 5
+    # si la fuente no era trackeable (ej. importada), el duplicado tampoco lo es —
+    # no tiene sentido grabar un duplicado de algo que no se puede reconstruir
 
     main_window.ui.comboDrawings.addItem(f"Plate {len(main_window.plates)}")
     print(f"Duplicate added: Plate {len(main_window.plates)}")
@@ -340,16 +345,16 @@ def save_work(main_window):
 
 
 def open_work(main_window):
-    """Etapa 9: abre un YAML de sesión (schema multi-placa) y reconstruye las
-    placas en la GUI, usando la MISMA función que usa el headless
-    (core.build_session_from_config) — no se reimplementa el parseo.
+    """Etapa 9 (schema unificado desde la Etapa 11): abre un YAML de sesión y
+    reconstruye las placas en la GUI, usando la MISMA función que usa el
+    headless (core.build_session_from_config) — no se reimplementa el parseo.
 
-    Cada placa nombrada se re-registra en el recorder con un único paso 'hard'
-    que refleja el estado final de óxidos (no el historial paso a paso original),
-    para que 'Guardar trabajo' siga funcionando después de abrir una sesión.
-    Los duplicados se re-registran en el PlateRegistry, pero — mismo gap
-    documentado desde la Etapa 5 — no quedan trackeables para ediciones
-    posteriores, porque el schema todavía no les da su propia secuencia de steps."""
+    Cada placa (sea 'create' o 'duplicate_of' — ya no hay distinción de
+    trackeabilidad entre las dos) se re-registra en el recorder con un único
+    paso 'hard' que refleja el estado final de óxidos (no el historial paso a
+    paso original), para que 'Guardar trabajo' siga funcionando después de
+    abrir una sesión, y para que se pueda seguir editando cualquier placa —
+    incluidos los duplicados — con esas ediciones quedando grabadas."""
     file_name, _= QFileDialog.getOpenFileName(main_window, "Open Work", "",
                                                "YAML Files (*.yaml *.yml);;All Files (*)")
     if not file_name:
@@ -368,44 +373,42 @@ def open_work(main_window):
         return
 
     try:
-        plates_by_name, all_plates, _, atom_types, _= core.build_session_from_config(cfg)
+        plates_by_name, _, _, atom_types, _= core.build_session_from_config(cfg)
     except ValueError as e:
         QMessageBox.critical(main_window, "Error", f"Couldn't load session:\n{e}")
         return
 
-    names_in_order= list(plates_by_name.keys())
     registry_id_by_config_name= {}
 
-    for i, name in enumerate(names_in_order):
+    for plate_cfg in cfg["plates"]:
+        name= plate_cfg["name"]
         plate= plates_by_name[name]
-        plate_id= main_window.plates.add(plate)
+
+        if "duplicate_of" in plate_cfg:
+            source_name= plate_cfg["duplicate_of"]
+            source_id= registry_id_by_config_name.get(source_name)
+            source_plate= plates_by_name[source_name]
+            dx, dy, dz= plate_cfg["translation"]
+            absolute= plate_cfg.get("absolute", False)
+            translation= core.compute_duplicate_translation(dx, dy, dz, absolute, source_plate.get_geometric_center())
+            plate_id= main_window.plates.add(plate, duplicate_of=source_id, translation=translation)
+
+            if source_id is not None and main_window.session_recorder.has_plate(source_id):
+                main_window.session_recorder.record_duplicate(
+                    source_id, plate_cfg["translation"], absolute, name=plate_id)
+        else:
+            plate_id= main_window.plates.add(plate)
+            main_window.session_recorder.record_plate_created(plate_cfg.get("create", {}), name=plate_id)
+
         registry_id_by_config_name[name]= plate_id
 
-        create_cfg= cfg["plates"][i].get("create", {})
-        main_window.session_recorder.record_plate_created(create_cfg, name=plate_id)
-
-        oxide_coords= plate.get_oxide_coords()
-        if oxide_coords:
-            oxide_atoms= [[x*10, y*10, z*10, t] for x, y, z, t, *_ in oxide_coords]
-            main_window.session_recorder.record_oxidation_hard(plate_id, oxide_atoms)
-
-        main_window.ui.comboDrawings.addItem(f"Plate {len(main_window.plates)}")
-
-    for i, entry in enumerate(cfg.get("duplicates", [])):
-        source_name= entry["source"]
-        source_id= registry_id_by_config_name.get(source_name)
-        dup_plate= all_plates[len(names_in_order) + i]
-
-        if source_id is not None:
-            source_plate= plates_by_name[source_name]
-            dx, dy, dz= entry["translation"]
-            absolute= entry.get("absolute", False)
-            translation= core.compute_duplicate_translation(dx, dy, dz, absolute, source_plate.get_geometric_center())
-            main_window.plates.add(dup_plate, duplicate_of=source_id, translation=translation)
-            if main_window.session_recorder.has_plate(source_id):
-                main_window.session_recorder.record_duplicate(source_id, entry["translation"], absolute)
-        else:
-            main_window.plates.add(dup_plate)
+        # Estado final de óxidos como un único step 'hard' — sea placa nueva o
+        # duplicado, así 'Guardar trabajo' sigue funcionando después de reabrir.
+        if main_window.session_recorder.has_plate(plate_id):
+            oxide_coords= plate.get_oxide_coords()
+            if oxide_coords:
+                oxide_atoms= [[x*10, y*10, z*10, t] for x, y, z, t, *_ in oxide_coords]
+                main_window.session_recorder.record_oxidation_hard(plate_id, oxide_atoms)
 
         main_window.ui.comboDrawings.addItem(f"Plate {len(main_window.plates)}")
 
@@ -419,5 +422,4 @@ def open_work(main_window):
         main_window.buttons_that_depend_of_having_a_plate(True)
         main_window.update_drawing_area()
 
-    n_dup= len(cfg.get("duplicates", []))
-    print(f"{len(names_in_order)} plate(s) + {n_dup} duplicate(s) loaded from {file_name}")
+    print(f"{len(cfg['plates'])} plate(s) loaded from {file_name}")

@@ -37,15 +37,19 @@ class TestPlateRegistration(unittest.TestCase):
         with self.assertRaises(ValueError):
             rec.record_reduce_borders("nope")
 
-    def test_remove_plate_also_drops_its_duplicates(self):
+    def test_remove_plate_leaves_dangling_reference_on_purpose(self):
+        """Etapa 11: el duplicado ahora es una placa trackeable más — remove_plate
+        NO cascadea el borrado (antes sí lo hacía, cuando duplicates era una lista
+        aparte sin steps propios). La referencia queda colgante a propósito: falla
+        fuerte en el replay (ValueError claro) en vez de fallar en silencio."""
         rec= SessionRecorder()
         rec.record_plate_created({"width": 40, "height": 40}, name="base")
-        rec.record_duplicate("base", [0, 0, 34])
+        rec.record_duplicate("base", [0, 0, 34], name="dup")
 
         rec.remove_plate("base")
 
-        self.assertEqual(rec.known_plates(), [])
-        self.assertEqual(rec.to_dict()["duplicates"], [])
+        self.assertEqual(rec.known_plates(), ["dup"])
+        self.assertEqual(rec.to_dict()["plates"][0]["duplicate_of"], "base")  # colgante, a propósito
 
 
 class TestOxidationRecording(unittest.TestCase):
@@ -112,13 +116,32 @@ class TestDuplicatesAndAtomTypes(unittest.TestCase):
         with self.assertRaises(ValueError):
             rec.record_duplicate("nope", [0, 0, 34])
 
-    def test_duplicate_recorded(self):
+    def test_duplicate_recorded_as_a_trackable_plate(self):
+        """Etapa 11: el duplicado es una placa más en 'plates' (duplicate_of en vez
+        de create), con su propia lista de steps vacía lista para usarse."""
         rec= SessionRecorder()
         rec.record_plate_created({"width": 40, "height": 40}, name="base")
-        rec.record_duplicate("base", [0, 0, 34], absolute=True)
-        self.assertEqual(rec.to_dict()["duplicates"], [
-            {"source": "base", "translation": [0, 0, 34], "absolute": True}
-        ])
+        dup_name= rec.record_duplicate("base", [0, 0, 34], absolute=True)
+
+        self.assertEqual(dup_name, "plate2")  # autogenerado, sigue el mismo contador
+        plates= rec.to_dict()["plates"]
+        self.assertEqual(plates[1], {
+            "name": "plate2", "duplicate_of": "base",
+            "translation": [0, 0, 34], "absolute": True, "steps": [],
+        })
+
+    def test_duplicate_can_have_its_own_steps(self):
+        """El punto central de la Etapa 11: se puede seguir editando un duplicado
+        y esas ediciones SÍ quedan grabadas (antes se perdían)."""
+        rec= SessionRecorder()
+        rec.record_plate_created({"width": 40, "height": 40}, name="base")
+        dup_name= rec.record_duplicate("base", [0, 0, 34], name="dup")
+
+        self.assertTrue(rec.has_plate(dup_name))
+        rec.record_cnt(dup_name, [10, 0])
+
+        dup_entry= rec.to_dict()["plates"][1]
+        self.assertEqual(dup_entry["steps"], [{"type": "cnt", "vector": [10, 0]}])
 
     def test_atom_type_recorded(self):
         rec= SessionRecorder()

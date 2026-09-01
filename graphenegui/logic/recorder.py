@@ -13,9 +13,8 @@ import yaml
 
 class SessionRecorder:
     def __init__(self):
-        self._plates= {}           # nombre -> {"create": {...}, "steps": [...]}
+        self._plates= {}           # nombre -> {"create"|"duplicate_of"+"translation"+"absolute", "steps": [...]}
         self._plate_order= []      # mantiene el orden de creación
-        self._duplicates= []       # [{"source":..., "translation":..., "absolute":...}]
         self._atom_types= []       # [{"name":..., "epsilon":..., "sigma":...}]
         self._next_plate_index= 0  # para autogenerar "plateN" si no se da nombre
 
@@ -23,26 +22,32 @@ class SessionRecorder:
     # Placas
     # ================================
 
-    def record_plate_created(self, create_params, name=None):
-        """create_params: dict con width/height/factor/center/periodic_boundary_x/y
-        (Å para width/height/center, igual que el resto del schema). Devuelve el
-        nombre asignado a la placa (autogenerado si no se pasó uno)."""
+    def _register_name(self, name):
         self._next_plate_index+= 1
         if name is None:
             name= f"plate{self._next_plate_index}"
         if name in self._plates:
             raise ValueError(f"Plate name already recorded: {name!r}")
+        return name
+
+    def record_plate_created(self, create_params, name=None):
+        """create_params: dict con width/height/factor/center/periodic_boundary_x/y
+        (Å para width/height/center, igual que el resto del schema). Devuelve el
+        nombre asignado a la placa (autogenerado si no se pasó uno)."""
+        name= self._register_name(name)
         self._plates[name]= {"create": dict(create_params), "steps": []}
         self._plate_order.append(name)
         return name
 
     def remove_plate(self, plate_name):
         """Para cuando la GUI borra una placa (delete_actual_plate): la saca del
-        recorder y limpia cualquier duplicado que la referenciara como fuente."""
+        recorder. Si otra placa la tenía como duplicate_of, esa referencia queda
+        colgante a propósito — el replay (core.build_session_from_config) va a
+        fallar con un error claro ("unknown source plate") en vez de fallar
+        silenciosamente o inventar datos; no se intenta "reparar" solo."""
         if plate_name in self._plates:
             del self._plates[plate_name]
             self._plate_order.remove(plate_name)
-        self._duplicates= [d for d in self._duplicates if d["source"] != plate_name]
 
     def known_plates(self):
         return list(self._plate_order)
@@ -52,7 +57,7 @@ class SessionRecorder:
 
     def _steps_for(self, plate_name):
         if plate_name not in self._plates:
-            raise ValueError(f"Unknown plate: {plate_name!r} (¿se registró con record_plate_created?)")
+            raise ValueError(f"Unknown plate: {plate_name!r} (¿se registró con record_plate_created o record_duplicate?)")
         return self._plates[plate_name]["steps"]
 
     # ================================
@@ -103,17 +108,26 @@ class SessionRecorder:
         self._steps_for(plate_name).append({"type": "cnt", "vector": list(vector)})
 
     # ================================
-    # Duplicados
+    # Duplicados (Etapa 11: son placas trackeables más, no un caso aparte)
     # ================================
 
-    def record_duplicate(self, source_plate_name, translation, absolute=False):
+    def record_duplicate(self, source_plate_name, translation, absolute=False, name=None):
+        """El duplicado pasa a ser una placa más en _plates, con su propia lista de
+        steps — así se puede seguir editando (oxidar, CNT, etc.) y esas ediciones
+        SÍ quedan grabadas, a diferencia de como era antes. 'source_plate_name'
+        tiene que ser una placa ya registrada (con record_plate_created o
+        record_duplicate). Devuelve el nombre asignado al duplicado."""
         if source_plate_name not in self._plates:
             raise ValueError(f"Unknown source plate: {source_plate_name!r}")
-        self._duplicates.append({
-            "source": source_plate_name,
+        name= self._register_name(name)
+        self._plates[name]= {
+            "duplicate_of": source_plate_name,
             "translation": list(translation),
             "absolute": absolute,
-        })
+            "steps": [],
+        }
+        self._plate_order.append(name)
+        return name
 
     # ================================
     # Tipos de átomo custom
@@ -130,15 +144,14 @@ class SessionRecorder:
         return not self._plate_order
 
     def to_dict(self, export_formats=None, output_dir=".", export_name="graphene"):
-        """Arma el dict con la misma forma del schema multi-placa de la Etapa 1.
-        La Etapa 6 (serializar a YAML de verdad) solo tiene que volcar esto con
-        yaml.safe_dump."""
+        """Arma el dict con la misma forma del schema multi-placa (Etapa 1, unificado
+        en la Etapa 11: 'plates' es la única lista, cada entrada es 'create' o
+        'duplicate_of' — ya no hay una sección 'duplicates' aparte)."""
         return {
             "plates": [
                 {"name": name, **self._plates[name]}
                 for name in self._plate_order
             ],
-            "duplicates": list(self._duplicates),
             "atom_types": list(self._atom_types),
             "export": {
                 "formats": export_formats or ["mol2"],
@@ -153,8 +166,7 @@ class SessionRecorder:
         data= self.to_dict(export_formats=export_formats, output_dir=output_dir, export_name=export_name)
         header= (
             "# Generado por \"Guardar trabajo\".\n"
-            "# Pensado para reproducirse con: graphene-gui-cli -c este_archivo.yaml\n"
-            "# (cli.py todavía no lee este schema multi-placa tal cual — ver TODO Etapa 8)\n"
+            "# Reproducible con: graphene-gui-cli -c este_archivo.yaml\n"
         )
         return header + yaml.safe_dump(data, sort_keys=False, default_flow_style=False, allow_unicode=True)
 

@@ -216,14 +216,44 @@ plates:
     create:
       width: 20
       height: 20
-""", extra_yaml="""
-duplicates:
-  - source: b
+  - name: b_dup
+    duplicate_of: b
     translation: [0, 0, 34]
 """)
             cli.main(["-c", config_path])
             plates_read= inf.readGRO(os.path.join(output_dir, "multi.gro"))
             self.assertEqual(len(plates_read), 3)  # a, b, duplicado de b
+
+    def test_duplicate_can_have_its_own_steps(self):
+        """El punto central de la Etapa 11: un duplicado puede seguir editándose
+        (acá, oxidándose) con sus propios steps, no solo con la traslación."""
+        n_x, n_y= core_module.compute_plate_grid(20, 20, 1.0)
+        probe= Graphene.create_from_params(n_x, n_y, 0, 0, 34/10, 1.0, False)  # ya trasladada en z
+        cx, cy, cz= probe.get_carbon_coords()[0][:3]
+        oo= [cx*10, cy*10, (cz+0.149)*10, "OO"]
+        ho= [(cx+0.093)*10, cy*10, (cz+0.181)*10, "HO"]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path, output_dir= self._write_config(tmp, f"""
+plates:
+  - name: b
+    create:
+      width: 20
+      height: 20
+  - name: b_dup
+    duplicate_of: b
+    translation: [0, 0, 34]
+    steps:
+      - type: oxidation
+        mode: hard
+        oxides:
+          - {oo}
+          - {ho}
+""")
+            cli.main(["-c", config_path])
+            plates_read= inf.readGRO(os.path.join(output_dir, "multi.gro"))
+            self.assertEqual(plates_read[0].get_oxide_count(), 0)   # b, sin tocar
+            self.assertEqual(plates_read[1].get_oxide_count(), 1)   # b_dup, con su propio óxido
 
     def test_duplicate_unknown_source_exits(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -233,10 +263,24 @@ plates:
     create:
       width: 30
       height: 30
-""", extra_yaml="""
-duplicates:
-  - source: nope
+  - name: a_dup
+    duplicate_of: nope
     translation: [0, 0, 34]
+""")
+            with self.assertRaises(SystemExit):
+                cli.main(["-c", config_path])
+
+    def test_duplicate_before_its_source_exits(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path, _= self._write_config(tmp, """
+plates:
+  - name: a_dup
+    duplicate_of: a
+    translation: [0, 0, 34]
+  - name: a
+    create:
+      width: 30
+      height: 30
 """)
             with self.assertRaises(SystemExit):
                 cli.main(["-c", config_path])
