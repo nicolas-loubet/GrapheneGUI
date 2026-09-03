@@ -73,6 +73,25 @@ class TestGroRoundTrip(unittest.TestCase):
         self.assertEqual(len(plates_read), 1)
         self.assertEqual(plates_read[0].get_number_atoms(), n_before)
 
+    def test_border_hydrogens_survive_roundtrip_not_miscounted_as_carbon(self):
+        """Regresión Etapa T1: readMOL2 no tenía 'ha' (el tipo SYBYL de los H de
+        borde) en atom_type_map -> caía al default 'C' -> un hidrógeno de borde
+        se leía como si fuera un carbono (corrupción silenciosa, peor que un
+        crash). Ahora 'ha' mapea a H y se trackea aparte."""
+        plate= Graphene.create_from_params(3, 3, 0, 0, 0, 1.0, False)
+        plate.reduce_borders()
+        n_h_before= len(plate.get_hydrogens_coords())
+        n_c_before= len(plate.get_carbon_coords())
+        self.assertGreater(n_h_before, 0)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path= os.path.join(tmp, "with_borders.mol2")
+            ef.writeMOL2(path, [plate], [False, False])
+            plates_read= inf.readMOL2(path)
+
+        self.assertEqual(len(plates_read[0].get_hydrogens_coords()), n_h_before)
+        self.assertEqual(len(plates_read[0].get_carbon_coords()), n_c_before)  # no inflado con H
+
 
 class TestXyzRoundTrip(unittest.TestCase):
     def test_roundtrip_preserves_atom_count(self):
@@ -100,6 +119,24 @@ class TestPdbRoundTrip(unittest.TestCase):
 
         self.assertEqual(len(plates_read), 1)
         self.assertEqual(plates_read[0].get_number_atoms(), n_before)
+
+    def test_border_hydrogens_survive_roundtrip(self):
+        """Regresión Etapa T1: readPDB no trackeaba hidrógenos de borde -- un H
+        de nombre 'H1' no matcheaba ni carbono ni óxido y explotaba con
+        'Unknown atom type'. Ahora se trackean igual que en readGRO."""
+        plate= Graphene.create_from_params(3, 3, 0, 0, 0, 1.0, False)
+        plate.reduce_borders()
+        n_h_before= len(plate.get_hydrogens_coords())
+        n_c_before= len(plate.get_carbon_coords())
+        self.assertGreater(n_h_before, 0)  # que el test realmente ejercite algo
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path= os.path.join(tmp, "with_borders.pdb")
+            ef.writePDB(path, [plate], [False, False])
+            plates_read= inf.readPDB(path)  # no debe explotar
+
+        self.assertEqual(len(plates_read[0].get_hydrogens_coords()), n_h_before)
+        self.assertEqual(len(plates_read[0].get_carbon_coords()), n_c_before)  # sin H mezclados acá
 
 
 if __name__ == "__main__":

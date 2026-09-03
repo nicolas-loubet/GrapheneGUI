@@ -3,6 +3,43 @@ import unittest
 from graphenegui.logic.graphene import Graphene
 
 
+class TestReduceBordersPeriodicity(unittest.TestCase):
+    """Etapa T2: reduce_borders() no le agrega H a los lados que son periódicos —
+    ahí no hay un borde real, se conecta con la imagen periódica."""
+
+    def test_no_periodicity_adds_h_on_all_sides(self):
+        plate= Graphene.create_from_params(6, 6, 0, 0, 0, 1.0, False, False)
+        plate.reduce_borders()
+        self.assertGreater(len(plate.get_hydrogens_coords()), 0)
+
+    def test_periodic_x_adds_fewer_h_than_flat(self):
+        plate_flat= Graphene.create_from_params(6, 6, 0, 0, 0, 1.0, False, False)
+        plate_flat.reduce_borders()
+        n_flat= len(plate_flat.get_hydrogens_coords())
+
+        plate_px= Graphene.create_from_params(6, 6, 0, 0, 0, 1.0, True, False)
+        plate_px.reduce_borders()
+        n_px= len(plate_px.get_hydrogens_coords())
+
+        self.assertGreater(n_px, 0)       # sigue habiendo borde real en Y
+        self.assertLess(n_px, n_flat)     # pero menos que si X también fuera borde
+
+    def test_periodic_both_axes_adds_no_h(self):
+        plate= Graphene.create_from_params(6, 6, 0, 0, 0, 1.0, True, True)
+        plate.reduce_borders()
+        self.assertEqual(len(plate.get_hydrogens_coords()), 0)
+
+    def test_periodicity_flags_stored_on_instance(self):
+        plate= Graphene.create_from_params(4, 4, 0, 0, 0, 1.0, True, False)
+        self.assertTrue(plate.periodic_boundary_x)
+        self.assertFalse(plate.periodic_boundary_y)
+
+    def test_default_is_non_periodic(self):
+        plate= Graphene.create_from_params(4, 4, 0, 0, 0, 1.0, False)  # sin pasar periodic_y
+        self.assertFalse(plate.periodic_boundary_x)
+        self.assertFalse(plate.periodic_boundary_y)
+
+
 class TestGrapheneCreation(unittest.TestCase):
     def test_atom_count_non_periodic(self):
         n_x, n_y, factor= 3, 2, 1.0
@@ -30,6 +67,12 @@ class TestGrapheneDuplicate(unittest.TestCase):
             self.assertAlmostEqual(moved[0] - orig[0], translation[0], places=6)
             self.assertAlmostEqual(moved[1] - orig[1], translation[1], places=6)
             self.assertAlmostEqual(moved[2] - orig[2], translation[2], places=6)
+
+    def test_duplicate_propagates_periodicity_flags(self):
+        periodic_plate= Graphene.create_from_params(2, 2, 0, 0, 0, 1.0, True, True)
+        dup= periodic_plate.duplicate([0, 0, 0.34])
+        self.assertTrue(dup.periodic_boundary_x)
+        self.assertTrue(dup.periodic_boundary_y)
 
 
 class TestOxidation(unittest.TestCase):

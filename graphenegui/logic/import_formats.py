@@ -101,7 +101,7 @@ def change_name_carbons_oxidized(plate):
         
 def readPDB(filename):
     with open(filename, 'r') as f:
-        acc= _PlateAccumulator()
+        acc= _PlateAccumulator(track_hydrogens=True)
         
         for line in f:
             if line.startswith("ATOM"):
@@ -119,6 +119,8 @@ def readPDB(filename):
                     acc.carbons.append([x, y, z, atom_name, atom_id, False, "ca"])
                 elif atom_name[:2] in ("OO", "HO", "OE"):
                     acc.oxides.append([x, y, z, atom_name[:2], atom_id, False, atom_name[:2]])
+                elif atom_name.startswith("H"):
+                    acc.hydrogens.append([x, y, z, atom_name, atom_id, False, "ha"])
                 else:
                     raise Exception("Unknown atom type: " + atom_name)
         
@@ -132,10 +134,10 @@ def readPDB(filename):
 
 def readMOL2(filename):
     with open(filename, 'r') as f:
-        acc= _PlateAccumulator()
+        acc= _PlateAccumulator(track_hydrogens=True)
         current_section= None
         
-        atom_type_map= {"ca": "C", "c3": "CO", "cx": "CE", "oh": "OO", "ho": "HO", "os": "OE"}
+        atom_type_map= {"ca": "C", "c3": "CO", "cx": "CE", "oh": "OO", "ho": "HO", "os": "OE", "ha": "H"}
         
         for line in f:
             line= line.strip()
@@ -160,6 +162,8 @@ def readMOL2(filename):
                 
                 if internal_type.startswith("C"):
                     acc.carbons.append([x, y, z, internal_type, atom_id, False, "ca"])
+                elif internal_type == "H":
+                    acc.hydrogens.append([x, y, z, internal_type, atom_id, False, "ha"])
                 else:
                     acc.oxides.append([x, y, z, internal_type, atom_id, False, internal_type])
         

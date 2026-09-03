@@ -290,6 +290,7 @@ def build_plate_from_create(create_cfg):
     factor= create_cfg.get("factor", 1.0)
     center= create_cfg.get("center", [0, 0, 0])  # Å
     periodic_x= create_cfg.get("periodic_boundary_x", False)
+    periodic_y= create_cfg.get("periodic_boundary_y", False)
 
     n_x, n_y= compute_plate_grid(width, height, factor)
     fits, max_atoms= check_plate_size(n_x, n_y)
@@ -297,7 +298,7 @@ def build_plate_from_create(create_cfg):
         raise ValueError(f"Plate too large ({max_atoms} atom names available in the naming scheme). Reduce width/height.")
 
     center_x_nm, center_y_nm, center_z_nm= [c / 10 for c in center]
-    plate= Graphene.create_from_params(n_x, n_y, center_x_nm, center_y_nm, center_z_nm, factor, periodic_x)
+    plate= Graphene.create_from_params(n_x, n_y, center_x_nm, center_y_nm, center_z_nm, factor, periodic_x, periodic_y)
     print(f"Plate built: {n_x}x{n_y} ({plate.get_number_atoms()} atoms)")
     return plate
 

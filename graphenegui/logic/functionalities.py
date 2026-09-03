@@ -135,7 +135,8 @@ def create_plate(dialog, main_window):
         QMessageBox.critical(main_window, "Too large", f"The number of atoms is too large ({max_atoms}). Reduce the width or height.")
         return
 
-    plate= Graphene.create_from_params(n_x, n_y, center_x_nm, center_y_nm, center_z_nm, factor, dialog.check_pbc_x.isChecked())
+    plate= Graphene.create_from_params(n_x, n_y, center_x_nm, center_y_nm, center_z_nm, factor,
+                                        dialog.check_pbc_x.isChecked(), dialog.check_pbc_y.isChecked())
     plate_id= main_window.plates.add(plate)
     main_window.session_recorder.record_plate_created({
         "width": width, "height": height, "factor": factor,

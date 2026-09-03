@@ -2,12 +2,15 @@ import random
 import numpy as np
 
 class Graphene:
-    def __init__(self, carbon_coords=None, oxide_coords=None, hydrogens_coords=None, scale_factor=1.0):
+    def __init__(self, carbon_coords=None, oxide_coords=None, hydrogens_coords=None, scale_factor=1.0,
+                 periodic_boundary_x=False, periodic_boundary_y=False):
         self.carbon_coords= carbon_coords if carbon_coords is not None else []
         self.oxide_coords= oxide_coords if oxide_coords is not None else []
         self.hydrogens_coords= hydrogens_coords if hydrogens_coords is not None else []
         self.scale_factor= scale_factor
         self.is_CNT= False
+        self.periodic_boundary_x= periodic_boundary_x
+        self.periodic_boundary_y= periodic_boundary_y
 
     @classmethod
     def create_from_coords(cls, carbon_coords, oxide_coords, hydrogens_coords=None):
@@ -19,7 +22,7 @@ class Graphene:
         return plate
 
     @classmethod
-    def create_from_params(cls, n_x, n_y, center_x, center_y, center_z, factor, periodic_boundary_x):
+    def create_from_params(cls, n_x, n_y, center_x, center_y, center_z, factor, periodic_boundary_x, periodic_boundary_y=False):
         dx= 0.1225 * factor
         dy= 0.071 * factor
         name_atoms= generatePatterns()
@@ -55,7 +58,8 @@ class Graphene:
                 coords.append([dx * n_x * 2 + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
                 i_atom+= 1
 
-        return cls(coords, [], [])
+        plate= cls(coords, [], [], periodic_boundary_x=periodic_boundary_x, periodic_boundary_y=periodic_boundary_y)
+        return plate
 
     def _translated(self, coords, translations):
         dx, dy, dz= translations
@@ -65,7 +69,10 @@ class Graphene:
         carbons= self._translated(self.carbon_coords, translations)
         oxides= self._translated(self.oxide_coords, translations)
         hydrogens= self._translated(self.hydrogens_coords, translations)
-        return Graphene.create_from_coords(carbons, oxides, hydrogens)
+        new_plate= Graphene.create_from_coords(carbons, oxides, hydrogens)
+        new_plate.periodic_boundary_x= self.periodic_boundary_x
+        new_plate.periodic_boundary_y= self.periodic_boundary_y
+        return new_plate
 
     def add_carbon(self, x, y, z, atom_name, atom_index, modified=False, atom_type="ca"):
         self.carbon_coords.append([x, y, z, atom_name, atom_index, modified, atom_type])
@@ -305,7 +312,16 @@ class Graphene:
         max_coords[1]-= .001
         for c in self.carbon_coords:
             xc,yc= c[:2]
-            if xc > min_coors[0] and xc < max_coords[0] and yc > min_coors[1] and yc < max_coords[1]: continue
+            inside_x= xc > min_coors[0] and xc < max_coords[0]
+            inside_y= yc > min_coors[1] and yc < max_coords[1]
+            if inside_x and inside_y: continue
+
+            # Si el único lado que toca este carbono es periódico, no es un borde de
+            # verdad (se conecta con su imagen periódica) -> no le corresponde H acá.
+            if not inside_x and self.periodic_boundary_x and inside_y: continue
+            if not inside_y and self.periodic_boundary_y and inside_x: continue
+            if not inside_x and not inside_y and self.periodic_boundary_x and self.periodic_boundary_y: continue
+
             adj_carbons= self.carbons_adjacent(c)
             if len(adj_carbons) != 2: continue
             
