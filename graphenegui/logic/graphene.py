@@ -1,6 +1,13 @@
 import random
 import numpy as np
 
+# Tipo de carbono por defecto al crear una placa. Único lugar donde se define
+# el literal — antes estaba repetido 6 veces en este archivo (create_from_params,
+# add_carbon, set_atoms) y una vez más en main_window.py (self.atom_types). La
+# Etapa 12 (reset de tipo de carbono a mano) necesita esta constante para no
+# repetir el string "ca" una vez más.
+DEFAULT_CARBON_TYPE= "ca"
+
 class Graphene:
     def __init__(self, carbon_coords=None, oxide_coords=None, hydrogens_coords=None, scale_factor=1.0,
                  periodic_boundary_x=False, periodic_boundary_y=False):
@@ -40,22 +47,22 @@ class Graphene:
         for iy in range(n_y):
             ybase= iy * 6 * dy
             for ix in range(n_x):
-                coords.append([dx * ix * 2 + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
+                coords.append([dx * ix * 2 + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, DEFAULT_CARBON_TYPE])
                 i_atom+= 1
-                coords.append([dx * (ix * 2 + 1) + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
+                coords.append([dx * (ix * 2 + 1) + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, DEFAULT_CARBON_TYPE])
                 i_atom+= 1
             if(not periodic_boundary_x):
-                coords.append([dx * n_x * 2 + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
+                coords.append([dx * n_x * 2 + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, DEFAULT_CARBON_TYPE])
                 i_atom+= 1
 
             ybase= ybase + dy * 3
             for ix in range(n_x):
-                coords.append([dx * ix * 2 + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
+                coords.append([dx * ix * 2 + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, DEFAULT_CARBON_TYPE])
                 i_atom+= 1
-                coords.append([dx * (ix * 2 + 1) + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
+                coords.append([dx * (ix * 2 + 1) + offset_x, ybase + dy + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, DEFAULT_CARBON_TYPE])
                 i_atom+= 1
             if(not periodic_boundary_x):
-                coords.append([dx * n_x * 2 + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, "ca"])
+                coords.append([dx * n_x * 2 + offset_x, ybase + offset_y, center_z, name_atoms[i_atom-1], i_atom, False, DEFAULT_CARBON_TYPE])
                 i_atom+= 1
 
         plate= cls(coords, [], [], periodic_boundary_x=periodic_boundary_x, periodic_boundary_y=periodic_boundary_y)
@@ -74,7 +81,7 @@ class Graphene:
         new_plate.periodic_boundary_y= self.periodic_boundary_y
         return new_plate
 
-    def add_carbon(self, x, y, z, atom_name, atom_index, modified=False, atom_type="ca"):
+    def add_carbon(self, x, y, z, atom_name, atom_index, modified=False, atom_type=DEFAULT_CARBON_TYPE):
         self.carbon_coords.append([x, y, z, atom_name, atom_index, modified, atom_type])
 
     def add_oxide(self, x, y, z, oxide_type, atom_index, modified=False):
@@ -84,7 +91,7 @@ class Graphene:
         self.carbon_coords= []
         self.oxide_coords= []
         for x, y, z, atom_name, atom_index, modified, *extra in atoms:  
-            atom_type= extra[0] if extra else "ca"
+            atom_type= extra[0] if extra else DEFAULT_CARBON_TYPE
             if atom_name.startswith("C"):
                 self.carbon_coords.append([x, y, z, atom_name, atom_index, modified, atom_type])
             else:

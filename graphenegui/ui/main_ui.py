@@ -208,6 +208,24 @@ class Ui_MainWindow(object):
 
         self.vLayoutSidebar.addWidget(self.btnRemoveOx, 0, Qt.AlignHCenter)
 
+        self.spacerBetweenRemoveAndCType = QSpacerItem(20, 12, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.vLayoutSidebar.addItem(self.spacerBetweenRemoveAndCType)
+
+        self.btnPaintCType = QPushButton(self.rightSidebar)
+        self.btnPaintCType.setObjectName(u"btnPaintCType")
+        self.btnPaintCType.setCheckable(True)
+        self.btnPaintCType.setMinimumSize(QSize(90, 35))
+
+        self.vLayoutSidebar.addWidget(self.btnPaintCType, 0, Qt.AlignHCenter)
+
+        self.btnResetCType = QPushButton(self.rightSidebar)
+        self.btnResetCType.setObjectName(u"btnResetCType")
+        self.btnResetCType.setCheckable(True)
+        self.btnResetCType.setMinimumSize(QSize(90, 35))
+
+        self.vLayoutSidebar.addWidget(self.btnResetCType, 0, Qt.AlignHCenter)
+
         self.spacerBetweenRemoveAndWhere = QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.vLayoutSidebar.addItem(self.spacerBetweenRemoveAndWhere)
@@ -348,6 +366,12 @@ class Ui_MainWindow(object):
 
         self.hLayoutBottom.addWidget(self.comboCType)
 
+        self.btnApplyCType = QPushButton(self.bottomBar)
+        self.btnApplyCType.setObjectName(u"btnApplyCType")
+        self.btnApplyCType.setMinimumSize(QSize(140, 40))
+
+        self.hLayoutBottom.addWidget(self.btnApplyCType)
+
 
         self.verticalLayout_1.addWidget(self.bottomBar)
 
@@ -374,6 +398,14 @@ class Ui_MainWindow(object):
         self.btnAddOH.setText(QCoreApplication.translate("MainWindow", u"-OH", None))
         self.btnAddO.setText(QCoreApplication.translate("MainWindow", u"-O-", None))
         self.btnRemoveOx.setText(QCoreApplication.translate("MainWindow", u"Remove", None))
+        self.btnPaintCType.setText(QCoreApplication.translate("MainWindow", u"Paint type", None))
+#if QT_CONFIG(tooltip)
+        self.btnPaintCType.setToolTip(QCoreApplication.translate("MainWindow", u"Click carbons on the canvas to assign them the type selected below (Bottom bar > C type)", None))
+#endif // QT_CONFIG(tooltip)
+        self.btnResetCType.setText(QCoreApplication.translate("MainWindow", u"Reset type", None))
+#if QT_CONFIG(tooltip)
+        self.btnResetCType.setToolTip(QCoreApplication.translate("MainWindow", u"Click carbons on the canvas to reset them to the default type", None))
+#endif // QT_CONFIG(tooltip)
         self.labelWhere.setText(QCoreApplication.translate("MainWindow", u"Where:", None))
         self.radioZpm.setText(QCoreApplication.translate("MainWindow", u"z\u00b1", None))
         self.radioZp.setText(QCoreApplication.translate("MainWindow", u"z+", None))
@@ -388,5 +420,9 @@ class Ui_MainWindow(object):
         self.btnAddCType.setText(QCoreApplication.translate("MainWindow", u"Add C type", None))
         self.comboCType.setItemText(0, QCoreApplication.translate("MainWindow", u"ca", None))
 
+        self.btnApplyCType.setText(QCoreApplication.translate("MainWindow", u"Apply to selection", None))
+#if QT_CONFIG(tooltip)
+        self.btnApplyCType.setToolTip(QCoreApplication.translate("MainWindow", u"Assign the type selected above to the current VMD/rectangle selection", None))
+#endif // QT_CONFIG(tooltip)
     # retranslateUi
 

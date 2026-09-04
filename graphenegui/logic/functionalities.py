@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QMessageBox, QFileDialog, QProgressDialog
 from PySide6.QtCore import Qt, QThread, Signal, QObject
 import yaml
-from .graphene import Graphene
+from .graphene import Graphene, DEFAULT_CARBON_TYPE
 from . import core
 
 # ================================
@@ -110,6 +110,46 @@ def put_oxides(main_window, list_carbons):
     main_window.update_drawing_area()
     print(f"Finished with {number_oxidations_done} oxides, that is {plate.get_oxide_count()/plate.get_number_atoms()*100:.2f}% of the selected part of the plate")
     return number_oxidations_done
+
+
+# ================================
+# Carbon type (Etapa 12)
+# ================================
+
+def record_carbon_type_change(main_window, plate_position, carbons, new_type):
+    """Graba en el recorder (si la placa es trackeable, ver PlateRegistry/
+    SessionRecorder.has_plate) un cambio de tipo de carbono YA APLICADO.
+    'carbons' son las tuplas completas de Graphene de los carbonos MODIFICADOS
+    (sea que vinieran de un click manual o de aplicar a una selección entera) —
+    mismo criterio 'hard' que record_new_oxides: posiciones exactas, no importa
+    el origen. Placas no trackeables se ignoran en silencio."""
+    plate_id= main_window.plates.id_at(plate_position)
+    if not main_window.session_recorder.has_plate(plate_id): return
+    positions= [[c[0]*10, c[1]*10, c[2]*10] for c in carbons]
+    if positions:
+        main_window.session_recorder.record_carbon_type(plate_id, positions, new_type)
+
+def apply_ctype_to_selection(main_window, list_carbons, new_type):
+    """Botón 'Apply to selection': aplica new_type a TODOS los carbonos de
+    list_carbons (selección por expresión o rectángulo, ver
+    information_selected_atoms). Filtra de entrada los que ya tienen ese tipo
+    -- no tiene sentido grabar un 'cambio' que no cambia nada, mismo espíritu
+    que la guarda de 'Position already occupied' en oxidación manual."""
+    if not list_carbons: return 0
+    if main_window.ui.comboDrawings.currentIndex() == -1: return 0
+
+    plate_index= main_window.ui.comboDrawings.currentIndex()
+    plate= main_window.plates[plate_index]
+    changed_carbons= [c for c in list_carbons if c[6] != new_type]
+    for carbon in changed_carbons:
+        plate.set_carbon_type(carbon, new_type)
+    record_carbon_type_change(main_window, plate_index, changed_carbons, new_type)
+
+    main_window.update_drawing_area()
+    skipped= len(list_carbons) - len(changed_carbons)
+    print(f"Set {len(changed_carbons)} carbon(s) to type '{new_type}'"
+          f"{f' ({skipped} already had it)' if skipped else ''}")
+    return len(changed_carbons)
 
 
 # ================================
@@ -411,12 +451,24 @@ def open_work(main_window):
                 oxide_atoms= [[x*10, y*10, z*10, t] for x, y, z, t, *_ in oxide_coords]
                 main_window.session_recorder.record_oxidation_hard(plate_id, oxide_atoms)
 
+            # Mismo criterio para tipos de carbono (Etapa 12): si no se re-graba
+            # el estado final acá, un YAML con carbonos CE/CO se abre bien pero
+            # 'Guardar trabajo' inmediatamente después perdería esa info.
+            non_default_carbons= [c for c in plate.get_carbon_coords() if c[6] != DEFAULT_CARBON_TYPE]
+            if non_default_carbons:
+                by_type= {}
+                for c in non_default_carbons:
+                    by_type.setdefault(c[6], []).append(c)
+                for ctype, carbons in by_type.items():
+                    record_carbon_type_change(main_window, main_window.plates.position_of(plate_id), carbons, ctype)
+
         main_window.ui.comboDrawings.addItem(f"Plate {len(main_window.plates)}")
 
     for name, params in atom_types.items():
         main_window.atom_types[name]= params
         main_window.ui.comboCType.addItem(name)
         main_window.session_recorder.record_atom_type(name, params["epsilon"], params["sigma"])
+    main_window.update_ctype_controls_enabled()
 
     if len(main_window.plates) > 0:
         main_window.ui.comboDrawings.setCurrentIndex(len(main_window.plates) - 1)

@@ -108,6 +108,24 @@ class SessionRecorder:
         self._steps_for(plate_name).append({"type": "cnt", "vector": list(vector)})
 
     # ================================
+    # Tipo de carbono (Etapa 12)
+    # ================================
+
+    def record_carbon_type(self, plate_name, carbons, new_type):
+        """La GUI permite asignar un tipo (CE/CO/custom) a un lote de carbonos, o
+        resetearlos al tipo default — ambos casos pasan por acá, no hay distinción
+        a nivel dato (reset es simplemente new_type=DEFAULT_CARBON_TYPE). Igual que
+        con oxidación, se graba siempre por posición YA RESUELTA (no hay modo
+        'soft': no existe nada probabilístico en elegir un tipo). Un evento por
+        cada aplicación (pintar o resetear), no se pisan entre sí, mismo criterio
+        que record_oxidation_removed — así se preserva el orden real en que pasó.
+        carbons: lista de [x, y, z] en Å."""
+        self._steps_for(plate_name).append({
+            "type": "set_carbon_type", "carbon_type": new_type,
+            "carbons": [list(c) for c in carbons],
+        })
+
+    # ================================
     # Duplicados (Etapa 11: son placas trackeables más, no un caso aparte)
     # ================================
 

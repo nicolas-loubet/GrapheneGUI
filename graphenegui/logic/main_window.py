@@ -1,6 +1,7 @@
 import os
 import random
 from .other_dialogs import CreateDialog, DuplicateDialog, ProbDialog, CNTDialog, AtomTypeDialog
+from .graphene import DEFAULT_CARBON_TYPE
 from .renderer import Renderer
 from .functionalities import *
 from .recorder import SessionRecorder
@@ -22,6 +23,7 @@ class MainWindow(QMainWindow):
         
         self.is_dark_mode= True
         self.active_oxide_mode= None
+        self.active_ctype_mode= None
         self.first_carbon= None
         self.z_mode= 2  # 0: z+, 1: z-, 2: z±
         self.last_prob_oh= 66
@@ -30,7 +32,26 @@ class MainWindow(QMainWindow):
         self.information_selected_atoms= []
 
         self.session_recorder= SessionRecorder()
-        
+
+        self.atom_types= {
+            DEFAULT_CARBON_TYPE: {"epsilon": 0.359824, "sigma": 3.39967}
+        }
+        self.current_ctype= DEFAULT_CARBON_TYPE
+        self.water_model= "TIP3P"
+        self.water_params= {
+            "TIP3P": {"epsilon": 0.6364, "sigma": 3.15061},
+            "TIP4P": {"epsilon": 0.6480, "sigma": 3.15365},
+            "TIP4P/2005": {"epsilon": 0.7749, "sigma": 3.1589},
+            "TIP5P": {"epsilon": 0.6694, "sigma": 3.12},
+            "TIP5P-2018": {"epsilon": 0.79, "sigma": 3.145},
+            "SPC": {"epsilon": 0.650, "sigma": 3.166},
+            "SPC/E": {"epsilon": 0.650, "sigma": 3.166},
+        }
+
+        self.ui.comboCType.clear()
+        for typ in self.atom_types.keys():
+            self.ui.comboCType.addItem(typ)
+
         is_dark_mode_func= lambda: self.is_dark_mode
         self.periodicity_conditions= [0,0]
 
@@ -54,26 +75,11 @@ class MainWindow(QMainWindow):
         self.open_work_shortcut= QShortcut(QKeySequence("Ctrl+Shift+O"), self)
         self.open_work_shortcut.activated.connect(self.handle_btn_open_work_clicked)
 
+        # Etapa 12: atom_types/comboCType ya tienen que existir para este primer
+        # llamado -- update_ctype_controls_enabled (adentro) los necesita para
+        # decidir si hay tipos custom.
         self.buttons_that_depend_of_having_a_plate(False)
         self.ui.radioZpm.setChecked(True)
-
-        self.atom_types= {
-            "ca": {"epsilon": 0.359824, "sigma": 3.39967}
-        }
-        self.water_model= "TIP3P"
-        self.water_params= {
-            "TIP3P": {"epsilon": 0.6364, "sigma": 3.15061},
-            "TIP4P": {"epsilon": 0.6480, "sigma": 3.15365},
-            "TIP4P/2005": {"epsilon": 0.7749, "sigma": 3.1589},
-            "TIP5P": {"epsilon": 0.6694, "sigma": 3.12},
-            "TIP5P-2018": {"epsilon": 0.79, "sigma": 3.145},
-            "SPC": {"epsilon": 0.650, "sigma": 3.166},
-            "SPC/E": {"epsilon": 0.650, "sigma": 3.166},
-        }
-
-        self.ui.comboCType.clear()
-        for typ in self.atom_types.keys():
-            self.ui.comboCType.addItem(typ)
 
         self.setup_connections()
 
@@ -102,6 +108,9 @@ class MainWindow(QMainWindow):
         self.ui.btnAddOxidation.clicked.connect(self.handle_btn_add_oxidation_clicked)
         self.ui.comboCType.currentIndexChanged.connect(self.handle_ctype_changed)
         self.ui.btnAddCType.clicked.connect(self.handle_btn_add_ctype_clicked)
+        self.ui.btnPaintCType.clicked.connect(self.handle_btn_paint_ctype_clicked)
+        self.ui.btnResetCType.clicked.connect(self.handle_btn_reset_ctype_clicked)
+        self.ui.btnApplyCType.clicked.connect(self.handle_btn_apply_ctype_clicked)
         self.ui.btnSaveWork.clicked.connect(self.handle_btn_save_work_clicked)
         self.ui.btnOpenWork.clicked.connect(self.handle_btn_open_work_clicked)
         
@@ -134,6 +143,7 @@ class MainWindow(QMainWindow):
     # State functions
     # ================================
     def buttons_that_depend_of_having_a_plate(self, active):
+        self._plate_editable= active
         self.ui.btnDuplicate.setEnabled(active)
         self.ui.btnDelete.setEnabled(active)
         self.ui.btnExport.setEnabled(active)
@@ -150,16 +160,34 @@ class MainWindow(QMainWindow):
         self.ui.radioZp.setEnabled(active)
         self.ui.radioZm.setEnabled(active)
         self.ui.btnAddOxidation.setEnabled(active)
+        # Etapa 12: Reset siempre disponible con placa editable (no depende de
+        # que existan tipos custom -- resetear a default es un no-op inofensivo
+        # si nunca se pintó nada, igual que Remove Ox con una placa sin óxidos).
+        self.ui.btnResetCType.setEnabled(active)
+        self.update_ctype_controls_enabled()
+
+    def update_ctype_controls_enabled(self):
+        """Paint/Apply/comboCType necesitan, además de una placa editable
+        (self._plate_editable), al menos un tipo de carbono custom creado -- si
+        solo existe el default no hay nada más para elegir, y dejarlos prendidos
+        no tiene sentido (pediste que el combo quede 'apagado, fijo en ca'). Se
+        llama después de crear un tipo (handle_btn_add_ctype_clicked), al abrir
+        una sesión (open_work) y desde buttons_that_depend_of_having_a_plate."""
+        has_custom_types= len(self.atom_types) > 1
+        enabled= self._plate_editable and has_custom_types
+        self.ui.comboCType.setEnabled(enabled)
+        self.ui.btnPaintCType.setEnabled(enabled)
+        self.ui.btnApplyCType.setEnabled(enabled)
 
     def eventFilter(self, source, event):
         if source is self.ui.graphicsView.viewport():
             if event.type() == QEvent.MouseButtonPress:
-                if event.button() == Qt.LeftButton and not self.active_oxide_mode:
+                if event.button() == Qt.LeftButton and not self.active_oxide_mode and not self.active_ctype_mode:
                     self.origin= event.pos()
                     self.rubberBand.setGeometry(QRect(self.origin, QSize()))
                     self.rubberBand.show()
                     return True
-                elif self.active_oxide_mode:
+                elif self.active_oxide_mode or self.active_ctype_mode:
                     return super().eventFilter(source, event)
 
             elif event.type() == QEvent.MouseMove:
@@ -327,14 +355,30 @@ class MainWindow(QMainWindow):
             print("Second carbon is not adjacent to the first")
         self.first_carbon= None
 
+    def clicked_carbon_set_type(self, plate, carbon, new_type):
+        if carbon[6] == new_type:
+            print(f"Carbon already has type '{new_type}'")
+            return
+        plate.set_carbon_type(carbon, new_type)
+        plate_index= self.ui.comboDrawings.currentIndex()
+        record_carbon_type_change(self, plate_index, [carbon], new_type)
+        self.update_drawing_area()
+        print(f"Set carbon at ({carbon[0]*10:.2f}, {carbon[1]*10:.2f}, {carbon[2]*10:.2f}) to type '{new_type}'")
+
     def handle_drawing_area_clicked(self, event):
-        if self.ui.comboDrawings.currentIndex() == -1 or not self.active_oxide_mode: return
+        if self.ui.comboDrawings.currentIndex() == -1: return
+        if not self.active_oxide_mode and not self.active_ctype_mode: return
 
         plate= self.plates[self.ui.comboDrawings.currentIndex()]
         pos= event.scenePos()
         x_nm, y_nm= self.renderer.pixel_to_nm(pos.x(), pos.y())
         carbon= plate.get_nearest_carbon(x_nm, y_nm)
         if not carbon: return
+
+        if self.active_ctype_mode:
+            new_type= self.current_ctype if self.active_ctype_mode == "Paint" else DEFAULT_CARBON_TYPE
+            self.clicked_carbon_set_type(plate, carbon, new_type)
+            return
 
         i_atom= plate.get_number_atoms() + 1
         z_sign= 1 if self.z_mode == 0 else -1 if self.z_mode == 1 else random.choice([-1, 1])
@@ -455,8 +499,10 @@ class MainWindow(QMainWindow):
             self.atom_types[name]= {"epsilon": data["epsilon"], "sigma": data["sigma"]}
             self.session_recorder.record_atom_type(name, data["epsilon"], data["sigma"])
             self.ui.comboCType.addItem(name)
-            self.ui.comboCType.setCurrentText(name)
-            print(f"Added new carbon type '{name}' with epsilon={data['epsilon']}, sigma={data['sigma']}")
+            self.ui.comboCType.setCurrentText(name)  # dispara handle_ctype_changed -> arma current_ctype
+            self.update_ctype_controls_enabled()
+            self.set_ctype_mode("Paint")
+            print(f"Added new carbon type '{name}' with epsilon={data['epsilon']}, sigma={data['sigma']} — paint mode activated")
 
     def handle_btn_save_work_clicked(self):
         """Etapa 7: conectado a btnSaveWork (toolbar) y a Ctrl+Shift+S."""
@@ -469,14 +515,7 @@ class MainWindow(QMainWindow):
     @Slot(int)
     def handle_ctype_changed(self, index):
         if index < 0: return
-        new_type= self.ui.comboCType.currentText()
-        if self.renderer.highlighted_atoms:
-            plate= self.plates[self.ui.comboDrawings.currentIndex()]
-            for carbon in self.renderer.highlighted_atoms:
-                plate.set_carbon_type(carbon, new_type)
-            print(f"Changed {len(self.renderer.highlighted_atoms)} carbons to type '{new_type}'")
-            self.renderer.highlighted_atoms= []  
-        self.update_drawing_area()
+        self.current_ctype= self.ui.comboCType.currentText()
 
 
     @Slot(int)
@@ -508,6 +547,15 @@ class MainWindow(QMainWindow):
         self.ui.btnAddOH.setChecked(mode == "OH")
         self.ui.btnAddO.setChecked(mode == "O")
         self.ui.btnRemoveOx.setChecked(mode == "Remove")
+        if mode is not None:
+            self.set_ctype_mode(None)  # mutuamente excluyente con Paint/Reset type
+
+    def set_ctype_mode(self, mode):
+        self.active_ctype_mode= mode
+        self.ui.btnPaintCType.setChecked(mode == "Paint")
+        self.ui.btnResetCType.setChecked(mode == "Reset")
+        if mode is not None:
+            self.set_oxide_mode(None)  # mutuamente excluyente con OH/O/Remove
 
     def handle_btn_oh_clicked(self):
         if self.ui.comboDrawings.currentIndex() == -1: return
@@ -570,6 +618,40 @@ class MainWindow(QMainWindow):
         else:
             self.set_oxide_mode(None)
             print("Remove mode deactivated")
+
+    @Slot()
+    def handle_btn_paint_ctype_clicked(self):
+        if self.ui.btnPaintCType.isChecked():
+            if self.active_oxide_mode:
+                print(f"{self.active_oxide_mode} mode deactivated")
+            if self.active_ctype_mode:
+                print(f"{self.active_ctype_mode} mode deactivated")
+            self.set_ctype_mode("Paint")
+            print(f"Paint carbon type mode activated (type='{self.current_ctype}')")
+        else:
+            self.set_ctype_mode(None)
+            print("Paint carbon type mode deactivated")
+
+    @Slot()
+    def handle_btn_reset_ctype_clicked(self):
+        if self.ui.btnResetCType.isChecked():
+            if self.active_oxide_mode:
+                print(f"{self.active_oxide_mode} mode deactivated")
+            if self.active_ctype_mode:
+                print(f"{self.active_ctype_mode} mode deactivated")
+            self.set_ctype_mode("Reset")
+            print(f"Reset carbon type mode activated (target='{DEFAULT_CARBON_TYPE}')")
+        else:
+            self.set_ctype_mode(None)
+            print("Reset carbon type mode deactivated")
+
+    @Slot()
+    def handle_btn_apply_ctype_clicked(self):
+        if self.ui.comboDrawings.currentIndex() == -1: return
+        if not self.information_selected_atoms: return
+        apply_ctype_to_selection(self, self.information_selected_atoms, self.current_ctype)
+        self.renderer.highlighted_atoms= []
+        self.information_selected_atoms= []
 
     def handle_radio_toggled(self, radio_button):
         if radio_button == self.ui.radioZp and radio_button.isChecked():

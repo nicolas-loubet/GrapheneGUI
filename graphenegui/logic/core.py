@@ -6,7 +6,7 @@ una main_window ni widgets vive acá. Es el módulo que comparten la GUI
 import random
 import math
 import numpy as np
-from .graphene import Graphene, generatePatterns
+from .graphene import Graphene, generatePatterns, DEFAULT_CARBON_TYPE
 from .import_formats import readGRO, readXYZ, readPDB, readMOL2
 from .export_formats import writeGRO, writeXYZ, writeTOP, writePDB, writeMOL2
 from .plate_registry import PlateRegistry
@@ -147,6 +147,57 @@ def apply_oxidation_explicit(plate, oxide_atoms):
         if oxide_type != "HO":
             added+= 1
     return added
+
+
+# ================================
+# Tipo de carbono (Etapa 12)
+# ================================
+# Mismo espíritu que la oxidación 'hard' de arriba: siempre se graba y se
+# reproduce por POSICIÓN EXACTA, nunca por expresión/azar -- acá ni siquiera
+# existe un modo 'soft' posible (no hay nada probabilístico en elegir un tipo
+# de carbono), así que no hace falta la distinción hard/soft que sí tiene
+# oxidación. "Reset to default" no es un caso aparte a nivel dato: es este
+# mismo mecanismo con new_type=DEFAULT_CARBON_TYPE.
+
+def find_carbon_at(plate, x, y, z, tolerance=1e-6):
+    """Busca el carbono en esta posición exacta (nm), con la misma tolerancia
+    que ya usa apply_oxidation_removed_step para óxidos. Devuelve None si no
+    encuentra ninguno."""
+    for carbon in plate.get_carbon_coords():
+        if abs(carbon[0]-x) < tolerance and abs(carbon[1]-y) < tolerance and abs(carbon[2]-z) < tolerance:
+            return carbon
+    return None
+
+def apply_carbon_type_explicit(plate, carbons, new_type):
+    """carbons: lista de (x, y, z) en nm -- posiciones ya resueltas de los
+    carbonos a los que hay que asignarles new_type (mismo criterio 'hard' que
+    apply_oxidation_explicit). Devuelve la cantidad de carbonos modificados.
+    Levanta ValueError con un mensaje claro si alguna posición no matchea
+    ningún carbono de la placa (típicamente: se está replayeando un step
+    fuera de orden, o sobre una placa distinta a la que se grabó)."""
+    changed= 0
+    for x, y, z in carbons:
+        carbon= find_carbon_at(plate, x, y, z)
+        if carbon is None:
+            raise ValueError(f"set_carbon_type: no carbon found at position "
+                              f"({x*10:.3f}, {y*10:.3f}, {z*10:.3f}) Å")
+        plate.set_carbon_type(carbon, new_type)
+        changed+= 1
+    return changed
+
+def apply_carbon_type_step(plate, step):
+    """Un step 'set_carbon_type' del schema multi-placa: {carbon_type, carbons}.
+    'carbons' viene en Å (mismo criterio que el resto del schema); se convierte
+    a nm antes de buscar, que es lo que usa Graphene internamente."""
+    new_type= step.get("carbon_type")
+    if not new_type:
+        raise ValueError("set_carbon_type step needs a non-empty 'carbon_type'")
+    carbons= step.get("carbons")
+    if not carbons:
+        raise ValueError("set_carbon_type step needs a non-empty 'carbons' list")
+    carbons_nm= [(x/10, y/10, z/10) for x, y, z in carbons]
+    changed= apply_carbon_type_explicit(plate, carbons_nm, new_type)
+    print(f"  set carbon type to {new_type!r} for {changed} carbon(s)")
 
 
 # ================================
@@ -371,6 +422,8 @@ def apply_step(plate, step):
         validate_cnt_vector(vector)
         apply_cnt(plate, vector)
         print(f"  rolled into CNT (vector={vector})")
+    elif step_type == "set_carbon_type":
+        apply_carbon_type_step(plate, step)
     else:
         raise ValueError(f"Unknown step type: {step_type!r}")
 
