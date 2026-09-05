@@ -9,7 +9,7 @@ import re
 import numpy as np
 from .graphene import Graphene, generatePatterns, DEFAULT_CARBON_TYPE
 from .import_formats import readGRO, readXYZ, readPDB, readMOL2
-from .export_formats import writeGRO, writeXYZ, writeTOP, writePDB, writeMOL2
+from .export_formats import writeGRO, writeXYZ, writeTOP, writePDB, writeMOL2, ATOM_PARAMS_TOP
 from .plate_registry import PlateRegistry
 
 
@@ -362,10 +362,20 @@ def build_plate_from_create(create_cfg):
     print(f"Plate built: {n_x}x{n_y} ({plate.get_number_atoms()} atoms)")
     return plate
 
+# Ver la misma constante en main_window.py (Etapa 15) -- duplicada acá porque
+# core.py no puede importar de main_window.py (Qt), pero ambas se derivan de
+# la misma fuente (ATOM_PARAMS_TOP), así que no se pueden desincronizar.
+_RESERVED_CTYPE_PREFIXES= tuple(k for k in ATOM_PARAMS_TOP if len(k) == 2)
+
 def build_atom_types(cfg):
     atom_types= {}
     for entry in cfg.get("atom_types", []):
-        atom_types[entry["name"]]= {"epsilon": entry["epsilon"], "sigma": entry["sigma"]}
+        name= entry["name"]
+        if name[:2] in _RESERVED_CTYPE_PREFIXES:
+            raise ValueError(f"atom type {name!r}: can't start with {name[:2]!r} -- reserved by "
+                              "the exporter for oxidized-carbon/oxide markers (would silently "
+                              "export with the wrong element's charge/mass)")
+        atom_types[name]= {"epsilon": entry["epsilon"], "sigma": entry["sigma"]}
     return atom_types
 
 def validate_cnt_vector(vector):

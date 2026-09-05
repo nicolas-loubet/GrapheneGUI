@@ -10,7 +10,17 @@ from PySide6.QtWidgets import QMainWindow, QMessageBox, QGraphicsScene, QDialog,
 from PySide6.QtCore import Slot, QEvent, QPoint, QRect, Qt, QSize, QTimer
 from PySide6.QtGui import QPixmap, QShortcut, QKeySequence
 from ..ui.main_ui import Ui_MainWindow
-from .export_formats import checkBounds
+from .export_formats import checkBounds, ATOM_PARAMS_TOP
+
+# Etapa 15: prefijos de 2 caracteres reservados por el exportador para
+# marcadores de carbono oxidado/óxidos (ver write_atoms_top en
+# export_formats.py: busca por type_atom[:2] en ATOM_PARAMS_TOP). Un tipo de
+# carbono custom cuyo nombre empiece con cualquiera de estos choca en
+# silencio -- se le asigna la carga/masa de OTRO elemento en el .top. Se
+# deriva de ATOM_PARAMS_TOP en vez de repetir la lista a mano, para que si
+# el diccionario reservado cambia algún día, esta validación no quede
+# desactualizada por las nuestras.
+_RESERVED_CTYPE_PREFIXES= tuple(k for k in ATOM_PARAMS_TOP if len(k) == 2)
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -513,6 +523,12 @@ class MainWindow(QMainWindow):
                 return
             if not name:
                 QMessageBox.warning(self, "Error", "Type name cannot be empty.")
+                return
+            if name[:2] in _RESERVED_CTYPE_PREFIXES:
+                QMessageBox.warning(self, "Error",
+                    f"Type name can't start with {name[:2]!r} -- reserved by the "
+                    "exporter for oxidized-carbon/oxide markers (would silently "
+                    "export with the wrong element's charge/mass).")
                 return
             self.atom_types[name]= {"epsilon": data["epsilon"], "sigma": data["sigma"]}
             self.session_recorder.record_atom_type(name, data["epsilon"], data["sigma"])
