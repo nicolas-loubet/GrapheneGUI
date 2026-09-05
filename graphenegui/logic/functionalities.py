@@ -500,6 +500,9 @@ def reset_session(main_window):
     main_window.ui.comboDrawings.clear()
     main_window.information_selected_atoms= []
     main_window.renderer.highlighted_atoms= []
+    main_window.first_carbon= None
+    main_window.set_oxide_mode(None)
+    main_window.set_ctype_mode(None)
     main_window.session_recorder= SessionRecorder()
     main_window.atom_types= {DEFAULT_CARBON_TYPE: {"epsilon": 0.359824, "sigma": 3.39967}}
     main_window.current_ctype= DEFAULT_CARBON_TYPE
@@ -567,24 +570,45 @@ def open_work(main_window):
 
         registry_id_by_config_name[name]= plate_id
 
-        # Estado final de óxidos como un único step 'hard' — sea placa nueva o
-        # duplicado, así 'Guardar trabajo' sigue funcionando después de reabrir.
+        # Estado final de óxidos/tipos como steps 'hard', para que 'Guardar
+        # trabajo' siga funcionando después de reabrir.
+        # Etapa 18: si la placa terminó enrollada en CNT, plate.get_carbon_coords()/
+        # get_oxide_coords() devuelven posiciones YA ROLLEADAS -- grabarlas tal
+        # cual rompía el reabrir+regrabar (el nuevo YAML reconstruye una placa
+        # PLANA desde 'create', y esas posiciones no matchean ningún carbono
+        # real ahí -> find_carbon_at explota). Graphene.set_is_CNT ya guarda un
+        # backup de las posiciones PLANAS (pre-roll) en backup_not_CNT, para
+        # poder restaurar -- se reusa ESE backup para la foto de óxidos/tipos,
+        # y el step 'cnt' (con el vector original, tomado del último step de la
+        # config -- garantizado que es 'cnt' si la placa quedó enrollada sin
+        # restaurar, ver validate_steps de la Etapa 14) se agrega DESPUÉS de
+        # esos dos, para que el replay quede en el orden correcto: crear ->
+        # oxidar/tipos (posiciones planas) -> enrollar.
+        is_cnt= plate.get_is_CNT()
+        if is_cnt:
+            snapshot_carbons, snapshot_oxides, _unused_hydrogens= plate.backup_not_CNT
+        else:
+            snapshot_carbons, snapshot_oxides= plate.get_carbon_coords(), plate.get_oxide_coords()
+
         if main_window.session_recorder.has_plate(plate_id):
-            oxide_coords= plate.get_oxide_coords()
-            if oxide_coords:
-                oxide_atoms= [[x*10, y*10, z*10, t] for x, y, z, t, *_ in oxide_coords]
+            if snapshot_oxides:
+                oxide_atoms= [[x*10, y*10, z*10, t] for x, y, z, t, *_ in snapshot_oxides]
                 main_window.session_recorder.record_oxidation_hard(plate_id, oxide_atoms)
 
             # Mismo criterio para tipos de carbono (Etapa 12): si no se re-graba
             # el estado final acá, un YAML con carbonos CE/CO se abre bien pero
             # 'Guardar trabajo' inmediatamente después perdería esa info.
-            non_default_carbons= [c for c in plate.get_carbon_coords() if c[6] != DEFAULT_CARBON_TYPE]
+            non_default_carbons= [c for c in snapshot_carbons if c[6] != DEFAULT_CARBON_TYPE]
             if non_default_carbons:
                 by_type= {}
                 for c in non_default_carbons:
                     by_type.setdefault(c[6], []).append(c)
                 for ctype, carbons in by_type.items():
                     record_carbon_type_change(main_window, main_window.plates.position_of(plate_id), carbons, ctype)
+
+            if is_cnt:
+                last_step= plate_cfg.get("steps", [])[-1]
+                main_window.session_recorder.record_cnt(plate_id, last_step["vector"])
 
         main_window.ui.comboDrawings.addItem(f"Plate {len(main_window.plates)}")
 

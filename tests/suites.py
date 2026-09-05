@@ -13,6 +13,8 @@ from tests.unit import (
     test_session_modified_flag,
     # Etapa 17 (Remove por selección):
     test_remove_selection,
+    # Etapa 18 (Open Work + CNT sin restaurar):
+    test_open_work_cnt_roundtrip,
 )
 from tests.integration import (
     test_cli_headless,
@@ -28,6 +30,7 @@ _UNIT_MODULES= (
     test_reserved_ctype_prefixes,
     test_session_modified_flag,
     test_remove_selection,
+    test_open_work_cnt_roundtrip,
 )
 _INTEGRATION_MODULES= (test_cli_headless, test_carbon_type_headless)
 _GOLDEN_MODULES= (test_golden,)
