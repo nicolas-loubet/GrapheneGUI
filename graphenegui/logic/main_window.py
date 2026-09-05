@@ -273,6 +273,9 @@ class MainWindow(QMainWindow):
         plate= self.plates[self.ui.comboDrawings.currentIndex()]
         if plate.get_is_CNT():
             plate.restore_plate()
+            plate_id= self.plates.id_at(self.ui.comboDrawings.currentIndex())
+            if self.session_recorder.has_plate(plate_id):
+                self.session_recorder.record_cnt_restored(plate_id)
             self.buttons_that_depend_of_having_a_plate(True)
         else:
             atoms= plate.get_carbon_coords() + plate.get_oxide_coords()

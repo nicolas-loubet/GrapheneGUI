@@ -107,6 +107,15 @@ class SessionRecorder:
     def record_cnt(self, plate_name, vector):
         self._steps_for(plate_name).append({"type": "cnt", "vector": list(vector)})
 
+    def record_cnt_restored(self, plate_name):
+        """Deshacer un CNT (plate.restore_plate() en la GUI, botón CNT
+        clickeado de nuevo sobre una placa ya enrollada). No lleva datos
+        propios -- el replay (core.apply_step) deshace el 'cnt' que haya
+        quedado activo inmediatamente antes en la misma lista de steps.
+        Después de esto la placa vuelve a ser editable (puede llevar más
+        steps atrás, incluido otro 'cnt' más adelante)."""
+        self._steps_for(plate_name).append({"type": "cnt_restored"})
+
     # ================================
     # Tipo de carbono (Etapa 12)
     # ================================

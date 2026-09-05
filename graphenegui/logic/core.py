@@ -431,21 +431,51 @@ def apply_step(plate, step):
         validate_cnt_vector(vector)
         apply_cnt(plate, vector)
         print(f"  rolled into CNT (vector={vector})")
+    elif step_type == "cnt_restored":
+        if not plate.get_is_CNT():
+            raise ValueError("cnt_restored step on a plate that isn't currently rolled into a CNT")
+        plate.restore_plate()
+        print("  cnt restored")
     elif step_type == "set_carbon_type":
         apply_carbon_type_step(plate, step)
     else:
         raise ValueError(f"Unknown step type: {step_type!r}")
 
 def validate_steps(plate_name, steps):
-    """Mismas restricciones que la GUI: reduce_borders y cnt son excluyentes entre
-    sí, y una vez enrollada en CNT no se puede seguir editando la placa."""
+    """Mismas restricciones que la GUI:
+    - reduce_borders deshabilita btnCNT para esa placa de ahí en más (ver
+      handle_btn_reduce_borders_clicked) -- pero NO al revés: un cnt ya
+      restaurado antes de reduce_borders no bloquea nada, porque la placa
+      volvió a su estado plano. Solo es inválido un 'cnt' que aparezca en o
+      después del PRIMER 'reduce_borders'.
+    - una vez enrollada en CNT, no se puede seguir editando la placa (todos
+      los botones de edición quedan deshabilitados salvo Export/Delete/CNT) --
+      así que un 'cnt' solo puede seguir de 'cnt_restored' (deshace el roll,
+      vuelve a habilitar todo) o ser el último step de la lista (queda
+      enrollada sin restaurar). 'cnt_restored' sin un 'cnt' activo justo
+      antes no tiene sentido (Etapa 14: antes ni existía este step)."""
     types= [s.get("type") for s in steps]
-    if "reduce_borders" in types and "cnt" in types:
-        raise ValueError(f"plate {plate_name!r}: reduce_borders and cnt are mutually exclusive "
-                          "(same restriction as the GUI)")
-    if "cnt" in types and types.index("cnt") != len(types) - 1:
-        raise ValueError(f"plate {plate_name!r}: 'cnt' must be the last step (same restriction "
-                          "as the GUI: further edits are disabled after rolling into a CNT)")
+
+    if "reduce_borders" in types:
+        first_reduce= types.index("reduce_borders")
+        if "cnt" in types[first_reduce:]:
+            raise ValueError(f"plate {plate_name!r}: reduce_borders and cnt are mutually exclusive "
+                              "(same restriction as the GUI: rolling into a CNT is disabled once "
+                              "border hydrogens were added)")
+
+    is_rolled= False
+    for step_type in types:
+        if step_type == "cnt_restored":
+            if not is_rolled:
+                raise ValueError(f"plate {plate_name!r}: 'cnt_restored' with no active 'cnt' before it")
+            is_rolled= False
+            continue
+        if is_rolled:
+            raise ValueError(f"plate {plate_name!r}: 'cnt' must be followed by 'cnt_restored' or be "
+                              "the last step (same restriction as the GUI: nothing else is editable "
+                              "while a plate is rolled into a CNT)")
+        if step_type == "cnt":
+            is_rolled= True
 
 def build_session_from_config(cfg):
     """Construye TODAS las placas de un schema multi-placa (cfg['plates']). Cada
