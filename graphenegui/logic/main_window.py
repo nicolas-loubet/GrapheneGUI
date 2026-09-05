@@ -7,7 +7,7 @@ from .functionalities import *
 from .recorder import SessionRecorder
 from .plate_registry import PlateRegistry
 from PySide6.QtWidgets import QMainWindow, QMessageBox, QGraphicsScene, QDialog, QFileDialog, QRubberBand
-from PySide6.QtCore import Slot, QEvent, QPoint, QRect, Qt, QSize
+from PySide6.QtCore import Slot, QEvent, QPoint, QRect, Qt, QSize, QTimer
 from PySide6.QtGui import QPixmap, QShortcut, QKeySequence
 from ..ui.main_ui import Ui_MainWindow
 from .export_formats import checkBounds
@@ -75,6 +75,18 @@ class MainWindow(QMainWindow):
         self.open_work_shortcut= QShortcut(QKeySequence("Ctrl+Shift+O"), self)
         self.open_work_shortcut.activated.connect(self.handle_btn_open_work_clicked)
 
+        # Etapa 13: entryVMD evaluaba en CADA tecla (textChanged), así que
+        # cualquier expresión con un comparador (>, <, ==...) pasaba por un
+        # estado a medio escribir sintácticamente inválido ("y>" antes de
+        # completar "y>0") -- eval() explotaba ahí, no por un caso raro.
+        # Ahora: Enter evalúa al toque (cancela la cuenta atrás si había una
+        # corriendo); si no hay Enter, se evalúa solo 1.5s después de la
+        # última tecla (se reinicia con cada tecla nueva mientras tanto).
+        self.vmd_debounce_timer= QTimer(self)
+        self.vmd_debounce_timer.setSingleShot(True)
+        self.vmd_debounce_timer.setInterval(1500)
+        self.vmd_debounce_timer.timeout.connect(self.expr_changed)
+
         # Etapa 12: atom_types/comboCType ya tienen que existir para este primer
         # llamado -- update_ctype_controls_enabled (adentro) los necesita para
         # decidir si hay tipos custom.
@@ -102,6 +114,7 @@ class MainWindow(QMainWindow):
         self.ui.btnChangeProb.clicked.connect(self.handle_btn_change_prob_clicked)
         self.ui.spinRandom.valueChanged.connect(self.handle_spin_random_value_changed)
         self.ui.entryVMD.textChanged.connect(self.handle_entry_selection_changed)
+        self.ui.entryVMD.returnPressed.connect(self.handle_entry_selection_return_pressed)
         self.ui.btnAddOH.clicked.connect(self.handle_btn_oh_clicked)
         self.ui.btnAddO.clicked.connect(self.handle_btn_o_clicked)
         self.ui.btnRemoveOx.clicked.connect(self.handle_btn_remove_ox_clicked)
@@ -452,7 +465,9 @@ class MainWindow(QMainWindow):
 
         self.update_drawing_area()
         self.ui.spinRandom.setValue(0)
+        self.vmd_debounce_timer.stop()
         self.ui.entryVMD.setText("")
+        self.expr_changed()
         print("Oxides removed")
 
     @Slot()
@@ -524,6 +539,11 @@ class MainWindow(QMainWindow):
 
     @Slot(str)
     def handle_entry_selection_changed(self, text):
+        self.vmd_debounce_timer.start()  # reinicia la cuenta atrás de 1.5s
+
+    @Slot()
+    def handle_entry_selection_return_pressed(self):
+        self.vmd_debounce_timer.stop()
         self.expr_changed()
 
     @Slot()

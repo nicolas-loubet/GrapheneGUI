@@ -5,6 +5,7 @@ una main_window ni widgets vive acá. Es el módulo que comparten la GUI
 """
 import random
 import math
+import re
 import numpy as np
 from .graphene import Graphene, generatePatterns, DEFAULT_CARBON_TYPE
 from .import_formats import readGRO, readXYZ, readPDB, readMOL2
@@ -83,9 +84,17 @@ def compute_duplicate_translation(delta_x, delta_y, delta_z, absolute, plate_cen
 # Oxidación
 # ================================
 
+# Regex con \b (límite de palabra) para envolver and/or/not con espacios antes
+# de eval() -- reemplaza el .replace() ingenuo de antes, que corrompía CUALQUIER
+# aparición de esas 3 letras dentro de otra palabra (ej. "constant" -> "const
+# and t") y explotaba con SyntaxError si el texto era EXACTAMENTE "and"/"or"/
+# "not" sin nada más -- que es justo lo que pasa en el medio de tipear "not (...)"
+# en entryVMD, porque evalúa en cada tecla (textChanged), no solo al terminar.
+_BOOLEAN_KEYWORD_RE= re.compile(r"\b(and|or|not)\b")
+
 def evaluate_condition(x, y, z, i_atom, expr):
-    if expr == "": return True
-    expr= expr.replace('and', ' and ').replace('or', ' or ').replace('not', ' not ')
+    if expr.strip() == "": return True
+    expr= _BOOLEAN_KEYWORD_RE.sub(r" \1 ", expr)
     return eval(expr, {'x': x, 'y': y, 'z': z, 'index': i_atom, 'and': lambda a, b: a and b, 'or': lambda a, b: a or b, 'not': lambda x: not x})
 
 def get_list_carbons_in_expr(plate, expr):

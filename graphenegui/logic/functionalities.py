@@ -347,7 +347,9 @@ def delete_actual_plate(main_window):
         main_window.ui.comboDrawings.setCurrentIndex(-1)
         main_window.buttons_that_depend_of_having_a_plate(False)
         main_window.ui.spinRandom.setValue(0)
+        main_window.vmd_debounce_timer.stop()
         main_window.ui.entryVMD.setText("")
+        main_window.expr_changed()
 
     main_window.update_drawing_area()
     print(f"Plate {index+1} deleted")
