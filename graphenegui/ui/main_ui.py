@@ -346,6 +346,12 @@ class Ui_MainWindow(object):
 
         self.hLayoutBottom.addWidget(self.btnAddOxidation)
 
+        self.btnRemoveSelection = QPushButton(self.bottomBar)
+        self.btnRemoveSelection.setObjectName(u"btnRemoveSelection")
+        self.btnRemoveSelection.setMinimumSize(QSize(140, 40))
+
+        self.hLayoutBottom.addWidget(self.btnRemoveSelection)
+
         self.line5 = QFrame(self.bottomBar)
         self.line5.setObjectName(u"line5")
         self.line5.setFrameShape(QFrame.Shape.VLine)
@@ -417,6 +423,10 @@ class Ui_MainWindow(object):
         self.spinRandom.setSuffix(QCoreApplication.translate("MainWindow", u"%", None))
         self.labelVMD.setText(QCoreApplication.translate("MainWindow", u"VMD Selection:", None))
         self.btnAddOxidation.setText(QCoreApplication.translate("MainWindow", u"Add Oxidation to selection", None))
+        self.btnRemoveSelection.setText(QCoreApplication.translate("MainWindow", u"Remove selection", None))
+#if QT_CONFIG(tooltip)
+        self.btnRemoveSelection.setToolTip(QCoreApplication.translate("MainWindow", u"Remove any OH/O oxides attached to the current VMD/rectangle selection", None))
+#endif // QT_CONFIG(tooltip)
         self.btnAddCType.setText(QCoreApplication.translate("MainWindow", u"Add C type", None))
         self.comboCType.setItemText(0, QCoreApplication.translate("MainWindow", u"ca", None))
 

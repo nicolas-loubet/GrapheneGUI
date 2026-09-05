@@ -112,6 +112,47 @@ def put_oxides(main_window, list_carbons):
     print(f"Finished with {number_oxidations_done} oxides, that is {plate.get_oxide_count()/plate.get_number_atoms()*100:.2f}% of the selected part of the plate")
     return number_oxidations_done
 
+def remove_oxides_from_selection(main_window, list_carbons):
+    """Botón 'Remove selection' (Etapa 17): aplica Remove a TODOS los carbonos
+    de list_carbons (selección por expresión o rectángulo, ver
+    information_selected_atoms) -- mismo mecanismo que ya usa el click manual
+    en modo Remove (plate.get_oxides_for_carbon + remove_atom_oxide), pero
+    para un lote entero en vez de un carbono a la vez. Simétrico con
+    apply_ctype_to_selection (Etapa 12) y con 'Add Oxidation to selection'.
+
+    Un óxido OE (epóxido) puentea DOS carbonos -- si la selección incluye a
+    los dos, get_oxides_for_carbon lo va a encontrar dos veces (una por cada
+    carbono). Sin el chequeo de 'ya_removidos' de acá abajo, la segunda
+    llamada a remove_atom_oxide tira ValueError (list.remove sobre algo que
+    ya no está en la lista). El click manual de a un carbono no sufre esto
+    (nunca ve el mismo óxido dos veces para un solo carbono)."""
+    if not list_carbons: return 0
+    if main_window.ui.comboDrawings.currentIndex() == -1: return 0
+
+    plate_index= main_window.ui.comboDrawings.currentIndex()
+    plate= main_window.plates[plate_index]
+    plate_id= main_window.plates.id_at(plate_index)
+    trackeable= main_window.session_recorder.has_plate(plate_id)
+
+    ya_removidos= set()
+    removed_count= 0
+    for carbon in list_carbons:
+        for ox in plate.get_oxides_for_carbon(carbon):
+            if id(ox) in ya_removidos:
+                continue
+            ya_removidos.add(id(ox))
+            plate.remove_atom_oxide(ox)
+            if trackeable:
+                main_window.session_recorder.record_oxidation_removed(plate_id, [ox[0]*10, ox[1]*10, ox[2]*10, ox[3]])
+            removed_count+= 1
+
+    if removed_count:
+        plate.recheck_ox_indexes()
+    main_window.update_drawing_area()
+    print(f"{removed_count} atom{'s' if removed_count != 1 else ''} removed from selection "
+          f"({len(list_carbons)} carbon{'s' if len(list_carbons) != 1 else ''} checked)")
+    return removed_count
+
 
 # ================================
 # Carbon type (Etapa 12)

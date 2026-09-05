@@ -129,6 +129,7 @@ class MainWindow(QMainWindow):
         self.ui.btnAddO.clicked.connect(self.handle_btn_o_clicked)
         self.ui.btnRemoveOx.clicked.connect(self.handle_btn_remove_ox_clicked)
         self.ui.btnAddOxidation.clicked.connect(self.handle_btn_add_oxidation_clicked)
+        self.ui.btnRemoveSelection.clicked.connect(self.handle_btn_remove_selection_clicked)
         self.ui.comboCType.currentIndexChanged.connect(self.handle_ctype_changed)
         self.ui.btnAddCType.clicked.connect(self.handle_btn_add_ctype_clicked)
         self.ui.btnPaintCType.clicked.connect(self.handle_btn_paint_ctype_clicked)
@@ -183,6 +184,7 @@ class MainWindow(QMainWindow):
         self.ui.radioZp.setEnabled(active)
         self.ui.radioZm.setEnabled(active)
         self.ui.btnAddOxidation.setEnabled(active)
+        self.ui.btnRemoveSelection.setEnabled(active)
         # Etapa 12: Reset siempre disponible con placa editable (no depende de
         # que existan tipos custom -- resetear a default es un no-op inofensivo
         # si nunca se pintó nada, igual que Remove Ox con una placa sin óxidos).
@@ -571,6 +573,13 @@ class MainWindow(QMainWindow):
         if self.ui.comboDrawings.currentIndex() == -1: return
         if not self.information_selected_atoms: return
         put_oxides(self, self.information_selected_atoms)
+        self.renderer.highlighted_atoms= []
+        self.information_selected_atoms= []
+
+    def handle_btn_remove_selection_clicked(self):
+        if self.ui.comboDrawings.currentIndex() == -1: return
+        if not self.information_selected_atoms: return
+        remove_oxides_from_selection(self, self.information_selected_atoms)
         self.renderer.highlighted_atoms= []
         self.information_selected_atoms= []
 
