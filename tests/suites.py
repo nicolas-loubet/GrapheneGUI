@@ -1,11 +1,35 @@
 import unittest
 
-from tests.unit import test_graphene, test_core, test_export_formats, test_import_formats, test_recorder, test_plate_registry
-from tests.integration import test_cli_headless
+from tests.unit import (
+    test_graphene, test_core, test_export_formats, test_import_formats,
+    test_recorder, test_plate_registry,
+    # Etapa 12 (tipo de carbono):
+    test_carbon_type_core, test_carbon_type_recorder,
+    # Etapa 14 (restaurar CNT):
+    test_cnt_restore_core, test_cnt_restore_recorder,
+    # Etapa 15 (prefijos de tipo reservados):
+    test_reserved_ctype_prefixes,
+    # Etapa 16 (Open Work: agregar/reemplazar + flag de sesión modificada):
+    test_session_modified_flag,
+    # Etapa 17 (Remove por selección):
+    test_remove_selection,
+)
+from tests.integration import (
+    test_cli_headless,
+    test_carbon_type_headless,  # Etapa 12: set_carbon_type llega hasta el .top
+)
 from tests.golden import test_golden
 
-_UNIT_MODULES= (test_graphene, test_core, test_export_formats, test_import_formats, test_recorder, test_plate_registry)
-_INTEGRATION_MODULES= (test_cli_headless,)
+_UNIT_MODULES= (
+    test_graphene, test_core, test_export_formats, test_import_formats,
+    test_recorder, test_plate_registry,
+    test_carbon_type_core, test_carbon_type_recorder,
+    test_cnt_restore_core, test_cnt_restore_recorder,
+    test_reserved_ctype_prefixes,
+    test_session_modified_flag,
+    test_remove_selection,
+)
+_INTEGRATION_MODULES= (test_cli_headless, test_carbon_type_headless)
 _GOLDEN_MODULES= (test_golden,)
 
 
