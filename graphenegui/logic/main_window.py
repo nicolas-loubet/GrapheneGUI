@@ -543,8 +543,9 @@ class MainWindow(QMainWindow):
         save_work(self)
 
     def handle_btn_open_work_clicked(self):
-        """Etapa 9: conectado a btnOpenWork (toolbar) y a Ctrl+Shift+O."""
-        open_work(self)
+        """Etapa 9: conectado a btnOpenWork (toolbar) y a Ctrl+Shift+O.
+        Etapa 16: ahora pasa por el confirm de agregar/reemplazar."""
+        open_work_with_confirmation(self)
 
     @Slot(int)
     def handle_ctype_changed(self, index):

@@ -2,6 +2,7 @@ from PySide6.QtWidgets import QMessageBox, QFileDialog, QProgressDialog
 from PySide6.QtCore import Qt, QThread, Signal, QObject
 import yaml
 from .graphene import Graphene, DEFAULT_CARBON_TYPE
+from .recorder import SessionRecorder
 from . import core
 
 # ================================
@@ -367,24 +368,104 @@ def roll_atoms_as_CNT(atoms, roll_vec, center=[0,0,0]):
 def save_work(main_window):
     """Vuelca la sesión grabada por session_recorder a un YAML reproducible con
     graphene-gui-cli -c archivo.yaml (schema multi-placa de la Etapa 1, que
-    cli.py ya sabe leer desde la Etapa 8)."""
+    cli.py ya sabe leer desde la Etapa 8). Devuelve el path si guardó de
+    verdad, o None si no había nada que guardar o si el usuario canceló el
+    diálogo -- Open Work (Etapa 16) lo usa para saber si puede seguir
+    adelante con "cerrar y abrir nuevo" o si hay que abortar todo el flujo."""
     if main_window.session_recorder.is_empty():
         QMessageBox.information(main_window, "Nothing to save",
                                  "There's nothing recorded yet — create a plate first.")
-        return
+        return None
 
     file_name, _= QFileDialog.getSaveFileName(main_window, "Save Work", "",
                                                "YAML Files (*.yaml *.yml);;All Files (*)")
     if not file_name:
-        return
+        return None
     if not file_name.endswith((".yaml", ".yml")):
         file_name += ".yaml"
 
     main_window.session_recorder.save(file_name, export_formats=["mol2", "top"],
                                        output_dir="./output", export_name="graphene")
+    main_window.session_recorder.mark_saved()
 
     QMessageBox.information(main_window, "Saved", f"Session saved to:\n{file_name}")
     print(f"Session saved to {file_name}")
+    return file_name
+
+
+def open_work_with_confirmation(main_window):
+    """Etapa 16: antes, btnOpenWork llamaba directo a open_work(), que
+    SIEMPRE agrega las placas del archivo a la sesión actual -- confirmado
+    que esto confunde (abrir un YAML con la GUI ya poblada crea "Plate 3"/
+    "Plate 4" en vez de reemplazar "Plate 1"/"Plate 2"). Ahora, si ya hay
+    algo en la sesión actual, pregunta primero: agregar (comportamiento de
+    siempre) o cerrar la sesión actual y abrir un archivo nuevo de cero. Si
+    elige lo segundo y había cambios sin guardar, ofrece guardar el YAML
+    antes de descartarlos."""
+    if len(main_window.plates) > 0:
+        choice= _ask_add_or_open_new(main_window)
+        if choice is None:
+            return  # canceló el primer diálogo, no se toca nada
+        if choice == "new":
+            if main_window.session_recorder.is_modified():
+                if not _offer_save_before_discarding(main_window):
+                    return  # canceló guardar, o canceló el diálogo de guardar
+            reset_session(main_window)
+
+    open_work(main_window)
+
+def _ask_add_or_open_new(main_window):
+    """Devuelve 'add', 'new', o None (canceló)."""
+    msg= QMessageBox(main_window)
+    msg.setWindowTitle("Open Work")
+    msg.setText("Add the plates from the file to the current session, "
+                 "or close the current session and open a new one?")
+    btn_add= msg.addButton("Add to current", QMessageBox.ButtonRole.AcceptRole)
+    btn_new= msg.addButton("Open new (close current)", QMessageBox.ButtonRole.DestructiveRole)
+    msg.addButton(QMessageBox.StandardButton.Cancel)
+    msg.exec()
+    clicked= msg.clickedButton()
+    if clicked is btn_add: return "add"
+    if clicked is btn_new: return "new"
+    return None
+
+def _offer_save_before_discarding(main_window):
+    """Devuelve True si hay que seguir adelante con 'cerrar y abrir nuevo'
+    (guardó, o eligió descartar los cambios a propósito), False si hay que
+    abortar todo el flujo de Open Work (canceló acá, o canceló el diálogo
+    de guardar que se abrió después)."""
+    msg= QMessageBox(main_window)
+    msg.setWindowTitle("Unsaved changes")
+    msg.setText("The current session has unsaved changes. Save it before closing?")
+    btn_save= msg.addButton("Save", QMessageBox.ButtonRole.AcceptRole)
+    btn_discard= msg.addButton("Discard", QMessageBox.ButtonRole.DestructiveRole)
+    msg.addButton(QMessageBox.StandardButton.Cancel)
+    msg.exec()
+    clicked= msg.clickedButton()
+    if clicked is btn_discard:
+        return True
+    if clicked is btn_save:
+        return bool(save_work(main_window))  # False si canceló el diálogo de guardar
+    return False  # Cancel
+
+def reset_session(main_window):
+    """Vacía la sesión actual para 'Open new' (Etapa 16). Muta
+    main_window.plates EN EL LUGAR (remove_at repetido) en vez de
+    reemplazarlo por un PlateRegistry nuevo -- Renderer guarda una
+    referencia directa a ese objeto (ver main_window.__init__), así que
+    reemplazarlo por uno nuevo lo dejaría mirando el registro viejo."""
+    while len(main_window.plates) > 0:
+        main_window.plates.remove_at(0)
+    main_window.ui.comboDrawings.clear()
+    main_window.information_selected_atoms= []
+    main_window.renderer.highlighted_atoms= []
+    main_window.session_recorder= SessionRecorder()
+    main_window.atom_types= {DEFAULT_CARBON_TYPE: {"epsilon": 0.359824, "sigma": 3.39967}}
+    main_window.current_ctype= DEFAULT_CARBON_TYPE
+    main_window.ui.comboCType.clear()
+    main_window.ui.comboCType.addItem(DEFAULT_CARBON_TYPE)
+    main_window.buttons_that_depend_of_having_a_plate(False)
+    main_window.update_drawing_area()
 
 
 def open_work(main_window):

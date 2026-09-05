@@ -17,6 +17,19 @@ class SessionRecorder:
         self._plate_order= []      # mantiene el orden de creación
         self._atom_types= []       # [{"name":..., "epsilon":..., "sigma":...}]
         self._next_plate_index= 0  # para autogenerar "plateN" si no se da nombre
+        self._modified= False      # Etapa 16: ¿hay cambios sin guardar?
+
+    def _mark_modified(self):
+        self._modified= True
+
+    def is_modified(self):
+        return self._modified
+
+    def mark_saved(self):
+        """Llamar después de un save() exitoso -- limpia el flag de 'sin
+        guardar' (Etapa 16, usado por Open Work para decidir si hace falta
+        ofrecer guardar antes de cerrar la sesión actual)."""
+        self._modified= False
 
     # ================================
     # Placas
@@ -37,6 +50,7 @@ class SessionRecorder:
         name= self._register_name(name)
         self._plates[name]= {"create": dict(create_params), "steps": []}
         self._plate_order.append(name)
+        self._mark_modified()
         return name
 
     def remove_plate(self, plate_name):
@@ -48,6 +62,7 @@ class SessionRecorder:
         if plate_name in self._plates:
             del self._plates[plate_name]
             self._plate_order.remove(plate_name)
+            self._mark_modified()
 
     def known_plates(self):
         return list(self._plate_order)
@@ -58,6 +73,7 @@ class SessionRecorder:
     def _steps_for(self, plate_name):
         if plate_name not in self._plates:
             raise ValueError(f"Unknown plate: {plate_name!r} (¿se registró con record_plate_created o record_duplicate?)")
+        self._mark_modified()
         return self._plates[plate_name]["steps"]
 
     # ================================
@@ -154,6 +170,7 @@ class SessionRecorder:
             "steps": [],
         }
         self._plate_order.append(name)
+        self._mark_modified()
         return name
 
     # ================================
@@ -162,6 +179,7 @@ class SessionRecorder:
 
     def record_atom_type(self, name, epsilon, sigma):
         self._atom_types.append({"name": name, "epsilon": epsilon, "sigma": sigma})
+        self._mark_modified()
 
     # ================================
     # Salida
