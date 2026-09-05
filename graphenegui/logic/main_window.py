@@ -22,6 +22,25 @@ from .export_formats import checkBounds, ATOM_PARAMS_TOP
 # desactualizada por las nuestras.
 _RESERVED_CTYPE_PREFIXES= tuple(k for k in ATOM_PARAMS_TOP if len(k) == 2)
 
+def _is_reserved_ctype_name(name):
+    """Etapa 20: además de los prefijos de 2 caracteres (Etapa 15),
+    write_atoms_top tiene un chequeo APARTE para hidrógenos autogenerados con
+    nombre "H1"/"H2".../"H999" (generatePatterns("H") en graphene.py) -- un
+    tipo de carbono custom llamado "H" + solo dígitos cae en ese mismo
+    chequeo y exporta con los parámetros de HIDRÓGENO en vez de los del
+    usuario. Se replica exactamente la lógica de isNumber (export_formats.py,
+    int(s) con try/except) en vez de usar .isdigit(), para no divergir en
+    casos límite (signos, etc.)."""
+    if name[:2] in _RESERVED_CTYPE_PREFIXES:
+        return True
+    if len(name) > 1 and name[0] == "H":
+        try:
+            int(name[1:])
+            return True
+        except ValueError:
+            pass
+    return False
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -526,11 +545,11 @@ class MainWindow(QMainWindow):
             if not name:
                 QMessageBox.warning(self, "Error", "Type name cannot be empty.")
                 return
-            if name[:2] in _RESERVED_CTYPE_PREFIXES:
+            if _is_reserved_ctype_name(name):
                 QMessageBox.warning(self, "Error",
-                    f"Type name can't start with {name[:2]!r} -- reserved by the "
-                    "exporter for oxidized-carbon/oxide markers (would silently "
-                    "export with the wrong element's charge/mass).")
+                    f"Type name {name!r} is reserved by the exporter (oxidized-carbon/oxide "
+                    "markers, or the auto-generated hydrogen naming scheme) -- would silently "
+                    "export with the wrong element's charge/mass.")
                 return
             self.atom_types[name]= {"epsilon": data["epsilon"], "sigma": data["sigma"]}
             self.session_recorder.record_atom_type(name, data["epsilon"], data["sigma"])

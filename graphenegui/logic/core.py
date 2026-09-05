@@ -367,14 +367,27 @@ def build_plate_from_create(create_cfg):
 # la misma fuente (ATOM_PARAMS_TOP), así que no se pueden desincronizar.
 _RESERVED_CTYPE_PREFIXES= tuple(k for k in ATOM_PARAMS_TOP if len(k) == 2)
 
+def _is_reserved_ctype_name(name):
+    """Etapa 20: ver el docstring gemelo en main_window.py -- misma lógica,
+    duplicada acá por la misma razón que _RESERVED_CTYPE_PREFIXES."""
+    if name[:2] in _RESERVED_CTYPE_PREFIXES:
+        return True
+    if len(name) > 1 and name[0] == "H":
+        try:
+            int(name[1:])
+            return True
+        except ValueError:
+            pass
+    return False
+
 def build_atom_types(cfg):
     atom_types= {}
     for entry in cfg.get("atom_types", []):
         name= entry["name"]
-        if name[:2] in _RESERVED_CTYPE_PREFIXES:
-            raise ValueError(f"atom type {name!r}: can't start with {name[:2]!r} -- reserved by "
-                              "the exporter for oxidized-carbon/oxide markers (would silently "
-                              "export with the wrong element's charge/mass)")
+        if _is_reserved_ctype_name(name):
+            raise ValueError(f"atom type {name!r}: reserved by the exporter (oxidized-carbon/oxide "
+                              "markers, or the auto-generated hydrogen naming scheme) -- would "
+                              "silently export with the wrong element's charge/mass")
         atom_types[name]= {"epsilon": entry["epsilon"], "sigma": entry["sigma"]}
     return atom_types
 
