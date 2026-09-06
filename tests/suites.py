@@ -3,20 +3,15 @@ import unittest
 from tests.unit import (
     test_graphene, test_core, test_export_formats, test_import_formats,
     test_recorder, test_plate_registry,
-    # Etapa 12 (tipo de carbono):
     test_carbon_type_core, test_carbon_type_recorder,
-    # Etapa 14 (restaurar CNT):
     test_cnt_restore_core, test_cnt_restore_recorder,
-    # Etapa 15 (prefijos de tipo reservados):
     test_reserved_ctype_prefixes,
-    # Etapa 16 (Open Work: agregar/reemplazar + flag de sesión modificada):
     test_session_modified_flag,
-    # Etapa 17 (Remove por selección):
     test_remove_selection,
-    # Etapa 18 (Open Work + CNT sin restaurar):
     test_open_work_cnt_roundtrip,
-    # Etapa 21 (colisión de nombres de atom_types al agregar):
     test_atom_type_collision,
+    test_plate_registry_slicing,
+    test_custom_ctype_mol2_export,
 )
 from tests.integration import (
     test_cli_headless,
@@ -34,6 +29,8 @@ _UNIT_MODULES= (
     test_remove_selection,
     test_open_work_cnt_roundtrip,
     test_atom_type_collision,
+    test_plate_registry_slicing,
+    test_custom_ctype_mol2_export,
 )
 _INTEGRATION_MODULES= (test_cli_headless, test_carbon_type_headless)
 _GOLDEN_MODULES= (test_golden,)

@@ -70,6 +70,8 @@ class PlateRegistry:
         return len(self._order)
 
     def __getitem__(self, position):
+        if isinstance(position, slice):
+            return [self._entries[id].plate for id in self._order[position]]
         return self._entries[self._order[position]].plate
 
     def __iter__(self):

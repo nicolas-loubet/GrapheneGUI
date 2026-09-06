@@ -1,3 +1,6 @@
+from .graphene import DEFAULT_CARBON_TYPE
+
+
 def generatePatternsOxides():
     result= []
     for i in range(1, 100):
@@ -195,6 +198,20 @@ def writeMOL2(filename, plates, periodicity_conditions):
                 if(atom_type_field == "ha"):
                     mol2_type= "ha"  # hidrógeno de borde (reduce_borders), no confundir con carbono
                     charge_type= "H"
+                elif atom_type_field not in ("OO", "HO", "OE") and atom_type_field != DEFAULT_CARBON_TYPE:
+                    # Tipo de carbono custom (Etapa 12) -- antes esto se ignoraba
+                    # por completo: la línea de abajo busca por 'name' (ej.
+                    # "C47"), que nunca matchea ninguna clave de
+                    # atom_type_dict, así que TODO carbono cae al default "ca"
+                    # sin importar atom_type_field. Se usa el nombre custom
+                    # LITERAL como mol2_type (a pedido -- no hay un código
+                    # GAFF/mol2 separado por tipo custom, solo epsilon/sigma).
+                    # No se replica acá el esquema de prefijos "c"+sufijo que
+                    # sí tiene el .top para carbonos oxidados Y custom a la
+                    # vez -- si ese caso hace falta más adelante, es una etapa
+                    # aparte.
+                    mol2_type= atom_type_field
+                    charge_type= atom_type_field
                 else:
                     mol2_type= atom_type_dict.get(name, atom_type_dict["C"])
                     charge_type= name  # por defecto: oxides (OO/HO/OE) usan su propio nombre
