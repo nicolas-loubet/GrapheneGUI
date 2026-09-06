@@ -15,6 +15,8 @@ from tests.unit import (
     test_remove_selection,
     # Etapa 18 (Open Work + CNT sin restaurar):
     test_open_work_cnt_roundtrip,
+    # Etapa 21 (colisión de nombres de atom_types al agregar):
+    test_atom_type_collision,
 )
 from tests.integration import (
     test_cli_headless,
@@ -31,6 +33,7 @@ _UNIT_MODULES= (
     test_session_modified_flag,
     test_remove_selection,
     test_open_work_cnt_roundtrip,
+    test_atom_type_collision,
 )
 _INTEGRATION_MODULES= (test_cli_headless, test_carbon_type_headless)
 _GOLDEN_MODULES= (test_golden,)

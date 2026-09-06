@@ -512,6 +512,36 @@ def reset_session(main_window):
     main_window.update_drawing_area()
 
 
+def _resolve_atom_type_collision(main_window, name, incoming_params):
+    """Etapa 21: 'Agregar al Work actual' (Open Work) podía pisar en silencio
+    un tipo de carbono ya existente en la sesión con otros epsilon/sigma, y
+    además duplicar la entrada en comboCType (addItem no chequeaba si ya
+    estaba). Devuelve True si hay que (re)grabar name->incoming_params (no
+    existía antes, o el usuario eligió sobrescribir), False si hay que
+    descartarlo (mismos valores ya presentes -- no hay colisión real -- o
+    el usuario eligió mantener el de la sesión actual)."""
+    existing= main_window.atom_types.get(name)
+    if existing is None:
+        return True
+    if existing["epsilon"] == incoming_params["epsilon"] and existing["sigma"] == incoming_params["sigma"]:
+        return False  # mismos valores -- no hay nada que resolver
+
+    msg= QMessageBox(main_window)
+    msg.setWindowTitle("Atom type collision")
+    msg.setText(
+        f"The current session already has a carbon type named {name!r} "
+        f"(epsilon={existing['epsilon']}, sigma={existing['sigma']}), but the file "
+        f"being added defines {name!r} with different values "
+        f"(epsilon={incoming_params['epsilon']}, sigma={incoming_params['sigma']}).\n\n"
+        "Overwriting affects every carbon using this type, in both the existing "
+        "session and the file being added."
+    )
+    btn_keep= msg.addButton("Keep current session's", QMessageBox.ButtonRole.RejectRole)
+    btn_overwrite= msg.addButton("Overwrite with file's", QMessageBox.ButtonRole.DestructiveRole)
+    msg.exec()
+    return msg.clickedButton() is btn_overwrite
+
+
 def open_work(main_window):
     """Etapa 9 (schema unificado desde la Etapa 11): abre un YAML de sesión y
     reconstruye las placas en la GUI, usando la MISMA función que usa el
@@ -613,8 +643,12 @@ def open_work(main_window):
         main_window.ui.comboDrawings.addItem(f"Plate {len(main_window.plates)}")
 
     for name, params in atom_types.items():
+        if not _resolve_atom_type_collision(main_window, name, params):
+            continue
+        is_new= name not in main_window.atom_types
         main_window.atom_types[name]= params
-        main_window.ui.comboCType.addItem(name)
+        if is_new:
+            main_window.ui.comboCType.addItem(name)
         main_window.session_recorder.record_atom_type(name, params["epsilon"], params["sigma"])
     main_window.update_ctype_controls_enabled()
 
