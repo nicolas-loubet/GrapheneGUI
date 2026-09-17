@@ -370,7 +370,7 @@ class MainWindow(QMainWindow):
 
         if not plate.is_position_occupied(o_x, o_y, o_z):
             oxide_count_before= len(plate.get_oxide_coords())
-            plate.add_oxide(o_x, o_y, o_z, "OO", i_atom)
+            plate.add_oxide(o_x, o_y, o_z, "OO", i_atom, bonded_carbon_indices=(carbon[4],))
             i_atom += 1
             plate.add_oxide(h_x, o_y, h_z, "HO", i_atom)
             record_new_oxides(self, self.ui.comboDrawings.currentIndex(), oxide_count_before)
@@ -391,7 +391,8 @@ class MainWindow(QMainWindow):
 
             if not plate.is_position_occupied(o_x, o_y, o_z):
                 oxide_count_before= len(plate.get_oxide_coords())
-                plate.add_oxide(o_x, o_y, o_z, "OE", i_atom)
+                plate.add_oxide(o_x, o_y, o_z, "OE", i_atom,
+                                 bonded_carbon_indices=(self.first_carbon[4], carbon[4]))
                 record_new_oxides(self, self.ui.comboDrawings.currentIndex(), oxide_count_before)
                 self.update_drawing_area()
                 print(f"Added O at ({o_x*10:.2f}, {o_y*10:.2f}, {o_z*10:.2f})")

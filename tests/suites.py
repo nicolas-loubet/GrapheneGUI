@@ -12,6 +12,9 @@ from tests.unit import (
     test_atom_type_collision,
     test_plate_registry_slicing,
     test_custom_ctype_mol2_export,
+    test_nested_duplicate_schema,
+    test_open_work_nested_duplicates,
+    test_oxide_neighbor_disambiguation,
 )
 from tests.integration import (
     test_cli_headless,
@@ -31,6 +34,9 @@ _UNIT_MODULES= (
     test_atom_type_collision,
     test_plate_registry_slicing,
     test_custom_ctype_mol2_export,
+    test_nested_duplicate_schema,
+    test_open_work_nested_duplicates,
+    test_oxide_neighbor_disambiguation,
 )
 _INTEGRATION_MODULES= (test_cli_headless, test_carbon_type_headless)
 _GOLDEN_MODULES= (test_golden,)

@@ -20,7 +20,7 @@ class TestCarbonTypeRecording(unittest.TestCase):
 
     def test_records_step_with_correct_shape(self):
         self.recorder.record_carbon_type(self.plate_name, [[0.0, 0.0, 0.0], [1.23, 4.56, 0.0]], "ce")
-        steps= self.recorder._plates[self.plate_name]["steps"]
+        steps= self.recorder._roots[self.plate_name]["steps"]
         self.assertEqual(len(steps), 1)
         self.assertEqual(steps[0], {
             "type": "set_carbon_type", "carbon_type": "ce",
@@ -32,7 +32,7 @@ class TestCarbonTypeRecording(unittest.TestCase):
         es record_carbon_type con carbon_type=DEFAULT_CARBON_TYPE ('ca')."""
         self.recorder.record_carbon_type(self.plate_name, [[0.0, 0.0, 0.0]], "ce")
         self.recorder.record_carbon_type(self.plate_name, [[0.0, 0.0, 0.0]], "ca")
-        steps= self.recorder._plates[self.plate_name]["steps"]
+        steps= self.recorder._roots[self.plate_name]["steps"]
         self.assertEqual(len(steps), 2)
         self.assertEqual(steps[0]["type"], "set_carbon_type")
         self.assertEqual(steps[1]["type"], "set_carbon_type")
@@ -43,7 +43,7 @@ class TestCarbonTypeRecording(unittest.TestCase):
         para preservar el orden real en que pasaron las cosas."""
         self.recorder.record_carbon_type(self.plate_name, [[0, 0, 0]], "ce")
         self.recorder.record_carbon_type(self.plate_name, [[1, 1, 1]], "co")
-        steps= self.recorder._plates[self.plate_name]["steps"]
+        steps= self.recorder._roots[self.plate_name]["steps"]
         self.assertEqual(len(steps), 2)
         self.assertEqual([s["carbon_type"] for s in steps], ["ce", "co"])
 
@@ -51,14 +51,14 @@ class TestCarbonTypeRecording(unittest.TestCase):
         carbons= [[9, 9, 9]]
         self.recorder.record_carbon_type(self.plate_name, carbons, "co")
         carbons.append([1, 1, 1])
-        self.assertEqual(self.recorder._plates[self.plate_name]["steps"][-1]["carbons"], [[9, 9, 9]])
+        self.assertEqual(self.recorder._roots[self.plate_name]["steps"][-1]["carbons"], [[9, 9, 9]])
 
     def test_interleaves_in_order_with_other_step_types(self):
         self.recorder.record_oxidation_hard(self.plate_name, [[0, 0, 1, "OO"]])
         self.recorder.record_reduce_borders(self.plate_name)
         self.recorder.record_carbon_type(self.plate_name, [[5, 5, 5]], "ce")
         self.recorder.record_cnt(self.plate_name, [1, 0])
-        steps= self.recorder._plates[self.plate_name]["steps"]
+        steps= self.recorder._roots[self.plate_name]["steps"]
         self.assertEqual([s["type"] for s in steps],
                           ["oxidation", "reduce_borders", "set_carbon_type", "cnt"])
 

@@ -37,19 +37,34 @@ class TestPlateRegistration(unittest.TestCase):
         with self.assertRaises(ValueError):
             rec.record_reduce_borders("nope")
 
-    def test_remove_plate_leaves_dangling_reference_on_purpose(self):
-        """Etapa 11: el duplicado ahora es una placa trackeable más — remove_plate
-        NO cascadea el borrado (antes sí lo hacía, cuando duplicates era una lista
-        aparte sin steps propios). La referencia queda colgante a propósito: falla
-        fuerte en el replay (ValueError claro) en vez de fallar en silencio."""
+    def test_removing_a_plate_cascades_to_its_nested_duplicates(self):
+        """Etapa 24: los duplicados viven ANIDADOS dentro de los steps de su
+        fuente (ya no son una entrada aparte referenciada por nombre) -- borrar
+        la fuente se lleva puesto a cualquier duplicado anidado en ella. Ya no
+        puede quedar una referencia colgando a propósito como pasaba con el
+        schema viejo (duplicate_of apuntando a un nombre que ya no existe):
+        acá el duplicado directamente desaparece con su padre."""
         rec= SessionRecorder()
         rec.record_plate_created({"width": 40, "height": 40}, name="base")
         rec.record_duplicate("base", [0, 0, 34], name="dup")
 
         rec.remove_plate("base")
 
-        self.assertEqual(rec.known_plates(), ["dup"])
-        self.assertEqual(rec.to_dict()["plates"][0]["duplicate_of"], "base")  # colgante, a propósito
+        self.assertEqual(rec.known_plates(), [])
+        self.assertFalse(rec.has_plate("dup"))
+
+    def test_removing_a_duplicate_leaves_its_source_untouched(self):
+        """Al revés: borrar el DUPLICADO (no la fuente) solo saca su propio
+        step anidado -- la fuente sigue intacta y editable."""
+        rec= SessionRecorder()
+        rec.record_plate_created({"width": 40, "height": 40}, name="base")
+        rec.record_duplicate("base", [0, 0, 34], name="dup")
+
+        rec.remove_plate("dup")
+
+        self.assertEqual(rec.known_plates(), ["base"])
+        self.assertFalse(rec.has_plate("dup"))
+        self.assertEqual(rec.to_dict()["plates"][0]["steps"], [])
 
 
 class TestOxidationRecording(unittest.TestCase):
@@ -117,22 +132,26 @@ class TestDuplicatesAndAtomTypes(unittest.TestCase):
             rec.record_duplicate("nope", [0, 0, 34])
 
     def test_duplicate_recorded_as_a_trackable_plate(self):
-        """Etapa 11: el duplicado es una placa más en 'plates' (duplicate_of en vez
-        de create), con su propia lista de steps vacía lista para usarse."""
+        """Etapa 24 (antes Etapa 11): el duplicado es un step {"type":"duplicate",...}
+        anidado dentro de los steps de SU FUENTE (ya no una entrada aparte de
+        'plates' con duplicate_of/translation/absolute a nivel superior), con su
+        propia lista de steps vacía lista para usarse."""
         rec= SessionRecorder()
         rec.record_plate_created({"width": 40, "height": 40}, name="base")
         dup_name= rec.record_duplicate("base", [0, 0, 34], absolute=True)
 
         self.assertEqual(dup_name, "plate2")  # autogenerado, sigue el mismo contador
         plates= rec.to_dict()["plates"]
-        self.assertEqual(plates[1], {
-            "name": "plate2", "duplicate_of": "base",
+        self.assertEqual(len(plates), 1)  # solo la RAÍZ es entrada de nivel superior
+        self.assertEqual(plates[0]["steps"], [{
+            "type": "duplicate", "name": "plate2",
             "translation": [0, 0, 34], "absolute": True, "steps": [],
-        })
+        }])
 
     def test_duplicate_can_have_its_own_steps(self):
-        """El punto central de la Etapa 11: se puede seguir editando un duplicado
-        y esas ediciones SÍ quedan grabadas (antes se perdían)."""
+        """El punto central de la Etapa 11 (con el schema de la Etapa 24): se
+        puede seguir editando un duplicado y esas ediciones SÍ quedan grabadas
+        -- dentro de la lista "steps" anidada de SU PROPIO step "duplicate"."""
         rec= SessionRecorder()
         rec.record_plate_created({"width": 40, "height": 40}, name="base")
         dup_name= rec.record_duplicate("base", [0, 0, 34], name="dup")
@@ -140,8 +159,9 @@ class TestDuplicatesAndAtomTypes(unittest.TestCase):
         self.assertTrue(rec.has_plate(dup_name))
         rec.record_cnt(dup_name, [10, 0])
 
-        dup_entry= rec.to_dict()["plates"][1]
-        self.assertEqual(dup_entry["steps"], [{"type": "cnt", "vector": [10, 0]}])
+        duplicate_step= rec.to_dict()["plates"][0]["steps"][0]
+        self.assertEqual(duplicate_step["name"], dup_name)
+        self.assertEqual(duplicate_step["steps"], [{"type": "cnt", "vector": [10, 0]}])
 
     def test_atom_type_recorded(self):
         rec= SessionRecorder()

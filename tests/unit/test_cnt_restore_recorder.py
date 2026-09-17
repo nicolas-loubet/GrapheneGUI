@@ -16,7 +16,7 @@ class TestCntRestoreRecording(unittest.TestCase):
     def test_records_bare_step_no_data(self):
         self.recorder.record_cnt(self.plate_name, [1, 0])
         self.recorder.record_cnt_restored(self.plate_name)
-        steps= self.recorder._plates[self.plate_name]["steps"]
+        steps= self.recorder._roots[self.plate_name]["steps"]
         self.assertEqual(steps, [
             {"type": "cnt", "vector": [1, 0]},
             {"type": "cnt_restored"},
@@ -27,7 +27,7 @@ class TestCntRestoreRecording(unittest.TestCase):
         self.recorder.record_cnt_restored(self.plate_name)
         self.recorder.record_oxidation_hard(self.plate_name, [[0, 0, 1, "OO"]])
         self.recorder.record_cnt(self.plate_name, [2, 0])
-        types= [s["type"] for s in self.recorder._plates[self.plate_name]["steps"]]
+        types= [s["type"] for s in self.recorder._roots[self.plate_name]["steps"]]
         self.assertEqual(types, ["cnt", "cnt_restored", "oxidation", "cnt"])
 
     def test_raises_on_unknown_plate(self):

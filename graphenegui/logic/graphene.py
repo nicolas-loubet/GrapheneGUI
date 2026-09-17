@@ -18,6 +18,17 @@ class Graphene:
         self.is_CNT= False
         self.periodic_boundary_x= periodic_boundary_x
         self.periodic_boundary_y= periodic_boundary_y
+        # Etapa 19: atom_index del óxido -> tupla de atom_index de los
+        # carbonos REALMENTE unidos a él (1 para OO, 2 para OE), grabado en
+        # el momento de oxidar (add_oxide). Un dict APARTE, no un campo más
+        # en la tupla del óxido -- roll_atoms_as_CNT arma un array de NumPy
+        # 2D a partir de carbon_coords+oxide_coords concatenados, que exige
+        # todas las filas del MISMO largo; agregarle un campo más a los
+        # óxidos nomás (sin tocar los carbonos) las desempareja y rompe ese
+        # array. atom_index sobrevive traducciones y rolls sin cambiar
+        # (set_atoms lo preserva tal cual viene), así que este dict se puede
+        # seguir consultando después de cualquier transformación.
+        self.oxide_bonds= {}
 
     @classmethod
     def create_from_coords(cls, carbon_coords, oxide_coords, hydrogens_coords=None):
@@ -79,13 +90,31 @@ class Graphene:
         new_plate= Graphene.create_from_coords(carbons, oxides, hydrogens)
         new_plate.periodic_boundary_x= self.periodic_boundary_x
         new_plate.periodic_boundary_y= self.periodic_boundary_y
+        new_plate.oxide_bonds= dict(self.oxide_bonds)
         return new_plate
 
     def add_carbon(self, x, y, z, atom_name, atom_index, modified=False, atom_type=DEFAULT_CARBON_TYPE):
         self.carbon_coords.append([x, y, z, atom_name, atom_index, modified, atom_type])
 
-    def add_oxide(self, x, y, z, oxide_type, atom_index, modified=False):
+    def add_oxide(self, x, y, z, oxide_type, atom_index, modified=False, bonded_carbon_indices=None):
+        """bonded_carbon_indices (Etapa 19): atom_index (posición 4 de la
+        tupla) del/los carbono(s) REALMENTE unidos a este óxido -- 1 para
+        OO (HO no lo necesita, ver comentario en change_name_oxides), 2 para
+        OE (puentea dos carbonos). Se graba EN EL MOMENTO en que se conoce
+        con certeza (al oxidar, mientras la placa está plana -- nunca se
+        puede oxidar una placa ya enrollada), en self.oxide_bonds (no en la
+        tupla del óxido, ver comentario en __init__), y sobrevive
+        traducciones/rolls porque atom_index no cambia con esas
+        transformaciones (a diferencia de re-derivar el vecino por geometría
+        DESPUÉS de enrollar: la curvatura puede acercar en 3D carbonos que
+        no tienen nada que ver, confirmado en vivo con un CNT [2,0] sobre
+        una placa 30x20). None si no se conoce (óxidos importados de un
+        archivo, o creados antes de este cambio) -- en ese caso se cae al
+        mecanismo geométrico viejo como mejor esfuerzo (ver
+        get_bonded_carbons_for_oxide)."""
         self.oxide_coords.append([x, y, z, oxide_type, atom_index, modified, oxide_type])
+        if bonded_carbon_indices:
+            self.oxide_bonds[atom_index]= tuple(bonded_carbon_indices)
 
     def set_atoms(self, atoms):
         self.carbon_coords= []
@@ -136,10 +165,12 @@ class Graphene:
     def remove_oxides(self):
         ox= self.oxide_coords
         self.oxide_coords= []
+        self.oxide_bonds= {}
         return ox
     
     def remove_atom_oxide(self, ox):
         self.oxide_coords.remove(ox)
+        self.oxide_bonds.pop(ox[4], None)
     
     def add_oxydation_to_list_of_carbon(self, list_carbons, z_mode, prob_oh):
         i_atom= self.get_number_atoms()
@@ -159,7 +190,7 @@ class Graphene:
 
             if rand <= prob_oh:
                 i_atom+= 1
-                self.add_oxide(x1, y1, z1+z_dir*0.149, "OO", i_atom)
+                self.add_oxide(x1, y1, z1+z_dir*0.149, "OO", i_atom, bonded_carbon_indices=(carbon[4],))
                 i_atom+= 1
                 self.add_oxide(x1+.093, y1, z1+z_dir*0.181, "HO", i_atom)
                 oxidized_carbons.append(carbon)
@@ -178,7 +209,8 @@ class Graphene:
                     z_mid= (z1 + z2) / 2
 
                     i_atom+= 1
-                    self.add_oxide(x_mid, y_mid, z_mid+z_dir*0.126, "OE", i_atom)
+                    self.add_oxide(x_mid, y_mid, z_mid+z_dir*0.126, "OE", i_atom,
+                                    bonded_carbon_indices=(carbon[4], adj[4]))
                     oxidized_carbons.append(carbon)
                     oxidized_carbons.append(adj)
                     count_oxidations+= 1
@@ -187,7 +219,7 @@ class Graphene:
 
                 if not found:
                     i_atom+= 1
-                    self.add_oxide(x1, y1, z1+z_dir*0.149, "OO", i_atom)
+                    self.add_oxide(x1, y1, z1+z_dir*0.149, "OO", i_atom, bonded_carbon_indices=(carbon[4],))
                     count_oxidations+= 1
                     i_atom+= 1
                     self.add_oxide(x1+.093, y1, z1+z_dir*0.18, "HO", i_atom)
@@ -224,21 +256,95 @@ class Graphene:
                 nearest_carbon= carbon
         return nearest_carbon
 
+    def get_bonded_carbons_for_oxide(self, ox, threshold=0.17):
+        """Devuelve los carbonos REALMENTE unidos a este óxido. Si está en
+        self.oxide_bonds (Etapa 19, grabado en el momento de oxidar), los
+        busca por atom_index: exacto, no depende de la geometría actual ni
+        de cuánto se haya enrollado la placa desde entonces. Si no
+        (óxidos importados de un archivo, o alguna vía que todavía no lo
+        setee), cae al mecanismo geométrico de mejor esfuerzo
+        (get_nearest_carbons_to_oxide)."""
+        bonded_indices= self.oxide_bonds.get(ox[4])
+        if bonded_indices:
+            by_index= {c[4]: c for c in self.carbon_coords}
+            found= [by_index[i] for i in bonded_indices if i in by_index]
+            if found:
+                return found
+        return self.get_nearest_carbons_to_oxide(ox, threshold=threshold)
+
+    def resolve_oxide_carbon_bonds(self, threshold=0.17):
+        """Asigna a cada óxido su/sus carbono(s). Etapa 19: los óxidos con
+        bond grabado en self.oxide_bonds se resuelven DIRECTO por índice,
+        sin ninguna ambigüedad ni necesidad de comparar distancias -- son la
+        mayoría en cualquier sesión nueva. Para los que NO lo tengan (óxidos
+        importados de un archivo), se arma la asignación geométrica greedy
+        de antes (candidatos por distancia, ordenados, el más cercano gana
+        primero) pero SOLO entre los carbonos que los óxidos con índice
+        conocido no se hayan quedado ya -- así ninguna resolución exacta
+        puede perder su carbono ante una geométrica ambigua."""
+        needed= {id(ox): (1 if ox[3] in ("OO", "HO") else 2) for ox in self.oxide_coords}
+        assigned= {id(ox): [] for ox in self.oxide_coords}
+        carbon_taken= set()
+
+        by_index= {c[4]: c for c in self.carbon_coords}
+        needs_geometry= []
+        for ox in self.oxide_coords:
+            bonded_indices= self.oxide_bonds.get(ox[4])
+            if not bonded_indices:
+                needs_geometry.append(ox)
+                continue
+            found= [by_index[i] for i in bonded_indices if i in by_index]
+            for c in found:
+                if id(c) in carbon_taken: continue
+                assigned[id(ox)].append(c)
+                carbon_taken.add(id(c))
+
+        if needs_geometry:
+            candidates= []
+            for ox in needs_geometry:
+                for carbon in self.carbon_coords:
+                    if id(carbon) in carbon_taken: continue
+                    d= self.distance_3D(ox[0], ox[1], ox[2], carbon[0], carbon[1], carbon[2])
+                    if d < threshold:
+                        candidates.append((d, ox, carbon))
+            candidates.sort(key=lambda triple: triple[0])
+            for d, ox, carbon in candidates:
+                oxid= id(ox)
+                if len(assigned[oxid]) >= needed[oxid]: continue
+                if id(carbon) in carbon_taken: continue
+                assigned[oxid].append(carbon)
+                carbon_taken.add(id(carbon))
+
+        return assigned
+
     def get_nearest_carbons_to_oxide(self, ox, threshold=0.17):
-        """Umbral en 3D (no 2D): en una placa plana, el offset carbono->óxido es
-        puramente perpendicular a la lámina (eje Z, ~0.149 nm para OO, ~0.144 nm
-        para OE) — con distance_2D eso da ~0 y siempre matcheaba bien. Pero al
-        enrollar en CNT, ese mismo offset perpendicular pasa a ser RADIAL (en x,y),
-        no en Z, así que distance_2D quedaba en ~0.149 nm — por encima del viejo
-        umbral de 0.1 — y esto devolvía una lista vacía (crash en change_name_oxides).
-        0.17 en 3D cubre los offsets reales (~0.144-0.149) con margen, y queda bien
-        por debajo de la distancia a un carbono vecino equivocado (~0.206 nm) —
-        funciona igual en plano y en CNT, sin depender de la orientación."""
-        output= []
+        """Devuelve los carbonos REALMENTE unidos a este óxido: 1 para OO/HO
+        (hidroxilo), 2 para OE (epóxido, puentea dos carbonos). Antes
+        devolvía TODOS los carbonos dentro de un umbral fijo de distancia --
+        funcionaba en una lámina plana, pero en una placa enrollada en CNT la
+        curvatura puede acercar en 3D carbonos que no tienen nada que ver
+        entre sí, haciendo que un mismo OE "encuentre" 3 o 4 vecinos en vez
+        de 2 (confirmado en vivo: CNT [2,0] sobre una placa 30x20 -- de 122
+        OE, 55 encontraban 4 vecinos y 34 encontraban 3; el/los de más se
+        marcaban como el otro lado del epóxido en change_name_oxides sin
+        serlo, corrompiendo su carga/tipo en el .mol2/.top exportado).
+
+        Ahora se ordenan TODOS los candidatos dentro del umbral por distancia
+        real y se devuelven los K más cercanos -- ya no importa cuántos
+        caigan bajo el corte, el orden decide. El umbral (0.17, sin cambios)
+        pasa a ser solo un resguardo de sanidad (si ni el más cercano cae
+        ahí, algo más está mal -- mejor devolver menos de lo esperado que
+        inventar un vecino a kilómetros), no la herramienta de desambiguación
+        -- esa ahora es el orden por distancia, que no depende de ajustar el
+        número para cada geometría/radio de enrollado."""
+        k= 1 if ox[3] in ("OO", "HO") else 2
+        candidates= []
         for carbon in self.carbon_coords:
-            if self.distance_3D(ox[0], ox[1], ox[2], carbon[0], carbon[1], carbon[2]) < threshold:
-                output.append(carbon)
-        return output
+            d= self.distance_3D(ox[0], ox[1], ox[2], carbon[0], carbon[1], carbon[2])
+            if d < threshold:
+                candidates.append((d, carbon))
+        candidates.sort(key=lambda pair: pair[0])
+        return [carbon for _, carbon in candidates[:k]]
 
     def is_position_occupied(self, x, y, z, threshold=0.1):
         for ox in self.get_oxide_coords():
@@ -270,22 +376,24 @@ class Graphene:
     
     def recheck_ox_indexes(self):
         original_ox= self.oxide_coords
+        old_bonds= self.oxide_bonds
         self.oxide_coords= []
+        self.oxide_bonds= {}
         i_atom= len(self.carbon_coords)
 
         fixed_ox= []
         for i, ox in enumerate(original_ox):
-            fixed_ox.append(ox)
+            fixed_ox.append((ox, old_bonds.get(ox[4])))
             if ox[3] == "OO":
                 has_paired_h= i+1 < len(original_ox) and original_ox[i+1][3] == "HO"
                 if not has_paired_h:
                     z_dir= 1 if ox[2] > self.carbon_coords[0][2] else -1
                     new_ox= [ox[0]+.093, ox[1], ox[2]+z_dir*.032, "HO", -1, ox[5], ox[6]]
-                    fixed_ox.append(new_ox)
+                    fixed_ox.append((new_ox, None))
 
-        for ox in fixed_ox:
+        for ox, bonded in fixed_ox:
             i_atom+= 1
-            self.add_oxide(ox[0], ox[1], ox[2], ox[3], i_atom, ox[5])
+            self.add_oxide(ox[0], ox[1], ox[2], ox[3], i_atom, ox[5], bonded_carbon_indices=bonded)
 
     def distance_2D(self, x1, y1, x2, y2):
         return np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)

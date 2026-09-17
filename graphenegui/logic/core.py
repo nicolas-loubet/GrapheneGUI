@@ -148,11 +148,22 @@ def apply_oxidation_explicit(plate, oxide_atoms):
     oxide_atoms es una lista de (x, y, z, oxide_type) en nm — el mismo formato que
     devuelve plate.get_oxide_coords() sin el índice ni el flag 'modified'.
     Devuelve la cantidad de sitios de oxidación agregados (cuenta OO/OE, no los
-    HO que los acompañan, igual que add_oxydation_to_list_of_carbon)."""
+    HO que los acompañan, igual que add_oxydation_to_list_of_carbon).
+
+    Etapa 19: acá SÍ hace falta derivar el/los carbono(s) real(es) por
+    geometría (el step de oxidación no trae esa info, solo posiciones) --
+    pero se hace EN ESTE MOMENTO, mientras la placa todavía está plana (nunca
+    se puede oxidar una placa ya enrollada, la GUI lo impide), que es
+    exactamente cuando la geometría es confiable. El resultado se graba por
+    atom_index (bonded_carbon_indices) para no tener que re-derivarlo si la
+    placa se enrolla más adelante en la misma sesión de steps."""
     added= 0
     for x, y, z, oxide_type in oxide_atoms:
         i_atom= plate.get_number_atoms() + 1
-        plate.add_oxide(x, y, z, oxide_type, i_atom)
+        temp_ox= [x, y, z, oxide_type, i_atom, False, oxide_type]
+        bonded= plate.get_nearest_carbons_to_oxide(temp_ox)
+        bonded_indices= tuple(c[4] for c in bonded) if bonded else None
+        plate.add_oxide(x, y, z, oxide_type, i_atom, bonded_carbon_indices=bonded_indices)
         if oxide_type != "HO":
             added+= 1
     return added
@@ -476,18 +487,24 @@ def validate_steps(plate_name, steps):
       así que un 'cnt' solo puede seguir de 'cnt_restored' (deshace el roll,
       vuelve a habilitar todo) o ser el último step de la lista (queda
       enrollada sin restaurar). 'cnt_restored' sin un 'cnt' activo justo
-      antes no tiene sentido (Etapa 14: antes ni existía este step)."""
-    types= [s.get("type") for s in steps]
+      antes no tiene sentido (Etapa 14: antes ni existía este step).
+    - Etapa 24: 'duplicate' (duplicar en el punto exacto donde pasó de
+      verdad, ya no al final) es una RAMA APARTE -- no transforma la placa
+      actual, así que no cuenta para la secuencia de cnt/reduce_borders de
+      ESTA placa. Sus propios steps anidados se validan recursivamente,
+      como si fueran una placa propia (con su propio nombre para los
+      mensajes de error)."""
+    relevant_types= [s.get("type") for s in steps if s.get("type") != "duplicate"]
 
-    if "reduce_borders" in types:
-        first_reduce= types.index("reduce_borders")
-        if "cnt" in types[first_reduce:]:
+    if "reduce_borders" in relevant_types:
+        first_reduce= relevant_types.index("reduce_borders")
+        if "cnt" in relevant_types[first_reduce:]:
             raise ValueError(f"plate {plate_name!r}: reduce_borders and cnt are mutually exclusive "
                               "(same restriction as the GUI: rolling into a CNT is disabled once "
                               "border hydrogens were added)")
 
     is_rolled= False
-    for step_type in types:
+    for step_type in relevant_types:
         if step_type == "cnt_restored":
             if not is_rolled:
                 raise ValueError(f"plate {plate_name!r}: 'cnt_restored' with no active 'cnt' before it")
@@ -500,14 +517,92 @@ def validate_steps(plate_name, steps):
         if step_type == "cnt":
             is_rolled= True
 
+    for step in steps:
+        if step.get("type") == "duplicate":
+            validate_steps(step.get("name", "<unnamed duplicate>"), step.get("steps", []))
+
+def _process_steps(plate, steps, registry, plates_by_name, name_to_id, plate_id):
+    """Procesa los steps de UNA placa en orden. Etapa 24: un step 'duplicate'
+    crea la placa nueva EN ESE PUNTO EXACTO -- con el estado que 'plate'
+    tenga hasta ahí, ni un paso más -- y procesa recursivamente los steps
+    propios del duplicado antes de seguir. Después continúa con el resto de
+    los steps de 'plate' sin ninguna interrupción (son la MISMA lista de
+    Python que ya estaba recorriendo, el duplicado no la modifica).
+
+    Antes de esto, un duplicado era una entrada de nivel superior aparte en
+    'plates', procesada DESPUÉS de que su fuente ya hubiera aplicado TODOS
+    sus steps -- así que si en la sesión real se duplicó a mitad de camino y
+    se siguió editando la fuente después, el duplicado terminaba reflejando
+    el estado FINAL de la fuente en vez del que tenía en el momento real de
+    la duplicación. Confirmado con una sesión real en la Etapa 19."""
+    for step in steps:
+        if step.get("type") != "duplicate":
+            apply_step(plate, step)
+            continue
+
+        name= step.get("name")
+        if not name:
+            raise ValueError("duplicate step needs a 'name'")
+        if name in plates_by_name:
+            raise ValueError(f"Duplicate plate name in config: {name!r}")
+
+        dx, dy, dz= step["translation"]
+        absolute= step.get("absolute", False)
+        translation= compute_duplicate_translation(dx, dy, dz, absolute, plate.get_geometric_center())
+        new_plate= plate.duplicate(translation)
+        new_plate_id= registry.add(new_plate, duplicate_of=plate_id, translation=translation)
+        print(f"  duplicate added as {name!r} (translation={step['translation']}, absolute={absolute})")
+
+        plates_by_name[name]= new_plate
+        name_to_id[name]= new_plate_id
+        _process_steps(new_plate, step.get("steps", []), registry, plates_by_name, name_to_id, new_plate_id)
+
+
+def _ends_up_rolled(steps):
+    """¿esta placa queda enrollada en CNT al final de sus PROPIOS steps? (sin
+    contar 'duplicate', que es una rama aparte -- mismo filtro que
+    validate_steps). Devuelve el vector del cnt final, o None si no."""
+    relevant= [s for s in steps if s.get("type") != "duplicate"]
+    if relevant and relevant[-1].get("type") == "cnt":
+        return relevant[-1]["vector"]
+    return None
+
+
+def iter_plate_build_order(cfg):
+    """Camina 'plates' en el MISMO orden en que build_session_from_config
+    construye cada placa (raíces primero, duplicados anidados en el punto
+    exacto de los 'steps' de su fuente) y devuelve una lista de tuplas
+    (name, parent_name_or_None, translation_raw, absolute, cnt_vector_or_None)
+    -- name_to_id no hace falta acá, cada llamador arma su propia relación
+    padre/hijo por nombre.
+
+    Existe para que quien reconstruya OTRA estructura además de los objetos
+    Graphene (ej. open_work.py necesita re-armar main_window.plates, un
+    PlateRegistry con su propia relación de duplicados) no tenga que volver
+    a caminar el árbol de 'steps' por su cuenta -- Etapa 24, antes 'plates'
+    era una lista plana y esto no hacía falta."""
+    order= []
+
+    def walk(name, parent_name, translation_raw, absolute, steps):
+        order.append((name, parent_name, translation_raw, absolute, _ends_up_rolled(steps)))
+        for step in steps:
+            if step.get("type") == "duplicate":
+                walk(step["name"], name, step["translation"], step.get("absolute", False), step.get("steps", []))
+
+    for plate_cfg in cfg.get("plates", []):
+        walk(plate_cfg["name"], None, None, None, plate_cfg.get("steps", []))
+
+    return order
+
+
 def build_session_from_config(cfg):
     """Construye TODAS las placas de un schema multi-placa (cfg['plates']). Cada
-    entrada es una placa nueva (con 'create') O un duplicado de una placa YA
-    procesada más arriba en la lista (con 'duplicate_of' + 'translation'), y en
-    cualquiera de los dos casos puede tener su propia secuencia de 'steps' — así
-    un duplicado se puede seguir editando igual que cualquier otra placa (Etapa 11:
-    antes 'duplicates' era una sección aparte sin steps propios, y cualquier
-    edición posterior sobre un duplicado se perdía).
+    entrada de nivel superior es una placa RAÍZ (con 'create') — los duplicados
+    (Etapa 24) ya no son entradas aparte: viven como steps {"type":"duplicate",
+    ...} anidados dentro de los 'steps' de su fuente, en el punto cronológico
+    exacto donde se duplicó de verdad (ver _process_steps). Un duplicado puede
+    tener su propia secuencia de steps propios (Etapa 11: se puede seguir
+    editando después de duplicar), incluidos sus propios duplicados anidados.
 
     Devuelve (plates_by_name, plates, duplicates_list, atom_types,
     periodicity_conditions). duplicates_list se DERIVA comparando átomos (arma un
@@ -522,11 +617,11 @@ def build_session_from_config(cfg):
     if not plates_cfg:
         raise ValueError("'plates' is present but empty — nothing to build")
 
-    # Nota: periodic_boundary_x/y vive dentro de cada placa que tenga 'create',
-    # pero export/checkBounds solo soportan UNA periodicidad global para todo el
-    # sistema (igual que main_window.periodicity_conditions en la GUI). Se toma
-    # la de la PRIMERA placa que tenga 'create' (un duplicado no tiene el suyo).
-    first_create= next((p.get("create", {}) for p in plates_cfg if "create" in p), {})
+    # Nota: periodic_boundary_x/y vive dentro de cada placa raíz ('create'),
+    # pero export/checkBounds solo soportan UNA periodicidad global para todo
+    # el sistema (igual que main_window.periodicity_conditions en la GUI). Se
+    # toma la de la PRIMERA placa raíz.
+    first_create= plates_cfg[0].get("create", {}) if plates_cfg else {}
     periodicity_conditions= [
         first_create.get("periodic_boundary_x", False),
         first_create.get("periodic_boundary_y", False),
@@ -542,30 +637,19 @@ def build_session_from_config(cfg):
             raise ValueError("Every entry in 'plates' needs a 'name'")
         if name in plates_by_name:
             raise ValueError(f"Duplicate plate name in config: {name!r}")
+        if "create" not in plate_cfg:
+            raise ValueError(f"plate {name!r}: top-level 'plates' entries need 'create' -- "
+                              "duplicates now live as a 'duplicate' step inside their source's "
+                              "'steps' (Etapa 24), not as their own top-level entry")
 
-        if "duplicate_of" in plate_cfg:
-            source_name= plate_cfg["duplicate_of"]
-            if source_name not in plates_by_name:
-                raise ValueError(f"plate {name!r}: unknown source plate {source_name!r} "
-                                  "(a duplicate must come after its source in 'plates')")
-            source_plate= plates_by_name[source_name]
-            dx, dy, dz= plate_cfg["translation"]
-            absolute= plate_cfg.get("absolute", False)
-            translation= compute_duplicate_translation(dx, dy, dz, absolute, source_plate.get_geometric_center())
-            plate= source_plate.duplicate(translation)
-            plate_id= registry.add(plate, duplicate_of=name_to_id[source_name], translation=translation)
-            print(f"  duplicate of {source_name!r} added (translation={plate_cfg['translation']}, absolute={absolute})")
-        else:
-            plate= build_plate_from_create(plate_cfg.get("create", {}))
-            plate_id= registry.add(plate)
-
+        plate= build_plate_from_create(plate_cfg["create"])
+        plate_id= registry.add(plate)
         plates_by_name[name]= plate
         name_to_id[name]= plate_id
 
         steps= plate_cfg.get("steps", [])
         validate_steps(name, steps)
-        for step in steps:
-            apply_step(plate, step)
+        _process_steps(plate, steps, registry, plates_by_name, name_to_id, plate_id)
 
     plates= list(registry)
     duplicates_list= registry.resolve_duplicate_groups()

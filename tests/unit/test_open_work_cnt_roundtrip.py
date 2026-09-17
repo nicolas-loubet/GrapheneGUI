@@ -129,7 +129,7 @@ class TestOpenWorkCntRoundTrip(unittest.TestCase):
         plate_id= r.record_plate_created(cfg["plates"][0].get("create", {}), name="a")
         _snapshot_and_rerecord_like_open_work(plate, cfg["plates"][0], r, plate_id)
 
-        steps= [s["type"] for s in r._plates["a"]["steps"]]
+        steps= [s["type"] for s in r._roots["a"]["steps"]]
         self.assertEqual(steps, ["oxidation"])  # sin 'cnt' de más
 
 

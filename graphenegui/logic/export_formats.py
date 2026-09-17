@@ -315,6 +315,11 @@ def change_name_oxides(plate, carbons, oxides):
     atoms= [c.copy() for c in carbons]
     i_HO, i_OO, i_OE= 0, 0, 0
     patterns= generatePatternsOxides()
+    # Etapa 19: asignación GLOBAL óxido-carbono de una sola vez -- evita que
+    # el mismo carbono resulte "el más cercano" para dos óxidos distintos a
+    # la vez, algo que resolver cada óxido por separado no podía evitar (ver
+    # Graphene.resolve_oxide_carbon_bonds).
+    bond_assignments= plate.resolve_oxide_carbon_bonds()
 
     for ox in oxides:
         if(ox[6] == "HO"):
@@ -323,17 +328,19 @@ def change_name_oxides(plate, carbons, oxides):
         elif(ox[6] == "OO"):
             atoms.append([*ox[:3], ox[3]+patterns[i_OO], *ox[4:]])
 
-            carbon_near= plate.get_nearest_carbons_to_oxide(ox)[0]
-            for i,c in enumerate(carbons):
-                if(c == carbon_near):
-                    atoms[i][3]= "CO"+patterns[i_OO]
-                    atoms[i][6]= "CO"+atoms[i][6]
-                
+            assigned= bond_assignments.get(id(ox), [])
+            if assigned:
+                carbon_near= assigned[0]
+                for i,c in enumerate(carbons):
+                    if(c == carbon_near):
+                        atoms[i][3]= "CO"+patterns[i_OO]
+                        atoms[i][6]= "CO"+atoms[i][6]
+
             i_OO+= 1
         elif(ox[6] == "OE"):
             atoms.append([*ox[:3], ox[3]+patterns[i_OE], *ox[4:]])
 
-            carbons_near= plate.get_nearest_carbons_to_oxide(ox)
+            carbons_near= bond_assignments.get(id(ox), [])
             find_one= False
             for i,c in enumerate(carbons):
                 if(c in carbons_near):
@@ -534,7 +541,7 @@ def write_angles_top(angles,plate):
         angle= 120.0
         for i in range(3):
             if(ang[i] in epoxys):
-                carbons= plate.get_nearest_carbons_to_oxide(oxides[ang[i]-1-N_CARBONS])
+                carbons= plate.get_bonded_carbons_for_oxide(oxides[ang[i]-1-N_CARBONS])
                 carbons_numbers= [c[4] for c in carbons]
                 if(ang[(i+1)%3] in carbons_numbers and ang[(i+2)%3] in carbons_numbers): angle= 60.0
             elif(ang[i] in hydroxyls_O):

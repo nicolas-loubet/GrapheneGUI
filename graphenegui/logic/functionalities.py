@@ -578,23 +578,30 @@ def open_work(main_window):
 
     registry_id_by_config_name= {}
 
-    for plate_cfg in cfg["plates"]:
-        name= plate_cfg["name"]
+    for name, parent_name, translation_raw, absolute, cnt_vector in core.iter_plate_build_order(cfg):
         plate= plates_by_name[name]
 
-        if "duplicate_of" in plate_cfg:
-            source_name= plate_cfg["duplicate_of"]
-            source_id= registry_id_by_config_name.get(source_name)
-            source_plate= plates_by_name[source_name]
-            dx, dy, dz= plate_cfg["translation"]
-            absolute= plate_cfg.get("absolute", False)
+        if parent_name is not None:
+            source_id= registry_id_by_config_name.get(parent_name)
+            # Nota: el centro se recalcula acá con el estado ACTUAL (final)
+            # de la fuente, no con el que tenía en el momento real de la
+            # duplicación (Etapa 24) -- eso solo afecta la metadata usada
+            # por resolve_duplicate_groups para la detección "¿este
+            # duplicado sigue siendo copia exacta de su fuente?" (una
+            # optimización de export, no la geometría real: la posición de
+            # 'plate' ya viene resuelta y correcta desde
+            # build_session_from_config). Peor caso: un duplicado genuino
+            # no se reconoce como tal para esa optimización puntual.
+            source_plate= plates_by_name[parent_name]
+            dx, dy, dz= translation_raw
             translation= core.compute_duplicate_translation(dx, dy, dz, absolute, source_plate.get_geometric_center())
             plate_id= main_window.plates.add(plate, duplicate_of=source_id, translation=translation)
 
             if source_id is not None and main_window.session_recorder.has_plate(source_id):
                 main_window.session_recorder.record_duplicate(
-                    source_id, plate_cfg["translation"], absolute, name=plate_id)
+                    source_id, translation_raw, absolute, name=plate_id)
         else:
+            plate_cfg= next(p for p in cfg["plates"] if p["name"] == name)
             plate_id= main_window.plates.add(plate)
             main_window.session_recorder.record_plate_created(plate_cfg.get("create", {}), name=plate_id)
 
@@ -609,11 +616,11 @@ def open_work(main_window):
         # real ahí -> find_carbon_at explota). Graphene.set_is_CNT ya guarda un
         # backup de las posiciones PLANAS (pre-roll) en backup_not_CNT, para
         # poder restaurar -- se reusa ESE backup para la foto de óxidos/tipos,
-        # y el step 'cnt' (con el vector original, tomado del último step de la
-        # config -- garantizado que es 'cnt' si la placa quedó enrollada sin
-        # restaurar, ver validate_steps de la Etapa 14) se agrega DESPUÉS de
-        # esos dos, para que el replay quede en el orden correcto: crear ->
-        # oxidar/tipos (posiciones planas) -> enrollar.
+        # y el step 'cnt' (con el vector original, tomado de
+        # iter_plate_build_order -- Etapa 24, antes se leía directo del
+        # último step plano de la config) se agrega DESPUÉS de esos dos, para
+        # que el replay quede en el orden correcto: crear -> oxidar/tipos
+        # (posiciones planas) -> enrollar.
         is_cnt= plate.get_is_CNT()
         if is_cnt:
             snapshot_carbons, snapshot_oxides, _unused_hydrogens= plate.backup_not_CNT
@@ -637,8 +644,7 @@ def open_work(main_window):
                     record_carbon_type_change(main_window, main_window.plates.position_of(plate_id), carbons, ctype)
 
             if is_cnt:
-                last_step= plate_cfg.get("steps", [])[-1]
-                main_window.session_recorder.record_cnt(plate_id, last_step["vector"])
+                main_window.session_recorder.record_cnt(plate_id, cnt_vector)
 
         main_window.ui.comboDrawings.addItem(f"Plate {len(main_window.plates)}")
 

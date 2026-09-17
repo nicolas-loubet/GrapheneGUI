@@ -216,9 +216,12 @@ plates:
     create:
       width: 20
       height: 20
-  - name: b_dup
-    duplicate_of: b
-    translation: [0, 0, 34]
+    steps:
+      - type: duplicate
+        name: b_dup
+        translation: [0, 0, 34]
+        absolute: false
+        steps: []
 """)
             cli.main(["-c", config_path])
             plates_read= inf.readGRO(os.path.join(output_dir, "multi.gro"))
@@ -240,22 +243,30 @@ plates:
     create:
       width: 20
       height: 20
-  - name: b_dup
-    duplicate_of: b
-    translation: [0, 0, 34]
     steps:
-      - type: oxidation
-        mode: hard
-        oxides:
-          - {oo}
-          - {ho}
+      - type: duplicate
+        name: b_dup
+        translation: [0, 0, 34]
+        absolute: false
+        steps:
+          - type: oxidation
+            mode: hard
+            oxides:
+              - {oo}
+              - {ho}
 """)
             cli.main(["-c", config_path])
             plates_read= inf.readGRO(os.path.join(output_dir, "multi.gro"))
             self.assertEqual(plates_read[0].get_oxide_count(), 0)   # b, sin tocar
             self.assertEqual(plates_read[1].get_oxide_count(), 1)   # b_dup, con su propio óxido
 
-    def test_duplicate_unknown_source_exits(self):
+    def test_duplicate_name_collision_exits(self):
+        """Etapa 24: antes, 'duplicate_of' apuntando a un nombre desconocido
+        salía con error -- con el schema nuevo (duplicados anidados DENTRO de
+        los steps de su fuente) esa situación ya no puede pasar ni escribirse:
+        la fuente es estructuralmente la placa que lo contiene, no un nombre
+        a resolver aparte. Lo que sigue existiendo es un nombre de duplicado
+        que choca con uno ya usado."""
         with tempfile.TemporaryDirectory() as tmp:
             config_path, _= self._write_config(tmp, """
 plates:
@@ -263,24 +274,48 @@ plates:
     create:
       width: 30
       height: 30
-  - name: a_dup
-    duplicate_of: nope
-    translation: [0, 0, 34]
+    steps:
+      - type: duplicate
+        name: a
+        translation: [0, 0, 34]
+        absolute: false
+        steps: []
 """)
             with self.assertRaises(SystemExit):
                 cli.main(["-c", config_path])
 
-    def test_duplicate_before_its_source_exits(self):
+    def test_duplicate_step_missing_name_exits(self):
         with tempfile.TemporaryDirectory() as tmp:
             config_path, _= self._write_config(tmp, """
 plates:
-  - name: a_dup
-    duplicate_of: a
-    translation: [0, 0, 34]
   - name: a
     create:
       width: 30
       height: 30
+    steps:
+      - type: duplicate
+        translation: [0, 0, 34]
+        absolute: false
+        steps: []
+""")
+            with self.assertRaises(SystemExit):
+                cli.main(["-c", config_path])
+
+    def test_top_level_duplicate_of_is_rejected(self):
+        """El schema viejo (duplicate_of como entrada de nivel superior) ya
+        no es válido -- retrocompatibilidad rota a propósito (Etapa 24), mismo
+        criterio que ya se aplicó en la Etapa 11 con los duplicados planos
+        viejos."""
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path, _= self._write_config(tmp, """
+plates:
+  - name: a
+    create:
+      width: 30
+      height: 30
+  - name: a_dup
+    duplicate_of: a
+    translation: [0, 0, 34]
 """)
             with self.assertRaises(SystemExit):
                 cli.main(["-c", config_path])
