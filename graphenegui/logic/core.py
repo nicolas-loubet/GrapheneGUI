@@ -159,7 +159,7 @@ def apply_oxidation_explicit(plate, oxide_atoms):
     placa se enrolla más adelante en la misma sesión de steps."""
     added= 0
     for x, y, z, oxide_type in oxide_atoms:
-        i_atom= plate.get_number_atoms() + 1
+        i_atom= plate.allocate_atom_index()
         temp_ox= [x, y, z, oxide_type, i_atom, False, oxide_type]
         bonded= plate.get_nearest_carbons_to_oxide(temp_ox)
         bonded_indices= tuple(c[4] for c in bonded) if bonded else None

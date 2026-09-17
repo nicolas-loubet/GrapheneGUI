@@ -1,11 +1,6 @@
 import random
 import numpy as np
 
-# Tipo de carbono por defecto al crear una placa. Único lugar donde se define
-# el literal — antes estaba repetido 6 veces en este archivo (create_from_params,
-# add_carbon, set_atoms) y una vez más en main_window.py (self.atom_types). La
-# Etapa 12 (reset de tipo de carbono a mano) necesita esta constante para no
-# repetir el string "ca" una vez más.
 DEFAULT_CARBON_TYPE= "ca"
 
 class Graphene:
@@ -18,17 +13,10 @@ class Graphene:
         self.is_CNT= False
         self.periodic_boundary_x= periodic_boundary_x
         self.periodic_boundary_y= periodic_boundary_y
-        # Etapa 19: atom_index del óxido -> tupla de atom_index de los
-        # carbonos REALMENTE unidos a él (1 para OO, 2 para OE), grabado en
-        # el momento de oxidar (add_oxide). Un dict APARTE, no un campo más
-        # en la tupla del óxido -- roll_atoms_as_CNT arma un array de NumPy
-        # 2D a partir de carbon_coords+oxide_coords concatenados, que exige
-        # todas las filas del MISMO largo; agregarle un campo más a los
-        # óxidos nomás (sin tocar los carbonos) las desempareja y rompe ese
-        # array. atom_index sobrevive traducciones y rolls sin cambiar
-        # (set_atoms lo preserva tal cual viene), así que este dict se puede
-        # seguir consultando después de cualquier transformación.
         self.oxide_bonds= {}
+        all_indices= [c[4] for c in self.carbon_coords] + [o[4] for o in self.oxide_coords] + \
+                     [h[4] for h in self.hydrogens_coords]
+        self._next_atom_index= (max(all_indices) + 1) if all_indices else 1
 
     @classmethod
     def create_from_coords(cls, carbon_coords, oxide_coords, hydrogens_coords=None):
@@ -91,10 +79,21 @@ class Graphene:
         new_plate.periodic_boundary_x= self.periodic_boundary_x
         new_plate.periodic_boundary_y= self.periodic_boundary_y
         new_plate.oxide_bonds= dict(self.oxide_bonds)
+        new_plate._next_atom_index= max(new_plate._next_atom_index, self._next_atom_index)
         return new_plate
+
+    def allocate_atom_index(self):
+        idx= self._next_atom_index
+        self._next_atom_index+= 1
+        return idx
+
+    def _reserve_atom_index(self, atom_index):
+        if atom_index >= self._next_atom_index:
+            self._next_atom_index= atom_index + 1
 
     def add_carbon(self, x, y, z, atom_name, atom_index, modified=False, atom_type=DEFAULT_CARBON_TYPE):
         self.carbon_coords.append([x, y, z, atom_name, atom_index, modified, atom_type])
+        self._reserve_atom_index(atom_index)
 
     def add_oxide(self, x, y, z, oxide_type, atom_index, modified=False, bonded_carbon_indices=None):
         """bonded_carbon_indices (Etapa 19): atom_index (posición 4 de la
@@ -113,6 +112,7 @@ class Graphene:
         mecanismo geométrico viejo como mejor esfuerzo (ver
         get_bonded_carbons_for_oxide)."""
         self.oxide_coords.append([x, y, z, oxide_type, atom_index, modified, oxide_type])
+        self._reserve_atom_index(atom_index)
         if bonded_carbon_indices:
             self.oxide_bonds[atom_index]= tuple(bonded_carbon_indices)
 
@@ -173,7 +173,6 @@ class Graphene:
         self.oxide_bonds.pop(ox[4], None)
     
     def add_oxydation_to_list_of_carbon(self, list_carbons, z_mode, prob_oh):
-        i_atom= self.get_number_atoms()
         count_oxidations= 0
         
         oxidized_carbons= []
@@ -189,10 +188,8 @@ class Graphene:
             z_dir= 1 if z_mode == 0 else -1 if z_mode == 1 else random.choice([-1,1])
 
             if rand <= prob_oh:
-                i_atom+= 1
-                self.add_oxide(x1, y1, z1+z_dir*0.149, "OO", i_atom, bonded_carbon_indices=(carbon[4],))
-                i_atom+= 1
-                self.add_oxide(x1+.093, y1, z1+z_dir*0.181, "HO", i_atom)
+                self.add_oxide(x1, y1, z1+z_dir*0.149, "OO", self.allocate_atom_index(), bonded_carbon_indices=(carbon[4],))
+                self.add_oxide(x1+.093, y1, z1+z_dir*0.181, "HO", self.allocate_atom_index())
                 oxidized_carbons.append(carbon)
                 count_oxidations+= 1
 
@@ -208,8 +205,7 @@ class Graphene:
                     y_mid= (y1 + y2) / 2
                     z_mid= (z1 + z2) / 2
 
-                    i_atom+= 1
-                    self.add_oxide(x_mid, y_mid, z_mid+z_dir*0.126, "OE", i_atom,
+                    self.add_oxide(x_mid, y_mid, z_mid+z_dir*0.126, "OE", self.allocate_atom_index(),
                                     bonded_carbon_indices=(carbon[4], adj[4]))
                     oxidized_carbons.append(carbon)
                     oxidized_carbons.append(adj)
@@ -218,11 +214,9 @@ class Graphene:
                     break
 
                 if not found:
-                    i_atom+= 1
-                    self.add_oxide(x1, y1, z1+z_dir*0.149, "OO", i_atom, bonded_carbon_indices=(carbon[4],))
+                    self.add_oxide(x1, y1, z1+z_dir*0.149, "OO", self.allocate_atom_index(), bonded_carbon_indices=(carbon[4],))
                     count_oxidations+= 1
-                    i_atom+= 1
-                    self.add_oxide(x1+.093, y1, z1+z_dir*0.18, "HO", i_atom)
+                    self.add_oxide(x1+.093, y1, z1+z_dir*0.18, "HO", self.allocate_atom_index())
                     oxidized_carbons.append(carbon)
 
         return count_oxidations
@@ -379,7 +373,6 @@ class Graphene:
         old_bonds= self.oxide_bonds
         self.oxide_coords= []
         self.oxide_bonds= {}
-        i_atom= len(self.carbon_coords)
 
         fixed_ox= []
         for i, ox in enumerate(original_ox):
@@ -392,8 +385,7 @@ class Graphene:
                     fixed_ox.append((new_ox, None))
 
         for ox, bonded in fixed_ox:
-            i_atom+= 1
-            self.add_oxide(ox[0], ox[1], ox[2], ox[3], i_atom, ox[5], bonded_carbon_indices=bonded)
+            self.add_oxide(ox[0], ox[1], ox[2], ox[3], self.allocate_atom_index(), ox[5], bonded_carbon_indices=bonded)
 
     def distance_2D(self, x1, y1, x2, y2):
         return np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
@@ -447,7 +439,7 @@ class Graphene:
             f= ( ((xv1*xv1 + yv1*yv1) / (xv3*xv3 + yv3*yv3)) ** .5 ) * .7676
             x3, y3= xc+f*xv3, yc+f*yv3
 
-            self.hydrogens_coords.append([x3, y3, c[2], patterns[n_Hs], n_Hs+1, c[5], "ha"])
+            self.hydrogens_coords.append([x3, y3, c[2], patterns[n_Hs], self.allocate_atom_index(), c[5], "ha"])
             n_Hs+= 1
 
 

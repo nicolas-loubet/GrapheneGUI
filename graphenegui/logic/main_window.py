@@ -12,25 +12,9 @@ from PySide6.QtGui import QPixmap, QShortcut, QKeySequence
 from ..ui.main_ui import Ui_MainWindow
 from .export_formats import checkBounds, ATOM_PARAMS_TOP
 
-# Etapa 15: prefijos de 2 caracteres reservados por el exportador para
-# marcadores de carbono oxidado/óxidos (ver write_atoms_top en
-# export_formats.py: busca por type_atom[:2] en ATOM_PARAMS_TOP). Un tipo de
-# carbono custom cuyo nombre empiece con cualquiera de estos choca en
-# silencio -- se le asigna la carga/masa de OTRO elemento en el .top. Se
-# deriva de ATOM_PARAMS_TOP en vez de repetir la lista a mano, para que si
-# el diccionario reservado cambia algún día, esta validación no quede
-# desactualizada por las nuestras.
 _RESERVED_CTYPE_PREFIXES= tuple(k for k in ATOM_PARAMS_TOP if len(k) == 2)
 
 def _is_reserved_ctype_name(name):
-    """Etapa 20: además de los prefijos de 2 caracteres (Etapa 15),
-    write_atoms_top tiene un chequeo APARTE para hidrógenos autogenerados con
-    nombre "H1"/"H2".../"H999" (generatePatterns("H") en graphene.py) -- un
-    tipo de carbono custom llamado "H" + solo dígitos cae en ese mismo
-    chequeo y exporta con los parámetros de HIDRÓGENO en vez de los del
-    usuario. Se replica exactamente la lógica de isNumber (export_formats.py,
-    int(s) con try/except) en vez de usar .isdigit(), para no divergir en
-    casos límite (signos, etc.)."""
     if name[:2] in _RESERVED_CTYPE_PREFIXES:
         return True
     if len(name) > 1 and name[0] == "H":
@@ -94,31 +78,17 @@ class MainWindow(QMainWindow):
             periodicity_conditions=self.periodicity_conditions
         )
 
-        # "Guardar trabajo" (Etapa 7): botón real en la toolbar (btnSaveWork) + este
-        # atajo de teclado como alternativa rápida. Ctrl+Shift+S para no pisar un
-        # futuro Ctrl+S de "guardar archivo".
         self.save_work_shortcut= QShortcut(QKeySequence("Ctrl+Shift+S"), self)
         self.save_work_shortcut.activated.connect(self.handle_btn_save_work_clicked)
 
-        # "Abrir trabajo" (Etapa 9): mismo patrón, botón real (btnOpenWork) + atajo.
         self.open_work_shortcut= QShortcut(QKeySequence("Ctrl+Shift+O"), self)
         self.open_work_shortcut.activated.connect(self.handle_btn_open_work_clicked)
 
-        # Etapa 13: entryVMD evaluaba en CADA tecla (textChanged), así que
-        # cualquier expresión con un comparador (>, <, ==...) pasaba por un
-        # estado a medio escribir sintácticamente inválido ("y>" antes de
-        # completar "y>0") -- eval() explotaba ahí, no por un caso raro.
-        # Ahora: Enter evalúa al toque (cancela la cuenta atrás si había una
-        # corriendo); si no hay Enter, se evalúa solo 1.5s después de la
-        # última tecla (se reinicia con cada tecla nueva mientras tanto).
         self.vmd_debounce_timer= QTimer(self)
         self.vmd_debounce_timer.setSingleShot(True)
         self.vmd_debounce_timer.setInterval(1500)
         self.vmd_debounce_timer.timeout.connect(self.expr_changed)
 
-        # Etapa 12: atom_types/comboCType ya tienen que existir para este primer
-        # llamado -- update_ctype_controls_enabled (adentro) los necesita para
-        # decidir si hay tipos custom.
         self.buttons_that_depend_of_having_a_plate(False)
         self.ui.radioZpm.setChecked(True)
 
@@ -204,9 +174,6 @@ class MainWindow(QMainWindow):
         self.ui.radioZm.setEnabled(active)
         self.ui.btnAddOxidation.setEnabled(active)
         self.ui.btnRemoveSelection.setEnabled(active)
-        # Etapa 12: Reset siempre disponible con placa editable (no depende de
-        # que existan tipos custom -- resetear a default es un no-op inofensivo
-        # si nunca se pintó nada, igual que Remove Ox con una placa sin óxidos).
         self.ui.btnResetCType.setEnabled(active)
         self.update_ctype_controls_enabled()
 
@@ -371,8 +338,7 @@ class MainWindow(QMainWindow):
         if not plate.is_position_occupied(o_x, o_y, o_z):
             oxide_count_before= len(plate.get_oxide_coords())
             plate.add_oxide(o_x, o_y, o_z, "OO", i_atom, bonded_carbon_indices=(carbon[4],))
-            i_atom += 1
-            plate.add_oxide(h_x, o_y, h_z, "HO", i_atom)
+            plate.add_oxide(h_x, o_y, h_z, "HO", plate.allocate_atom_index())
             record_new_oxides(self, self.ui.comboDrawings.currentIndex(), oxide_count_before)
             self.update_drawing_area()
             print(f"Added O at ({o_x*10:.2f}, {o_y*10:.2f}, {o_z*10:.2f}) and H at ({h_x:.3f}, {o_y:.3f}, {h_z:.3f})")
@@ -428,7 +394,7 @@ class MainWindow(QMainWindow):
             self.clicked_carbon_set_type(plate, carbon, new_type)
             return
 
-        i_atom= plate.get_number_atoms() + 1
+        i_atom= plate.allocate_atom_index()
         z_sign= 1 if self.z_mode == 0 else -1 if self.z_mode == 1 else random.choice([-1, 1])
 
         if self.active_oxide_mode == "OH":
@@ -561,12 +527,9 @@ class MainWindow(QMainWindow):
             print(f"Added new carbon type '{name}' with epsilon={data['epsilon']}, sigma={data['sigma']} — paint mode activated")
 
     def handle_btn_save_work_clicked(self):
-        """Etapa 7: conectado a btnSaveWork (toolbar) y a Ctrl+Shift+S."""
         save_work(self)
 
     def handle_btn_open_work_clicked(self):
-        """Etapa 9: conectado a btnOpenWork (toolbar) y a Ctrl+Shift+O.
-        Etapa 16: ahora pasa por el confirm de agregar/reemplazar."""
         open_work_with_confirmation(self)
 
     @Slot(int)
