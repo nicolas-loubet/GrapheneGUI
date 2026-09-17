@@ -30,8 +30,6 @@ class TestBasicRegistration(unittest.TestCase):
 
 class TestRemoveAtNeedsNoIndexShifting(unittest.TestCase):
     def test_remove_middle_keeps_other_ids_valid(self):
-        """El caso que rompía el bookkeeping viejo por posición: borrar una placa del
-        medio no debe requerir tocar las referencias duplicate_of de las demás."""
         reg= PlateRegistry()
         base= Graphene.create_from_params(4, 4, 0, 0, 0, 1.0, False)
         base_id= reg.add(base)
@@ -60,9 +58,6 @@ class TestResolveDuplicateGroups(unittest.TestCase):
         self.assertEqual(roots, [1])
 
     def test_edited_duplicate_is_excluded(self):
-        """El punto central del rediseño: si el duplicado se editó después (acá,
-        oxidado), deja de coincidir con la fuente trasladada y sale del grupo SOLO,
-        sin que nadie tenga que avisarle a esta función."""
         reg= PlateRegistry()
         base= Graphene.create_from_params(4, 4, 0, 0, 0, 1.0, False)
         base_id= reg.add(base)
@@ -77,8 +72,6 @@ class TestResolveDuplicateGroups(unittest.TestCase):
         self.assertEqual(roots, [])
 
     def test_edited_base_also_excludes_its_duplicate(self):
-        """Si en cambio se edita la BASE después de duplicar, el duplicado (que
-        quedó con la geometría vieja) tampoco debería seguir matcheando."""
         reg= PlateRegistry()
         base= Graphene.create_from_params(4, 4, 0, 0, 0, 1.0, False)
         base_id= reg.add(base)
@@ -92,8 +85,6 @@ class TestResolveDuplicateGroups(unittest.TestCase):
         self.assertEqual(roots, [])
 
     def test_chain_of_duplicates_resolves_to_ultimate_root(self):
-        """C es duplicado de B, que es duplicado de A. Si ninguno se tocó, C debe
-        resolver como duplicado de A (el root real), no de B."""
         reg= PlateRegistry()
         a= Graphene.create_from_params(4, 4, 0, 0, 0, 1.0, False)
         a_id= reg.add(a)

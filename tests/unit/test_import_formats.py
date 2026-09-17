@@ -10,9 +10,6 @@ from graphenegui.logic.import_formats import _PlateAccumulator
 
 class TestPlateAccumulator(unittest.TestCase):
     def test_closes_plate_on_molec_change(self):
-        # Graphene.create_from_coords necesita >=2 carbonos por placa para calcular
-        # el scale_factor (mide distancia al vecino más cercano), así que cada
-        # "placa" de prueba lleva 2 carbonos a distancia real de enlace C-C (~0.142 nm).
         acc= _PlateAccumulator()
         acc.start_new_plate_if_needed(1)
         acc.carbons.append([0.0, 0.0, 0.0, "C1", 1, False, "ca"])
@@ -34,11 +31,6 @@ class TestPlateAccumulator(unittest.TestCase):
         self.assertEqual(len(acc.plates), 0)
 
     def test_close_plate_force_on_empty_accumulator_raises(self):
-        """Límite conocido, heredado del comportamiento original: si el acumulador
-        está totalmente vacío (ej. un .gro con natoms=0), Graphene.create_from_coords
-        no puede calcular el scale_factor (necesita >=2 carbonos) y explota con
-        IndexError. Ya pasaba en el código viejo (append incondicional al final de
-        readGRO) — no es una regresión de _PlateAccumulator, queda documentado acá."""
         acc= _PlateAccumulator()
         with self.assertRaises(IndexError):
             acc.close_plate(force=True)
@@ -74,10 +66,6 @@ class TestGroRoundTrip(unittest.TestCase):
         self.assertEqual(plates_read[0].get_number_atoms(), n_before)
 
     def test_border_hydrogens_survive_roundtrip_not_miscounted_as_carbon(self):
-        """Regresión Etapa T1: readMOL2 no tenía 'ha' (el tipo SYBYL de los H de
-        borde) en atom_type_map -> caía al default 'C' -> un hidrógeno de borde
-        se leía como si fuera un carbono (corrupción silenciosa, peor que un
-        crash). Ahora 'ha' mapea a H y se trackea aparte."""
         plate= Graphene.create_from_params(3, 3, 0, 0, 0, 1.0, False)
         plate.reduce_borders()
         n_h_before= len(plate.get_hydrogens_coords())
@@ -121,9 +109,6 @@ class TestPdbRoundTrip(unittest.TestCase):
         self.assertEqual(plates_read[0].get_number_atoms(), n_before)
 
     def test_border_hydrogens_survive_roundtrip(self):
-        """Regresión Etapa T1: readPDB no trackeaba hidrógenos de borde -- un H
-        de nombre 'H1' no matcheaba ni carbono ni óxido y explotaba con
-        'Unknown atom type'. Ahora se trackean igual que en readGRO."""
         plate= Graphene.create_from_params(3, 3, 0, 0, 0, 1.0, False)
         plate.reduce_borders()
         n_h_before= len(plate.get_hydrogens_coords())

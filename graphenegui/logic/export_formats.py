@@ -136,7 +136,6 @@ def writePDB(filename, plates, periodicity_conditions):
     print("File exported to " + filename)
 
 # Parámetros AMBER/GAFF por tipo de átomo: [tipo_top, carga_parcial, masa].
-# Única fuente de verdad para cargas: la usan tanto write_atoms_top (.top) como writeMOL2 (.mol2).
 ATOM_PARAMS_TOP= {
     "CE": ["c",0.18,12.01],
     "CO": ["c",0.18,12.01],
@@ -199,17 +198,6 @@ def writeMOL2(filename, plates, periodicity_conditions):
                     mol2_type= "ha"  # hidrógeno de borde (reduce_borders), no confundir con carbono
                     charge_type= "H"
                 elif atom_type_field not in ("OO", "HO", "OE") and atom_type_field != DEFAULT_CARBON_TYPE:
-                    # Tipo de carbono custom (Etapa 12) -- antes esto se ignoraba
-                    # por completo: la línea de abajo busca por 'name' (ej.
-                    # "C47"), que nunca matchea ninguna clave de
-                    # atom_type_dict, así que TODO carbono cae al default "ca"
-                    # sin importar atom_type_field. Se usa el nombre custom
-                    # LITERAL como mol2_type (a pedido -- no hay un código
-                    # GAFF/mol2 separado por tipo custom, solo epsilon/sigma).
-                    # No se replica acá el esquema de prefijos "c"+sufijo que
-                    # sí tiene el .top para carbonos oxidados Y custom a la
-                    # vez -- si ese caso hace falta más adelante, es una etapa
-                    # aparte.
                     mol2_type= atom_type_field
                     charge_type= atom_type_field
                 else:
@@ -315,10 +303,6 @@ def change_name_oxides(plate, carbons, oxides):
     atoms= [c.copy() for c in carbons]
     i_HO, i_OO, i_OE= 0, 0, 0
     patterns= generatePatternsOxides()
-    # Etapa 19: asignación GLOBAL óxido-carbono de una sola vez -- evita que
-    # el mismo carbono resulte "el más cercano" para dos óxidos distintos a
-    # la vez, algo que resolver cada óxido por separado no podía evitar (ver
-    # Graphene.resolve_oxide_carbon_bonds).
     bond_assignments= plate.resolve_oxide_carbon_bonds()
 
     for ox in oxides:

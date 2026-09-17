@@ -1,21 +1,3 @@
-"""
-Etapa 18: Open Work rompía el round-trip de una placa CNT sin restaurar.
-
-open_work reconstruye el recorder tomando una foto del estado final (óxidos,
-tipos de carbono). Si la placa terminaba enrollada en CNT, esa foto usaba
-plate.get_carbon_coords()/get_oxide_coords() -- posiciones YA ROLLEADAS.
-Guardar esa foto y reabrirla reconstruía una placa PLANA desde 'create', y
-esas posiciones no matcheaban ningún carbono real ahí (find_carbon_at
-explotaba con ValueError). El fix usa plate.backup_not_CNT (que
-Graphene.set_is_CNT ya guarda con las posiciones PRE-roll, para poder
-restaurar) para la foto, y agrega el step 'cnt' original DESPUÉS -- el orden
-de replay queda: crear -> oxidar/tipos (planos) -> enrollar.
-
-Esta lógica vive inline dentro de open_work() en functionalities.py (que
-necesita PySide6 para los diálogos, no importable acá) -- se prueba
-reproduciendo el mismo cálculo a mano contra core.build_session_from_config,
-que es exactamente lo que open_work usa por debajo.
-"""
 import unittest
 from graphenegui.logic import core
 from graphenegui.logic.graphene import DEFAULT_CARBON_TYPE
@@ -23,19 +5,12 @@ from graphenegui.logic.recorder import SessionRecorder
 
 
 def _atoms_close(a, b, tol=1e-6):
-    """Compara dos tuplas de átomo (carbono u óxido) con tolerancia de punto
-    flotante en x,y,z -- exige nombre/tipo iguales. La conversión nm->Å->nm
-    que hace el schema (todo se guarda en Å) introduce ruido de punto
-    flotante inherente al resto del proyecto, no específico de esta etapa."""
     if a[3] != b[3] or a[6] != b[6]:
         return False
     return all(abs(a[i] - b[i]) < tol for i in (0, 1, 2))
 
 
 def _snapshot_and_rerecord_like_open_work(plate, plate_cfg, recorder, plate_id):
-    """Reproduce la parte relevante de open_work (Etapa 18) para poder
-    probarla sin PySide6: toma la foto de óxidos/tipos (desde backup_not_CNT
-    si la placa quedó enrollada) y agrega el step 'cnt' si corresponde."""
     is_cnt= plate.get_is_CNT()
     if is_cnt:
         snapshot_carbons, snapshot_oxides, _unused= plate.backup_not_CNT
@@ -56,7 +31,7 @@ def _snapshot_and_rerecord_like_open_work(plate, plate_cfg, recorder, plate_id):
 
     if is_cnt:
         last_step= plate_cfg.get("steps", [])[-1]
-        assert last_step["type"] == "cnt", "garantizado por validate_steps (Etapa 14)"
+        assert last_step["type"] == "cnt", "garantizado por validate_steps"
         recorder.record_cnt(plate_id, last_step["vector"])
 
 
@@ -109,9 +84,6 @@ class TestOpenWorkCntRoundTrip(unittest.TestCase):
         self.assertTrue(all(_atoms_close(x, y) for x, y in zip(oxides_a, oxides_b)))
 
     def test_non_cnt_plate_snapshot_unaffected(self):
-        """La placa SIN CNT sigue tomando la foto directo de get_carbon_coords/
-        get_oxide_coords, como ya hacía antes de esta etapa -- no se rompió
-        el camino normal (sin CNT) al tocar esto."""
         create_params= {"width": 20, "height": 15, "factor": 1.0, "center": [0, 0, 0],
                          "periodic_boundary_x": False, "periodic_boundary_y": False}
         cfg= {

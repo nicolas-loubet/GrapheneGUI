@@ -1,19 +1,3 @@
-"""
-Bug encontrado en vivo (Etapa 19, sesión t1): un óxido OE (epóxido) puentea
-exactamente 2 carbonos, pero get_nearest_carbons_to_oxide devolvía TODOS los
-carbonos dentro de un umbral fijo de distancia (0.17 nm) -- en una placa
-enrollada en CNT, la curvatura puede acercar en 3D carbonos que no tienen
-nada que ver con ese óxido. Confirmado con una placa 30x20 enrollada en CNT
-[2,0]: de 122 OE, 55 encontraban 4 vecinos y 34 encontraban 3 -- el/los de
-más se marcaban como el otro lado del epóxido en change_name_oxides
-(export_formats.py) sin serlo, dejando CE != CF en el .mol2/.gro exportado
-(cada epóxido real aporta un CE y un CF, deberían coincidir siempre).
-
-Fix: ordenar los candidatos por distancia real y devolver los K más
-cercanos (K=1 para OO/HO, K=2 para OE) -- ya no importa cuántos caigan
-dentro del umbral, el orden decide. El umbral queda solo como resguardo de
-sanidad, no como herramienta de desambiguación.
-"""
 import unittest
 from graphenegui.logic.graphene import Graphene
 from graphenegui.logic import core

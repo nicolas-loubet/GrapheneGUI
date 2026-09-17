@@ -18,7 +18,7 @@ from tests.unit import (
 )
 from tests.integration import (
     test_cli_headless,
-    test_carbon_type_headless,  # Etapa 12: set_carbon_type llega hasta el .top
+    test_carbon_type_headless,
 )
 from tests.golden import test_golden
 

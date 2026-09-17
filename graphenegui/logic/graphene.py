@@ -96,21 +96,6 @@ class Graphene:
         self._reserve_atom_index(atom_index)
 
     def add_oxide(self, x, y, z, oxide_type, atom_index, modified=False, bonded_carbon_indices=None):
-        """bonded_carbon_indices (Etapa 19): atom_index (posición 4 de la
-        tupla) del/los carbono(s) REALMENTE unidos a este óxido -- 1 para
-        OO (HO no lo necesita, ver comentario en change_name_oxides), 2 para
-        OE (puentea dos carbonos). Se graba EN EL MOMENTO en que se conoce
-        con certeza (al oxidar, mientras la placa está plana -- nunca se
-        puede oxidar una placa ya enrollada), en self.oxide_bonds (no en la
-        tupla del óxido, ver comentario en __init__), y sobrevive
-        traducciones/rolls porque atom_index no cambia con esas
-        transformaciones (a diferencia de re-derivar el vecino por geometría
-        DESPUÉS de enrollar: la curvatura puede acercar en 3D carbonos que
-        no tienen nada que ver, confirmado en vivo con un CNT [2,0] sobre
-        una placa 30x20). None si no se conoce (óxidos importados de un
-        archivo, o creados antes de este cambio) -- en ese caso se cae al
-        mecanismo geométrico viejo como mejor esfuerzo (ver
-        get_bonded_carbons_for_oxide)."""
         self.oxide_coords.append([x, y, z, oxide_type, atom_index, modified, oxide_type])
         self._reserve_atom_index(atom_index)
         if bonded_carbon_indices:
@@ -251,13 +236,6 @@ class Graphene:
         return nearest_carbon
 
     def get_bonded_carbons_for_oxide(self, ox, threshold=0.17):
-        """Devuelve los carbonos REALMENTE unidos a este óxido. Si está en
-        self.oxide_bonds (Etapa 19, grabado en el momento de oxidar), los
-        busca por atom_index: exacto, no depende de la geometría actual ni
-        de cuánto se haya enrollado la placa desde entonces. Si no
-        (óxidos importados de un archivo, o alguna vía que todavía no lo
-        setee), cae al mecanismo geométrico de mejor esfuerzo
-        (get_nearest_carbons_to_oxide)."""
         bonded_indices= self.oxide_bonds.get(ox[4])
         if bonded_indices:
             by_index= {c[4]: c for c in self.carbon_coords}
@@ -267,15 +245,6 @@ class Graphene:
         return self.get_nearest_carbons_to_oxide(ox, threshold=threshold)
 
     def resolve_oxide_carbon_bonds(self, threshold=0.17):
-        """Asigna a cada óxido su/sus carbono(s). Etapa 19: los óxidos con
-        bond grabado en self.oxide_bonds se resuelven DIRECTO por índice,
-        sin ninguna ambigüedad ni necesidad de comparar distancias -- son la
-        mayoría en cualquier sesión nueva. Para los que NO lo tengan (óxidos
-        importados de un archivo), se arma la asignación geométrica greedy
-        de antes (candidatos por distancia, ordenados, el más cercano gana
-        primero) pero SOLO entre los carbonos que los óxidos con índice
-        conocido no se hayan quedado ya -- así ninguna resolución exacta
-        puede perder su carbono ante una geométrica ambigua."""
         needed= {id(ox): (1 if ox[3] in ("OO", "HO") else 2) for ox in self.oxide_coords}
         assigned= {id(ox): [] for ox in self.oxide_coords}
         carbon_taken= set()
@@ -321,16 +290,7 @@ class Graphene:
         de 2 (confirmado en vivo: CNT [2,0] sobre una placa 30x20 -- de 122
         OE, 55 encontraban 4 vecinos y 34 encontraban 3; el/los de más se
         marcaban como el otro lado del epóxido en change_name_oxides sin
-        serlo, corrompiendo su carga/tipo en el .mol2/.top exportado).
-
-        Ahora se ordenan TODOS los candidatos dentro del umbral por distancia
-        real y se devuelven los K más cercanos -- ya no importa cuántos
-        caigan bajo el corte, el orden decide. El umbral (0.17, sin cambios)
-        pasa a ser solo un resguardo de sanidad (si ni el más cercano cae
-        ahí, algo más está mal -- mejor devolver menos de lo esperado que
-        inventar un vecino a kilómetros), no la herramienta de desambiguación
-        -- esa ahora es el orden por distancia, que no depende de ajustar el
-        número para cada geometría/radio de enrollado."""
+        serlo, corrompiendo su carga/tipo en el .mol2/.top exportado)."""
         k= 1 if ox[3] in ("OO", "HO") else 2
         candidates= []
         for carbon in self.carbon_coords:

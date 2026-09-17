@@ -1,20 +1,3 @@
-"""
-Bug encontrado en vivo durante la Etapa 19 (validación end-to-end), en la
-Etapa 12 original (no en ninguna etapa posterior): writeMOL2 buscaba el tipo
-mol2 por 'name' (atom[3], ej. "C47"), no por atom_type_field (atom[6], el
-campo que la Etapa 12 modifica) -- atom_type_dict solo tiene 6 claves fijas
-("C","CO","CE","OO","HO","OE"), 'name' nunca matchea ninguna para un
-carbono, así que TODO carbono caía al default "ca" sin importar qué tipo
-custom se le hubiera asignado. Un tipo custom exportaba a .mol2
-IDÉNTICO a un carbono sin modificar. Solo se había probado contra .top
-(test_carbon_type_headless.py, Etapa 12) -- nunca contra .mol2.
-
-Fix (a pedido): usar el nombre custom LITERAL como mol2_type cuando
-atom_type_field no es el default ni un código de óxido. Tiene prioridad
-sobre la detección de oxidación-adyacente (a diferencia de .top, que sí
-combina ambas con un esquema de prefijos "c"+sufijo) -- no se replicó ese
-esquema acá, es una decisión más simple, explícitamente la que se pidió.
-"""
 import unittest
 import tempfile
 import os

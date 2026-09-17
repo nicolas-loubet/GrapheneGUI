@@ -47,33 +47,17 @@ class TestSelectAndApplyOxidation(unittest.TestCase):
 
 
 class TestDuplicatesBookkeeping(unittest.TestCase):
-    def test_register_and_resolve_root_direct(self):
+
+    def test_register_duplicate_appends_to_both_lists(self):
         duplicates_list= [[], []]
         core.register_duplicate(duplicates_list, new_plate_index=2, root_index=1)
-        self.assertEqual(core.resolve_duplicate_root(duplicates_list, 2), 1)
-
-    def test_resolve_root_follows_chain(self):
-        # placa 3 es duplicado de la 2, que a su vez es duplicado de la 1
-        duplicates_list= [[2, 3], [1, 2]]
-        self.assertEqual(core.resolve_duplicate_root(duplicates_list, 3), 1)
-
-    def test_manage_duplicates_for_deletion_reparents_children(self):
-        # placas 2 y 3 son duplicados de la 1 (el root); se borra la 1
-        duplicates_list= [[2, 3], [1, 1]]
-        core.manage_duplicates_for_deletion(duplicates_list, 1, index_would_be_removed=True)
-        # la 2 pasa a ser el nuevo root implícito; la que era 3 (ahora 2, tras el
-        # corrimiento de índices) queda registrada como duplicado de la que era 2 (ahora 1)
         self.assertEqual(duplicates_list, [[2], [1]])
 
-    def test_manage_duplicates_for_deletion_shifts_even_when_index_unrelated(self):
-        """FIX: antes, si se borraba una placa que no participaba de ninguna relacion
-        de duplicados, la funcion no corria los indices de las demas (el 'if/elif/else:
-        return' cortaba antes de llegar al shift). Ahora corre siempre - aca la placa 1
-        (sin relacion con nada) se borra, y las placas 2 y 3 (con relacion entre si)
-        bajan un lugar cada una."""
-        duplicates_list= [[3], [2]]
-        core.manage_duplicates_for_deletion(duplicates_list, 1, index_would_be_removed=True)
-        self.assertEqual(duplicates_list, [[2], [1]])
+    def test_register_duplicate_multiple_entries_same_root(self):
+        duplicates_list= [[], []]
+        core.register_duplicate(duplicates_list, new_plate_index=2, root_index=1)
+        core.register_duplicate(duplicates_list, new_plate_index=3, root_index=1)
+        self.assertEqual(duplicates_list, [[2, 3], [1, 1]])
 
     def test_compute_duplicate_translation_relative(self):
         t= core.compute_duplicate_translation(10, 0, 0, absolute=False, plate_center=[5, 5, 5])
@@ -219,8 +203,6 @@ class TestReduceBorders(unittest.TestCase):
         self.assertLess(n_h, len(plate.get_carbon_coords()))  # no todos los carbonos son de borde
 
     def test_noop_call_pattern_is_idempotent_safe(self):
-        """No es idempotente de verdad (agrega H de nuevo si se llama 2 veces), pero no
-        tiene que explotar ni duplicar sin sentido en un uso normal de una sola vez."""
         plate= Graphene.create_from_params(4, 4, 0, 0, 0, 1.0, False)
         core.reduce_borders(plate)
         n_h_first= len(plate.get_hydrogens_coords())

@@ -1,19 +1,3 @@
-"""
-Etapa 24 (fix de fondo, no un parche): los duplicados dejaron de ser
-entradas de nivel superior en 'plates' con 'duplicate_of'+'translation'
-separadas de 'steps'. Ahora son un STEP MÁS, anidado
-({"type":"duplicate",...}), dentro de los steps de su placa fuente, en la
-posición cronológica EXACTA donde se duplicó de verdad.
-
-Encontrado en la Etapa 19 (validación end-to-end) con una sesión real:
-duplicar una placa mientras estaba PLANA, y recién después volver a
-enrollarla -- en la GUI, el duplicado queda plano (correcto); con el
-schema viejo, el replay lo reconstruía enrollado (tomaba el estado FINAL
-de la fuente, no el que tenía en el momento real de la duplicación, porque
-cada placa era una entrada de nivel superior aparte, procesada de punta a
-punta antes de llegar a cualquier entrada 'duplicate_of' que la
-referenciara).
-"""
 import unittest
 from graphenegui.logic.recorder import SessionRecorder
 from graphenegui.logic import core
@@ -75,8 +59,6 @@ class TestDuplicateAsNestedStep(unittest.TestCase):
         self.assertEqual(len(plates_by_name), 2)
 
     def test_duplicate_can_still_have_its_own_steps(self):
-        """Regresión Etapa 11: un duplicado sigue pudiendo tener sus propios
-        steps (editarse después de duplicar)."""
         r= SessionRecorder()
         name= r.record_plate_created({
             "width": 20, "height": 15, "factor": 1.0, "center": [0, 0, 0],
@@ -103,10 +85,6 @@ class TestDuplicateAsNestedStep(unittest.TestCase):
         self.assertIn(n3, plates_by_name)
 
     def test_top_level_entry_without_create_is_rejected(self):
-        """El schema viejo (duplicate_of como entrada de nivel superior) ya
-        no es válido -- retrocompatibilidad rota a propósito, mismo
-        criterio que ya se aplicó en la Etapa 11 con los duplicados
-        planos viejos."""
         cfg= {
             "plates": [
                 {"name": "a", "create": {"width": 10, "height": 10, "factor": 1.0,
@@ -209,8 +187,6 @@ class TestIterPlateBuildOrder(unittest.TestCase):
         self.assertEqual(order, [("a", None, None, None, None)])
 
     def test_the_central_case_duplicate_flat_then_reroll_source(self):
-        """El caso que motivó la Etapa 24: duplicar plana, re-enrollar
-        la fuente DESPUÉS -- el duplicado no hereda el cnt_vector final."""
         cfg= {"plates": [{"name": "a", "create": {}, "steps": [
             {"type": "cnt", "vector": [2, 0]},
             {"type": "cnt_restored"},

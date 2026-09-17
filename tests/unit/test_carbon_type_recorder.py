@@ -1,11 +1,3 @@
-"""
-Etapa 12: tests de SessionRecorder.record_carbon_type.
-
-Van en tests/unit/ (o se pueden fusionar como una clase más dentro de
-tests/unit/test_recorder.py, junto a TestOxidationRecording/TestOtherSteps
--- se dejaron autocontenidos para no asumir el contenido actual de ese
-archivo).
-"""
 import unittest
 from graphenegui.logic.recorder import SessionRecorder
 
@@ -28,8 +20,6 @@ class TestCarbonTypeRecording(unittest.TestCase):
         })
 
     def test_reset_is_same_mechanism_with_default_type(self):
-        """Etapa 12: 'reset to default' no es un step distinto a nivel dato --
-        es record_carbon_type con carbon_type=DEFAULT_CARBON_TYPE ('ca')."""
         self.recorder.record_carbon_type(self.plate_name, [[0.0, 0.0, 0.0]], "ce")
         self.recorder.record_carbon_type(self.plate_name, [[0.0, 0.0, 0.0]], "ca")
         steps= self.recorder._roots[self.plate_name]["steps"]
@@ -39,8 +29,6 @@ class TestCarbonTypeRecording(unittest.TestCase):
         self.assertEqual(steps[1]["carbon_type"], "ca")
 
     def test_each_application_is_its_own_event(self):
-        """No se pisan entre sí -- mismo criterio que record_oxidation_removed,
-        para preservar el orden real en que pasaron las cosas."""
         self.recorder.record_carbon_type(self.plate_name, [[0, 0, 0]], "ce")
         self.recorder.record_carbon_type(self.plate_name, [[1, 1, 1]], "co")
         steps= self.recorder._roots[self.plate_name]["steps"]

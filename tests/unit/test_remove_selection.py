@@ -1,17 +1,3 @@
-"""
-Etapa 17: functionalities.remove_oxides_from_selection -- aplica Remove a
-toda una selección (VMD/rectángulo), simétrico con apply_ctype_to_selection
-(Etapa 12) y con 'Add Oxidation to selection'. Antes Remove solo funcionaba
-con click manual, uno por uno.
-
-Caso crítico probado a propósito: un óxido OE (epóxido) puentea DOS
-carbonos -- si la selección incluye a los dos, sin deduplicar se intenta
-remover el mismo objeto dos veces (ValueError de list.remove).
-
-No se puede importar functionalities.py entero acá (requiere PySide6) --
-se extrae la función y se prueba aislada contra un main_window/plates fake,
-mismo criterio que ya se usó para apply_ctype_to_selection en la Etapa 12.
-"""
 import unittest
 from graphenegui.logic.graphene import Graphene
 from graphenegui.logic import core
@@ -19,11 +5,13 @@ from graphenegui.logic import core
 
 def _load_remove_oxides_from_selection():
     import importlib.util
+    import re
     spec= importlib.util.find_spec("graphenegui.logic.functionalities")
     with open(spec.origin) as f:
         src= f.read()
     start= src.index("def remove_oxides_from_selection")
-    end= src.index("# ================================\n# Carbon type")
+    next_def= re.search(r"\ndef ", src[start+1:])
+    end= start+1+next_def.start() if next_def else len(src)
     ns= {}
     exec(src[start:end], ns)
     return ns["remove_oxides_from_selection"]
@@ -86,8 +74,6 @@ class TestRemoveOxidesFromSelection(unittest.TestCase):
         self.assertEqual(mw.update_calls, 1)
 
     def test_shared_epoxide_between_two_selected_carbons_is_not_double_removed(self):
-        """El caso crítico: un OE puentea 2 carbonos. Sin el dedup por id(ox)
-        esto tira ValueError (list.remove sobre algo ya sacado)."""
         plate= Graphene.create_from_params(6, 4, 0, 0, 0, 1.0, False, False)
         carbons= plate.get_carbon_coords()
         # prob_oh=0 fuerza epóxidos (OE) siempre que haya un vecino libre

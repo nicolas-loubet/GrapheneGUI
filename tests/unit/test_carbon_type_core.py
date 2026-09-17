@@ -1,14 +1,3 @@
-"""
-Etapa 12: tests de la sección "Tipo de carbono" de core.py --
-find_carbon_at / apply_carbon_type_explicit / apply_carbon_type_step, y su
-enganche en el dispatcher genérico apply_step.
-
-NO pude correrlos acá (sandbox sin PySide6 y sin plate_registry.py/
-import_formats.py/export_formats.py, que core.py necesita para importarse
-como paquete) -- la lógica de estas 3 funciones sí se probó aislada durante
-el desarrollo (extraídas del archivo y ejecutadas contra un Graphene real).
-Van en tests/unit/, van a correr con el resto vía run_tests.py.
-"""
 import unittest
 from graphenegui.logic import core
 from graphenegui.logic.graphene import Graphene, DEFAULT_CARBON_TYPE

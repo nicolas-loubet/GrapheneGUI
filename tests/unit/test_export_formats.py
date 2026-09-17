@@ -8,8 +8,6 @@ from graphenegui.logic.graphene import Graphene
 
 class TestChargeTable(unittest.TestCase):
     def test_charge_table_derived_from_atom_params(self):
-        """CHARGE_TABLE (mol2) y ATOM_PARAMS_TOP (.top) tienen que seguir siendo
-        la misma fuente de verdad, no dos números copiados a mano."""
         for key, params in ef.ATOM_PARAMS_TOP.items():
             self.assertEqual(ef.CHARGE_TABLE[key], params[1])
 
@@ -21,7 +19,6 @@ class TestChargeTable(unittest.TestCase):
 
 
 class FakePlate:
-    """Doble mínimo para testear locate_global_atom sin construir un Graphene real."""
     def __init__(self, n_atoms):
         self._n= n_atoms
 
@@ -93,10 +90,6 @@ class TestMol2BondTypes(unittest.TestCase):
 
 
 class TestWriteTopSmoke(unittest.TestCase):
-    """No tengo a la vista el cuerpo completo de writeTOP (secciones bonds/angles/
-    dihedrals), así que este es un smoke test superficial: confirma que exporta sin
-    explotar y que un atom_type custom llega al archivo. Si falla, puede ser una señal
-    de que atom_types no está conectado como asumo — avisar, no asumir que es un bug mío."""
     def test_top_export_with_custom_atom_type(self):
         plate= Graphene.create_from_params(3, 3, 0, 0, 0, 1.0, False)
         carbons= plate.get_carbon_coords()

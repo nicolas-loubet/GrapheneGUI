@@ -63,9 +63,6 @@ export:
 
 
 class TestMultiPlateSchema(unittest.TestCase):
-    """Etapa 8: cli.main detecta 'plates' (lista) y usa el camino nuevo. El schema
-    plano de siempre (sin 'plates') sigue exactamente igual — ver TestCliEndToEnd."""
-
     def _write_config(self, tmp, plates_yaml, extra_yaml=""):
         config_path= os.path.join(tmp, "config.yaml")
         output_dir= os.path.join(tmp, "out")
@@ -228,8 +225,6 @@ plates:
             self.assertEqual(len(plates_read), 3)  # a, b, duplicado de b
 
     def test_duplicate_can_have_its_own_steps(self):
-        """El punto central de la Etapa 11: un duplicado puede seguir editándose
-        (acá, oxidándose) con sus propios steps, no solo con la traslación."""
         n_x, n_y= core_module.compute_plate_grid(20, 20, 1.0)
         probe= Graphene.create_from_params(n_x, n_y, 0, 0, 34/10, 1.0, False)  # ya trasladada en z
         cx, cy, cz= probe.get_carbon_coords()[0][:3]
@@ -261,12 +256,6 @@ plates:
             self.assertEqual(plates_read[1].get_oxide_count(), 1)   # b_dup, con su propio óxido
 
     def test_duplicate_name_collision_exits(self):
-        """Etapa 24: antes, 'duplicate_of' apuntando a un nombre desconocido
-        salía con error -- con el schema nuevo (duplicados anidados DENTRO de
-        los steps de su fuente) esa situación ya no puede pasar ni escribirse:
-        la fuente es estructuralmente la placa que lo contiene, no un nombre
-        a resolver aparte. Lo que sigue existiendo es un nombre de duplicado
-        que choca con uno ya usado."""
         with tempfile.TemporaryDirectory() as tmp:
             config_path, _= self._write_config(tmp, """
 plates:
@@ -302,10 +291,6 @@ plates:
                 cli.main(["-c", config_path])
 
     def test_top_level_duplicate_of_is_rejected(self):
-        """El schema viejo (duplicate_of como entrada de nivel superior) ya
-        no es válido -- retrocompatibilidad rota a propósito (Etapa 24), mismo
-        criterio que ya se aplicó en la Etapa 11 con los duplicados planos
-        viejos."""
         with tempfile.TemporaryDirectory() as tmp:
             config_path, _= self._write_config(tmp, """
 plates:

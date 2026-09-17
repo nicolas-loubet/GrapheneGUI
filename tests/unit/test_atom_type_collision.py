@@ -1,13 +1,3 @@
-"""
-Etapa 21: "Agregar al Work actual" (Open Work, Etapa 16) podía pisar en
-silencio un tipo de carbono ya existente en la sesión con otros
-epsilon/sigma, y además duplicar la entrada en comboCType (addItem no
-chequeaba si ya estaba). _resolve_atom_type_collision decide qué hacer.
-
-Solo se pueden probar acá los 2 caminos que NO abren un QMessageBox (nombre
-nuevo, y colisión con los MISMOS valores) -- el camino con valores distintos
-sí abre un diálogo (Keep/Overwrite) y no se puede probar sin PySide6.
-"""
 import unittest
 
 

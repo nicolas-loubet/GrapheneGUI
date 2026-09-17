@@ -178,12 +178,6 @@ class MainWindow(QMainWindow):
         self.update_ctype_controls_enabled()
 
     def update_ctype_controls_enabled(self):
-        """Paint/Apply/comboCType necesitan, además de una placa editable
-        (self._plate_editable), al menos un tipo de carbono custom creado -- si
-        solo existe el default no hay nada más para elegir, y dejarlos prendidos
-        no tiene sentido (pediste que el combo quede 'apagado, fijo en ca'). Se
-        llama después de crear un tipo (handle_btn_add_ctype_clicked), al abrir
-        una sesión (open_work) y desde buttons_that_depend_of_having_a_plate."""
         has_custom_types= len(self.atom_types) > 1
         enabled= self._plate_editable and has_custom_types
         self.ui.comboCType.setEnabled(enabled)

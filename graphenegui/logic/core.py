@@ -17,56 +17,26 @@ from .plate_registry import PlateRegistry
 # Duplicados (bookkeeping de placas)
 # ================================
 
-# ⚠️ DEPRECADO: main_window/functionalities ya no usan estas 3 funciones — el
-# bookkeeping de duplicados por posición (main_window.plates_corresponding_to_duplicates)
-# se reemplazó por graphenegui/logic/plate_registry.py (PlateRegistry), que identifica
-# placas por un id estable en vez de por índice, y DERIVA si dos placas siguen siendo
-# copias idénticas comparando átomos en vez de mantener un flag que hay que invalidar
-# a mano (esa invalidación manual, repartida en varios handlers, era la fuente real de
-# los bugs). Se dejan sin tocar acá solo para no romper los tests existentes que las
-# ejercitan directamente — candidatas a borrar en una limpieza futura.
-def manage_duplicates_for_deletion(duplicates_list, index, index_would_be_removed):
-    """duplicates_list es [lista_de_duplicados, lista_de_originales] (mismo formato
-    que main_window.plates_corresponding_to_duplicates)."""
-    if index in duplicates_list[0]:
-        index_in_list= duplicates_list[0].index(index)
-        duplicates_list[0].pop(index_in_list)
-        duplicates_list[1].pop(index_in_list)
-    elif index in duplicates_list[1]:
-        indexes_in_list= []
-        for i in range(len(duplicates_list[1])):
-            if duplicates_list[1][i] == index:
-                indexes_in_list.append(i)
-
-        if len(indexes_in_list) == 1:
-            duplicates_list[0].pop(indexes_in_list[0])
-            duplicates_list[1].pop(indexes_in_list[0])
-        else:
-            new_base= duplicates_list[0][indexes_in_list[0]]
-            for i in range(1, len(indexes_in_list)):
-                duplicates_list[1][indexes_in_list[i]]= new_base
-            duplicates_list[0].pop(indexes_in_list[0])
-            duplicates_list[1].pop(indexes_in_list[0])
-
-    # Nota: si index no participa de ninguna relación de duplicados (ni como root ni
-    # como duplicado), no hay nada que popear arriba — pero el shift de abajo tiene
-    # que correr igual, porque borrar CUALQUIER placa corre la numeración de todas
-    # las que están después. Antes había un "else: return" acá que lo cortaba.
-    if index_would_be_removed:
-        for i in range(len(duplicates_list[0])):
-            for j in range(2):
-                if duplicates_list[j][i] > index:
-                    duplicates_list[j][i] -= 1
-
-
-def resolve_duplicate_root(duplicates_list, index_base):
-    while index_base in duplicates_list[0]:
-        index_in_list= duplicates_list[0].index(index_base)
-        index_base= duplicates_list[1][index_in_list]
-    return index_base
-
-
+# register_duplicate sigue viva: la usa cli.py (build_duplicates) para el
+# schema plano viejo (bloque 'duplicates:' del YAML, la rama de
+# compatibilidad hacia atrás explícita en main() -- "schema plano, sin
+# cambios"). NO es el mismo camino que la GUI: main_window/functionalities
+# usan graphenegui/logic/plate_registry.py (PlateRegistry) para bookkeeping
+# de duplicados, que identifica placas por un id estable en vez de por
+# índice, y DERIVA si dos placas siguen siendo copias idénticas comparando
+# átomos en vez de mantener un flag que hay que invalidar a mano. Pero el
+# CLI headless en su modo plano (no 'plates: [...]') sigue con el formato
+# viejo [lista_de_duplicados, lista_de_originales] por índice, y esta
+# función es la única pieza de ese mecanismo que seguía haciendo falta --
+# manage_duplicates_for_deletion (borrado de una placa reparentando a sus
+# hijos) y resolve_duplicate_root (seguir la cadena hasta el root) no tenían
+# ningún caller real, confirmado con grep sobre todo el repo -- se
+# borraron acá. Los tests que las ejercitaban directamente (test_core.py,
+# TestDuplicatesBookkeeping) se podaron junto con esto.
 def register_duplicate(duplicates_list, new_plate_index, root_index):
+    """duplicates_list es [lista_de_duplicados, lista_de_originales] (mismo
+    formato que usaba main_window.plates_corresponding_to_duplicates antes
+    de PlateRegistry)."""
     duplicates_list[0].append(new_plate_index)
     duplicates_list[1].append(root_index)
 
@@ -148,15 +118,7 @@ def apply_oxidation_explicit(plate, oxide_atoms):
     oxide_atoms es una lista de (x, y, z, oxide_type) en nm — el mismo formato que
     devuelve plate.get_oxide_coords() sin el índice ni el flag 'modified'.
     Devuelve la cantidad de sitios de oxidación agregados (cuenta OO/OE, no los
-    HO que los acompañan, igual que add_oxydation_to_list_of_carbon).
-
-    Etapa 19: acá SÍ hace falta derivar el/los carbono(s) real(es) por
-    geometría (el step de oxidación no trae esa info, solo posiciones) --
-    pero se hace EN ESTE MOMENTO, mientras la placa todavía está plana (nunca
-    se puede oxidar una placa ya enrollada, la GUI lo impide), que es
-    exactamente cuando la geometría es confiable. El resultado se graba por
-    atom_index (bonded_carbon_indices) para no tener que re-derivarlo si la
-    placa se enrolla más adelante en la misma sesión de steps."""
+    HO que los acompañan, igual que add_oxydation_to_list_of_carbon)."""
     added= 0
     for x, y, z, oxide_type in oxide_atoms:
         i_atom= plate.allocate_atom_index()
@@ -170,14 +132,8 @@ def apply_oxidation_explicit(plate, oxide_atoms):
 
 
 # ================================
-# Tipo de carbono (Etapa 12)
+# Tipo de carbono
 # ================================
-# Mismo espíritu que la oxidación 'hard' de arriba: siempre se graba y se
-# reproduce por POSICIÓN EXACTA, nunca por expresión/azar -- acá ni siquiera
-# existe un modo 'soft' posible (no hay nada probabilístico en elegir un tipo
-# de carbono), así que no hace falta la distinción hard/soft que sí tiene
-# oxidación. "Reset to default" no es un caso aparte a nivel dato: es este
-# mismo mecanismo con new_type=DEFAULT_CARBON_TYPE.
 
 def find_carbon_at(plate, x, y, z, tolerance=1e-6):
     """Busca el carbono en esta posición exacta (nm), con la misma tolerancia
@@ -347,11 +303,6 @@ def export_plates(file_name, plates, periodicity_conditions, atom_types=None, du
 # ================================
 # Schema multi-placa (plates: [...] con steps ordenados por placa)
 # ================================
-# Movido acá desde cli.py en la Etapa 9: tiene que ser reusable tanto por el
-# headless (cli.py, que atrapa ValueError y hace sys.exit) como por la GUI
-# (functionalities.py, que atrapa ValueError y muestra un QMessageBox) — por
-# eso estas funciones NUNCA llaman sys.exit ni tocan Qt, solo levantan
-# ValueError con un mensaje claro.
 
 def build_plate_from_create(create_cfg):
     """Construye una Graphene a partir del dict 'create' de una entrada 'plates'
@@ -373,14 +324,9 @@ def build_plate_from_create(create_cfg):
     print(f"Plate built: {n_x}x{n_y} ({plate.get_number_atoms()} atoms)")
     return plate
 
-# Ver la misma constante en main_window.py (Etapa 15) -- duplicada acá porque
-# core.py no puede importar de main_window.py (Qt), pero ambas se derivan de
-# la misma fuente (ATOM_PARAMS_TOP), así que no se pueden desincronizar.
 _RESERVED_CTYPE_PREFIXES= tuple(k for k in ATOM_PARAMS_TOP if len(k) == 2)
 
 def _is_reserved_ctype_name(name):
-    """Etapa 20: ver el docstring gemelo en main_window.py -- misma lógica,
-    duplicada acá por la misma razón que _RESERVED_CTYPE_PREFIXES."""
     if name[:2] in _RESERVED_CTYPE_PREFIXES:
         return True
     if len(name) > 1 and name[0] == "H":
@@ -476,24 +422,6 @@ def apply_step(plate, step):
         raise ValueError(f"Unknown step type: {step_type!r}")
 
 def validate_steps(plate_name, steps):
-    """Mismas restricciones que la GUI:
-    - reduce_borders deshabilita btnCNT para esa placa de ahí en más (ver
-      handle_btn_reduce_borders_clicked) -- pero NO al revés: un cnt ya
-      restaurado antes de reduce_borders no bloquea nada, porque la placa
-      volvió a su estado plano. Solo es inválido un 'cnt' que aparezca en o
-      después del PRIMER 'reduce_borders'.
-    - una vez enrollada en CNT, no se puede seguir editando la placa (todos
-      los botones de edición quedan deshabilitados salvo Export/Delete/CNT) --
-      así que un 'cnt' solo puede seguir de 'cnt_restored' (deshace el roll,
-      vuelve a habilitar todo) o ser el último step de la lista (queda
-      enrollada sin restaurar). 'cnt_restored' sin un 'cnt' activo justo
-      antes no tiene sentido (Etapa 14: antes ni existía este step).
-    - Etapa 24: 'duplicate' (duplicar en el punto exacto donde pasó de
-      verdad, ya no al final) es una RAMA APARTE -- no transforma la placa
-      actual, así que no cuenta para la secuencia de cnt/reduce_borders de
-      ESTA placa. Sus propios steps anidados se validan recursivamente,
-      como si fueran una placa propia (con su propio nombre para los
-      mensajes de error)."""
     relevant_types= [s.get("type") for s in steps if s.get("type") != "duplicate"]
 
     if "reduce_borders" in relevant_types:
@@ -522,19 +450,6 @@ def validate_steps(plate_name, steps):
             validate_steps(step.get("name", "<unnamed duplicate>"), step.get("steps", []))
 
 def _process_steps(plate, steps, registry, plates_by_name, name_to_id, plate_id):
-    """Procesa los steps de UNA placa en orden. Etapa 24: un step 'duplicate'
-    crea la placa nueva EN ESE PUNTO EXACTO -- con el estado que 'plate'
-    tenga hasta ahí, ni un paso más -- y procesa recursivamente los steps
-    propios del duplicado antes de seguir. Después continúa con el resto de
-    los steps de 'plate' sin ninguna interrupción (son la MISMA lista de
-    Python que ya estaba recorriendo, el duplicado no la modifica).
-
-    Antes de esto, un duplicado era una entrada de nivel superior aparte en
-    'plates', procesada DESPUÉS de que su fuente ya hubiera aplicado TODOS
-    sus steps -- así que si en la sesión real se duplicó a mitad de camino y
-    se siguió editando la fuente después, el duplicado terminaba reflejando
-    el estado FINAL de la fuente en vez del que tenía en el momento real de
-    la duplicación. Confirmado con una sesión real en la Etapa 19."""
     for step in steps:
         if step.get("type") != "duplicate":
             apply_step(plate, step)
@@ -574,13 +489,7 @@ def iter_plate_build_order(cfg):
     exacto de los 'steps' de su fuente) y devuelve una lista de tuplas
     (name, parent_name_or_None, translation_raw, absolute, cnt_vector_or_None)
     -- name_to_id no hace falta acá, cada llamador arma su propia relación
-    padre/hijo por nombre.
-
-    Existe para que quien reconstruya OTRA estructura además de los objetos
-    Graphene (ej. open_work.py necesita re-armar main_window.plates, un
-    PlateRegistry con su propia relación de duplicados) no tenga que volver
-    a caminar el árbol de 'steps' por su cuenta -- Etapa 24, antes 'plates'
-    era una lista plana y esto no hacía falta."""
+    padre/hijo por nombre."""
     order= []
 
     def walk(name, parent_name, translation_raw, absolute, steps):
@@ -596,23 +505,6 @@ def iter_plate_build_order(cfg):
 
 
 def build_session_from_config(cfg):
-    """Construye TODAS las placas de un schema multi-placa (cfg['plates']). Cada
-    entrada de nivel superior es una placa RAÍZ (con 'create') — los duplicados
-    (Etapa 24) ya no son entradas aparte: viven como steps {"type":"duplicate",
-    ...} anidados dentro de los 'steps' de su fuente, en el punto cronológico
-    exacto donde se duplicó de verdad (ver _process_steps). Un duplicado puede
-    tener su propia secuencia de steps propios (Etapa 11: se puede seguir
-    editando después de duplicar), incluidos sus propios duplicados anidados.
-
-    Devuelve (plates_by_name, plates, duplicates_list, atom_types,
-    periodicity_conditions). duplicates_list se DERIVA comparando átomos (arma un
-    PlateRegistry interno y reusa resolve_duplicate_groups en vez de reimplementar
-    la comparación) — si un duplicado se editó vía sus steps y ya no coincide con
-    su fuente, sale solo del grupo, igual que en la GUI.
-
-    Levanta ValueError ante cualquier problema — no decide cómo mostrarlo, eso es
-    trabajo de quien llama (cli.py hace sys.exit, la GUI muestra un QMessageBox).
-    Compartida por cli.py (headless) y main_window.py (GUI, Etapa 9)."""
     plates_cfg= cfg.get("plates", [])
     if not plates_cfg:
         raise ValueError("'plates' is present but empty — nothing to build")
@@ -640,7 +532,7 @@ def build_session_from_config(cfg):
         if "create" not in plate_cfg:
             raise ValueError(f"plate {name!r}: top-level 'plates' entries need 'create' -- "
                               "duplicates now live as a 'duplicate' step inside their source's "
-                              "'steps' (Etapa 24), not as their own top-level entry")
+                              "'steps', not as their own top-level entry")
 
         plate= build_plate_from_create(plate_cfg["create"])
         plate_id= registry.add(plate)

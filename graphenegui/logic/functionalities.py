@@ -71,7 +71,7 @@ def record_new_oxides(main_window, plate_position, oxide_count_before):
     placa fue creada vía dialog, ver PlateRegistry/SessionRecorder.has_plate) los
     átomos NUEVOS como un paso 'hard' — exactos, sin importar si vinieron de una
     expresión, un click manual, o una oxidación forzada. Placas no trackeables
-    (importadas o duplicadas, ver TODO Etapa 5) se ignoran en silencio."""
+    (importadas o duplicadas) se ignoran en silencio."""
     plate_id= main_window.plates.id_at(plate_position)
     if not main_window.session_recorder.has_plate(plate_id): return
     plate= main_window.plates[plate_position]
@@ -113,19 +113,6 @@ def put_oxides(main_window, list_carbons):
     return number_oxidations_done
 
 def remove_oxides_from_selection(main_window, list_carbons):
-    """Botón 'Remove selection' (Etapa 17): aplica Remove a TODOS los carbonos
-    de list_carbons (selección por expresión o rectángulo, ver
-    information_selected_atoms) -- mismo mecanismo que ya usa el click manual
-    en modo Remove (plate.get_oxides_for_carbon + remove_atom_oxide), pero
-    para un lote entero en vez de un carbono a la vez. Simétrico con
-    apply_ctype_to_selection (Etapa 12) y con 'Add Oxidation to selection'.
-
-    Un óxido OE (epóxido) puentea DOS carbonos -- si la selección incluye a
-    los dos, get_oxides_for_carbon lo va a encontrar dos veces (una por cada
-    carbono). Sin el chequeo de 'ya_removidos' de acá abajo, la segunda
-    llamada a remove_atom_oxide tira ValueError (list.remove sobre algo que
-    ya no está en la lista). El click manual de a un carbono no sufre esto
-    (nunca ve el mismo óxido dos veces para un solo carbono)."""
     if not list_carbons: return 0
     if main_window.ui.comboDrawings.currentIndex() == -1: return 0
 
@@ -153,18 +140,11 @@ def remove_oxides_from_selection(main_window, list_carbons):
           f"({len(list_carbons)} carbon{'s' if len(list_carbons) != 1 else ''} checked)")
     return removed_count
 
-
-# ================================
-# Carbon type (Etapa 12)
-# ================================
-
 def record_carbon_type_change(main_window, plate_position, carbons, new_type):
     """Graba en el recorder (si la placa es trackeable, ver PlateRegistry/
     SessionRecorder.has_plate) un cambio de tipo de carbono YA APLICADO.
     'carbons' son las tuplas completas de Graphene de los carbonos MODIFICADOS
-    (sea que vinieran de un click manual o de aplicar a una selección entera) —
-    mismo criterio 'hard' que record_new_oxides: posiciones exactas, no importa
-    el origen. Placas no trackeables se ignoran en silencio."""
+    (sea que vinieran de un click manual o de aplicar a una selección entera)"""
     plate_id= main_window.plates.id_at(plate_position)
     if not main_window.session_recorder.has_plate(plate_id): return
     positions= [[c[0]*10, c[1]*10, c[2]*10] for c in carbons]
@@ -174,9 +154,7 @@ def record_carbon_type_change(main_window, plate_position, carbons, new_type):
 def apply_ctype_to_selection(main_window, list_carbons, new_type):
     """Botón 'Apply to selection': aplica new_type a TODOS los carbonos de
     list_carbons (selección por expresión o rectángulo, ver
-    information_selected_atoms). Filtra de entrada los que ya tienen ese tipo
-    -- no tiene sentido grabar un 'cambio' que no cambia nada, mismo espíritu
-    que la guarda de 'Position already occupied' en oxidación manual."""
+    information_selected_atoms). Filtra de entrada los que ya tienen ese tipo"""
     if not list_carbons: return 0
     if main_window.ui.comboDrawings.currentIndex() == -1: return 0
 
@@ -243,7 +221,7 @@ def import_file(ext, file_name, main_window):
     new_plates= core.load_plates_from_file(ext, file_name)
 
     for plate in new_plates:
-        main_window.plates.add(plate)  # importada: no se registra en el recorder, ver TODO Etapa 5
+        main_window.plates.add(plate)
         idx= len(main_window.plates)
         main_window.ui.comboDrawings.addItem(f"Plate {idx}")
         print(f"Importing coords: Plate {idx}")
@@ -352,10 +330,6 @@ def create_duplicate(main_window, dialog):
 
     new_plate_id= main_window.plates.add(source_plate.duplicate(translation), duplicate_of=source_id, translation=translation)
 
-    # Etapa 11: el duplicado usa el MISMO id que le asignó el registry como nombre
-    # en el recorder — así queda trackeable para ediciones posteriores (oxidar,
-    # CNT, etc.) igual que cualquier placa creada de cero. Antes esto no pasaba,
-    # y cualquier edición sobre un duplicado se perdía silenciosamente.
     if main_window.session_recorder.has_plate(source_id):
         main_window.session_recorder.record_duplicate(
             source_id,
@@ -363,8 +337,6 @@ def create_duplicate(main_window, dialog):
             dialog.radio_btn_absolute_pos.isChecked(),
             name=new_plate_id,
         )
-    # si la fuente no era trackeable (ej. importada), el duplicado tampoco lo es —
-    # no tiene sentido grabar un duplicado de algo que no se puede reconstruir
 
     main_window.ui.comboDrawings.addItem(f"Plate {len(main_window.plates)}")
     print(f"Duplicate added: Plate {len(main_window.plates)}")
@@ -403,16 +375,7 @@ def roll_atoms_as_CNT(atoms, roll_vec, center=[0,0,0]):
     return core.roll_atoms_as_CNT(atoms, roll_vec, center)
 
 
-# ================================
-# Guardar trabajo (Etapa 7)
-# ================================
 def save_work(main_window):
-    """Vuelca la sesión grabada por session_recorder a un YAML reproducible con
-    graphene-gui-cli -c archivo.yaml (schema multi-placa de la Etapa 1, que
-    cli.py ya sabe leer desde la Etapa 8). Devuelve el path si guardó de
-    verdad, o None si no había nada que guardar o si el usuario canceló el
-    diálogo -- Open Work (Etapa 16) lo usa para saber si puede seguir
-    adelante con "cerrar y abrir nuevo" o si hay que abortar todo el flujo."""
     if main_window.session_recorder.is_empty():
         QMessageBox.information(main_window, "Nothing to save",
                                  "There's nothing recorded yet — create a plate first.")
@@ -435,14 +398,6 @@ def save_work(main_window):
 
 
 def open_work_with_confirmation(main_window):
-    """Etapa 16: antes, btnOpenWork llamaba directo a open_work(), que
-    SIEMPRE agrega las placas del archivo a la sesión actual -- confirmado
-    que esto confunde (abrir un YAML con la GUI ya poblada crea "Plate 3"/
-    "Plate 4" en vez de reemplazar "Plate 1"/"Plate 2"). Ahora, si ya hay
-    algo en la sesión actual, pregunta primero: agregar (comportamiento de
-    siempre) o cerrar la sesión actual y abrir un archivo nuevo de cero. Si
-    elige lo segundo y había cambios sin guardar, ofrece guardar el YAML
-    antes de descartarlos."""
     if len(main_window.plates) > 0:
         choice= _ask_add_or_open_new(main_window)
         if choice is None:
@@ -490,11 +445,6 @@ def _offer_save_before_discarding(main_window):
     return False  # Cancel
 
 def reset_session(main_window):
-    """Vacía la sesión actual para 'Open new' (Etapa 16). Muta
-    main_window.plates EN EL LUGAR (remove_at repetido) en vez de
-    reemplazarlo por un PlateRegistry nuevo -- Renderer guarda una
-    referencia directa a ese objeto (ver main_window.__init__), así que
-    reemplazarlo por uno nuevo lo dejaría mirando el registro viejo."""
     while len(main_window.plates) > 0:
         main_window.plates.remove_at(0)
     main_window.ui.comboDrawings.clear()
@@ -513,13 +463,6 @@ def reset_session(main_window):
 
 
 def _resolve_atom_type_collision(main_window, name, incoming_params):
-    """Etapa 21: 'Agregar al Work actual' (Open Work) podía pisar en silencio
-    un tipo de carbono ya existente en la sesión con otros epsilon/sigma, y
-    además duplicar la entrada en comboCType (addItem no chequeaba si ya
-    estaba). Devuelve True si hay que (re)grabar name->incoming_params (no
-    existía antes, o el usuario eligió sobrescribir), False si hay que
-    descartarlo (mismos valores ya presentes -- no hay colisión real -- o
-    el usuario eligió mantener el de la sesión actual)."""
     existing= main_window.atom_types.get(name)
     if existing is None:
         return True
@@ -543,16 +486,6 @@ def _resolve_atom_type_collision(main_window, name, incoming_params):
 
 
 def open_work(main_window):
-    """Etapa 9 (schema unificado desde la Etapa 11): abre un YAML de sesión y
-    reconstruye las placas en la GUI, usando la MISMA función que usa el
-    headless (core.build_session_from_config) — no se reimplementa el parseo.
-
-    Cada placa (sea 'create' o 'duplicate_of' — ya no hay distinción de
-    trackeabilidad entre las dos) se re-registra en el recorder con un único
-    paso 'hard' que refleja el estado final de óxidos (no el historial paso a
-    paso original), para que 'Guardar trabajo' siga funcionando después de
-    abrir una sesión, y para que se pueda seguir editando cualquier placa —
-    incluidos los duplicados — con esas ediciones quedando grabadas."""
     file_name, _= QFileDialog.getOpenFileName(main_window, "Open Work", "",
                                                "YAML Files (*.yaml *.yml);;All Files (*)")
     if not file_name:
@@ -583,15 +516,6 @@ def open_work(main_window):
 
         if parent_name is not None:
             source_id= registry_id_by_config_name.get(parent_name)
-            # Nota: el centro se recalcula acá con el estado ACTUAL (final)
-            # de la fuente, no con el que tenía en el momento real de la
-            # duplicación (Etapa 24) -- eso solo afecta la metadata usada
-            # por resolve_duplicate_groups para la detección "¿este
-            # duplicado sigue siendo copia exacta de su fuente?" (una
-            # optimización de export, no la geometría real: la posición de
-            # 'plate' ya viene resuelta y correcta desde
-            # build_session_from_config). Peor caso: un duplicado genuino
-            # no se reconoce como tal para esa optimización puntual.
             source_plate= plates_by_name[parent_name]
             dx, dy, dz= translation_raw
             translation= core.compute_duplicate_translation(dx, dy, dz, absolute, source_plate.get_geometric_center())
@@ -607,20 +531,6 @@ def open_work(main_window):
 
         registry_id_by_config_name[name]= plate_id
 
-        # Estado final de óxidos/tipos como steps 'hard', para que 'Guardar
-        # trabajo' siga funcionando después de reabrir.
-        # Etapa 18: si la placa terminó enrollada en CNT, plate.get_carbon_coords()/
-        # get_oxide_coords() devuelven posiciones YA ROLLEADAS -- grabarlas tal
-        # cual rompía el reabrir+regrabar (el nuevo YAML reconstruye una placa
-        # PLANA desde 'create', y esas posiciones no matchean ningún carbono
-        # real ahí -> find_carbon_at explota). Graphene.set_is_CNT ya guarda un
-        # backup de las posiciones PLANAS (pre-roll) en backup_not_CNT, para
-        # poder restaurar -- se reusa ESE backup para la foto de óxidos/tipos,
-        # y el step 'cnt' (con el vector original, tomado de
-        # iter_plate_build_order -- Etapa 24, antes se leía directo del
-        # último step plano de la config) se agrega DESPUÉS de esos dos, para
-        # que el replay quede en el orden correcto: crear -> oxidar/tipos
-        # (posiciones planas) -> enrollar.
         is_cnt= plate.get_is_CNT()
         if is_cnt:
             snapshot_carbons, snapshot_oxides, _unused_hydrogens= plate.backup_not_CNT
@@ -632,9 +542,6 @@ def open_work(main_window):
                 oxide_atoms= [[x*10, y*10, z*10, t] for x, y, z, t, *_ in snapshot_oxides]
                 main_window.session_recorder.record_oxidation_hard(plate_id, oxide_atoms)
 
-            # Mismo criterio para tipos de carbono (Etapa 12): si no se re-graba
-            # el estado final acá, un YAML con carbonos CE/CO se abre bien pero
-            # 'Guardar trabajo' inmediatamente después perdería esa info.
             non_default_carbons= [c for c in snapshot_carbons if c[6] != DEFAULT_CARBON_TYPE]
             if non_default_carbons:
                 by_type= {}

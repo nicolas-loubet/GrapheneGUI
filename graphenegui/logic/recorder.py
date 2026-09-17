@@ -1,53 +1,17 @@
-"""
-Recorder de sesión para "Guardar trabajo": junta en memoria todo lo hecho en
-una sesión de la GUI, en una forma que mapea directo al schema YAML
-multi-placa diseñado en la Etapa 1 (ver headless_config_multiplate_example.yaml
-en la raíz del proyecto).
-
-Etapa 24 (rediseño de fondo): los duplicados YA NO son entradas de nivel
-superior en 'plates' con 'duplicate_of'+'translation' separadas de 'steps'.
-Ahora son un STEP MÁS, anidado, dentro de los steps de su placa fuente
-(type: duplicate), en la posición cronológica EXACTA donde se duplicó de
-verdad. Antes, como cada placa era una entrada aparte, el replay
-(core.build_session_from_config) siempre completaba TODOS los steps de la
-fuente antes de llegar a la entrada del duplicado -- si en la sesión real se
-duplicó a mitad de camino y se siguió editando la fuente DESPUÉS, el
-duplicado terminaba reflejando el estado FINAL de la fuente, no el que tenía
-en el momento real de la duplicación (confirmado con una sesión real en la
-Etapa 19: duplicar una placa plana y recién después volver a enrollarla).
-Con los duplicados como step anidado, esto se resuelve solo: al llegar a ese
-step en el orden real de la lista, se duplica con lo que la placa tenga HASTA
-AHÍ, y se sigue procesando el resto de los steps de la fuente sin
-interrupción — ni core.py ni recorder.py necesitan reordenar nada.
-
-No sabe nada de Qt ni de main_window — solo junta datos. La Etapa 5 conecta
-sus métodos a los puntos reales de la GUI; to_yaml()/save() (Etapa 6) vuelcan
-to_dict() a un archivo YAML de verdad.
-"""
 import yaml
 
 
 class SessionRecorder:
     def __init__(self):
-        # Placas RAÍZ (creadas con 'create', nunca duplicadas) -- lo único
-        # que se serializa como entrada de nivel superior en 'plates'.
         self._roots= {}            # nombre de placa raíz -> {"create": {...}, "steps": [...]}
         self._root_order= []       # orden de creación de las raíces
 
-        # Todo nombre de placa conocido (raíz o duplicado) -> la lista de
-        # Python EXACTA donde van sus futuros steps. Para una raíz, es
-        # self._roots[name]["steps"] (la misma lista, por referencia). Para
-        # un duplicado, es la lista "steps" ANIDADA dentro del step
-        # {"type":"duplicate", ...} que vive en los steps de SU fuente --
-        # apendear ahí, en el lugar exacto donde se creó, es lo que resuelve
-        # la Etapa 24 (no hace falta ningún reordenamiento después: como es
-        # la MISMA lista por referencia, ya queda en su posición correcta).
         self._step_lists= {}
         self._all_names_order= []  # orden de alta real (raíces Y duplicados mezclados)
 
         self._atom_types= []       # [{"name":..., "epsilon":..., "sigma":...}]
         self._next_plate_index= 0  # para autogenerar "plateN" si no se da nombre
-        self._modified= False      # Etapa 16: ¿hay cambios sin guardar?
+        self._modified= False      # ¿hay cambios sin guardar?
 
     def _mark_modified(self):
         self._modified= True
@@ -56,9 +20,6 @@ class SessionRecorder:
         return self._modified
 
     def mark_saved(self):
-        """Llamar después de un save() exitoso -- limpia el flag de 'sin
-        guardar' (Etapa 16, usado por Open Work para decidir si hace falta
-        ofrecer guardar antes de cerrar la sesión actual)."""
         self._modified= False
 
     # ================================
@@ -99,17 +60,6 @@ class SessionRecorder:
         return names
 
     def remove_plate(self, plate_name):
-        """Para cuando la GUI borra una placa (delete_actual_plate): la saca del
-        recorder. Si es una RAÍZ, se saca de 'plates' directo. Si es un
-        DUPLICADO, se busca y se saca el step 'duplicate' correspondiente de
-        la lista de SU fuente (Etapa 24: ya no es una entrada de nivel
-        superior). En cualquiera de los dos casos, CUALQUIER duplicado anidado
-        dentro de la placa borrada se va con ella -- ya no puede quedar una
-        referencia colgando (a diferencia del schema viejo, donde
-        duplicate_of apuntaba por nombre y sí podía quedar sin resolver a
-        propósito, fallando recién en el replay). Acá el subárbol completo
-        se limpia del bookkeeping (known_plates/has_plate) en el momento,
-        no solo se vuelve inalcanzable en el próximo to_dict()."""
         if plate_name not in self._step_lists:
             return
 
@@ -152,9 +102,6 @@ class SessionRecorder:
     # ================================
 
     def record_oxidation_soft(self, plate_name, expression, fraction, prob_oh, z_mode):
-        """El modo 'como quedó' (select_atoms_expr + put_oxides de la GUI): guarda los
-        parámetros usados, no el resultado. Sirve para documentar qué se hizo, pero
-        replayearlo no garantiza el mismo subconjunto exacto de átomos (ver Etapa 2)."""
         self._steps_for(plate_name).append({
             "type": "oxidation", "mode": "soft",
             "expression": expression, "fraction": fraction,
@@ -162,18 +109,12 @@ class SessionRecorder:
         })
 
     def record_oxidation_hard(self, plate_name, oxide_atoms):
-        """oxide_atoms: lista de [x, y, z, type] en Å — los átomos de óxido YA
-        RESUELTOS que quedaron agregados. Es la que usa 'Guardar trabajo' para poder
-        reproducir la sesión tal cual (ver core.apply_oxidation_explicit, Etapa 2)."""
         self._steps_for(plate_name).append({
             "type": "oxidation", "mode": "hard",
             "oxides": [list(atom) for atom in oxide_atoms],
         })
 
     def record_oxidation_removed(self, plate_name, oxide_atom):
-        """La GUI permite remover un grupo OH/O manualmente. Se guarda como su propio
-        evento en el log (no se edita retroactivamente un step anterior), para que
-        quien reproduzca (Etapa 8) aplique todo en el mismo orden en que pasó."""
         self._steps_for(plate_name).append({
             "type": "oxidation_removed",
             "oxide": list(oxide_atom),
@@ -203,40 +144,13 @@ class SessionRecorder:
         steps atrás, incluido otro 'cnt' más adelante)."""
         self._steps_for(plate_name).append({"type": "cnt_restored"})
 
-    # ================================
-    # Tipo de carbono (Etapa 12)
-    # ================================
-
     def record_carbon_type(self, plate_name, carbons, new_type):
-        """La GUI permite asignar un tipo (CE/CO/custom) a un lote de carbonos, o
-        resetearlos al tipo default — ambos casos pasan por acá, no hay distinción
-        a nivel dato (reset es simplemente new_type=DEFAULT_CARBON_TYPE). Igual que
-        con oxidación, se graba siempre por posición YA RESUELTA (no hay modo
-        'soft': no existe nada probabilístico en elegir un tipo). Un evento por
-        cada aplicación (pintar o resetear), no se pisan entre sí, mismo criterio
-        que record_oxidation_removed — así se preserva el orden real en que pasó.
-        carbons: lista de [x, y, z] en Å."""
         self._steps_for(plate_name).append({
             "type": "set_carbon_type", "carbon_type": new_type,
             "carbons": [list(c) for c in carbons],
         })
 
-    # ================================
-    # Duplicados (Etapa 24: step anidado, no entrada de nivel superior)
-    # ================================
-
     def record_duplicate(self, source_plate_name, translation, absolute=False, name=None):
-        """Etapa 24: el duplicado se registra como un step {"type":"duplicate",...}
-        DENTRO de los steps de source_plate_name, en la posición exacta donde se
-        llama esto -- no como una entrada aparte de nivel superior. Así el replay
-        (core.build_session_from_config) lo procesa exactamente en el punto
-        cronológico real, sin importar qué más se le siga haciendo a la fuente
-        después. El duplicado tiene su PROPIA lista de steps anidada (puede
-        seguir editándose, Etapa 11), y a su vez puede tener sus propios
-        duplicados anidados más profundo, recursivamente.
-        'source_plate_name' tiene que ser una placa ya registrada (con
-        record_plate_created o record_duplicate). Devuelve el nombre asignado
-        al duplicado."""
         if source_plate_name not in self._step_lists:
             raise ValueError(f"Unknown source plate: {source_plate_name!r}")
         name= self._register_name(name)
@@ -268,10 +182,6 @@ class SessionRecorder:
         return not self._root_order
 
     def to_dict(self, export_formats=None, output_dir=".", export_name="graphene"):
-        """Arma el dict con el schema multi-placa (Etapa 24: 'plates' solo lleva
-        las placas RAÍZ -- cada entrada tiene 'create' + 'steps', y los
-        duplicados viven como steps {"type":"duplicate",...} anidados dentro
-        de 'steps', en el punto exacto donde se duplicaron de verdad)."""
         return {
             "plates": [
                 {"name": name, **self._roots[name]}

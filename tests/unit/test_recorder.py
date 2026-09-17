@@ -38,12 +38,6 @@ class TestPlateRegistration(unittest.TestCase):
             rec.record_reduce_borders("nope")
 
     def test_removing_a_plate_cascades_to_its_nested_duplicates(self):
-        """Etapa 24: los duplicados viven ANIDADOS dentro de los steps de su
-        fuente (ya no son una entrada aparte referenciada por nombre) -- borrar
-        la fuente se lleva puesto a cualquier duplicado anidado en ella. Ya no
-        puede quedar una referencia colgando a propósito como pasaba con el
-        schema viejo (duplicate_of apuntando a un nombre que ya no existe):
-        acá el duplicado directamente desaparece con su padre."""
         rec= SessionRecorder()
         rec.record_plate_created({"width": 40, "height": 40}, name="base")
         rec.record_duplicate("base", [0, 0, 34], name="dup")
@@ -132,10 +126,6 @@ class TestDuplicatesAndAtomTypes(unittest.TestCase):
             rec.record_duplicate("nope", [0, 0, 34])
 
     def test_duplicate_recorded_as_a_trackable_plate(self):
-        """Etapa 24 (antes Etapa 11): el duplicado es un step {"type":"duplicate",...}
-        anidado dentro de los steps de SU FUENTE (ya no una entrada aparte de
-        'plates' con duplicate_of/translation/absolute a nivel superior), con su
-        propia lista de steps vacía lista para usarse."""
         rec= SessionRecorder()
         rec.record_plate_created({"width": 40, "height": 40}, name="base")
         dup_name= rec.record_duplicate("base", [0, 0, 34], absolute=True)
@@ -149,9 +139,6 @@ class TestDuplicatesAndAtomTypes(unittest.TestCase):
         }])
 
     def test_duplicate_can_have_its_own_steps(self):
-        """El punto central de la Etapa 11 (con el schema de la Etapa 24): se
-        puede seguir editando un duplicado y esas ediciones SÍ quedan grabadas
-        -- dentro de la lista "steps" anidada de SU PROPIO step "duplicate"."""
         rec= SessionRecorder()
         rec.record_plate_created({"width": 40, "height": 40}, name="base")
         dup_name= rec.record_duplicate("base", [0, 0, 34], name="dup")

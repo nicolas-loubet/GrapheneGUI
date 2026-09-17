@@ -1,7 +1,3 @@
-"""
-Etapa 16: SessionRecorder.is_modified()/mark_saved() -- necesario para que
-Open Work sepa si hay que ofrecer guardar antes de cerrar la sesión actual.
-"""
 import unittest
 from graphenegui.logic.recorder import SessionRecorder
 
@@ -29,8 +25,6 @@ class TestModifiedFlag(unittest.TestCase):
         self.assertFalse(self.recorder.is_modified())
 
     def test_every_mutation_kind_marks_modified_again_after_a_save(self):
-        """Cubre los 5 puntos de mutación: crear placa, cualquier step
-        (via _steps_for), duplicar, agregar atom_type, borrar placa."""
         name= self.recorder.record_plate_created({
             "width": 10, "height": 10, "factor": 1.0, "center": [0, 0, 0],
             "periodic_boundary_x": False, "periodic_boundary_y": False,
@@ -53,7 +47,6 @@ class TestModifiedFlag(unittest.TestCase):
         self.assertTrue(self.recorder.is_modified())
 
     def test_reading_steps_does_not_mark_modified(self):
-        """Guarda (to_dict/to_yaml) no debería ensuciar el flag por sí solo."""
         name= self.recorder.record_plate_created({
             "width": 10, "height": 10, "factor": 1.0, "center": [0, 0, 0],
             "periodic_boundary_x": False, "periodic_boundary_y": False,

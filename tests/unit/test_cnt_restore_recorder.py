@@ -1,6 +1,3 @@
-"""
-Etapa 14: tests de SessionRecorder.record_cnt_restored.
-"""
 import unittest
 from graphenegui.logic.recorder import SessionRecorder
 

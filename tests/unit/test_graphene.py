@@ -1,11 +1,8 @@
 import unittest
-
 from graphenegui.logic.graphene import Graphene
 
 
 class TestReduceBordersPeriodicity(unittest.TestCase):
-    """Etapa T2: reduce_borders() no le agrega H a los lados que son periódicos —
-    ahí no hay un borde real, se conecta con la imagen periódica."""
 
     def test_no_periodicity_adds_h_on_all_sides(self):
         plate= Graphene.create_from_params(6, 6, 0, 0, 0, 1.0, False, False)
@@ -77,8 +74,6 @@ class TestGrapheneDuplicate(unittest.TestCase):
 
 class TestOxidation(unittest.TestCase):
     def test_full_oh_oxidation_is_deterministic(self):
-        # prob_oh=100 hace que rand<=100 sea SIEMPRE verdadero (random.random() < 1),
-        # así que el resultado no depende de la semilla del random.
         plate= Graphene.create_from_params(3, 3, 0, 0, 0, 1.0, False)
         carbons= plate.get_carbon_coords()
         count= plate.add_oxydation_to_list_of_carbon(list(carbons), z_mode=2, prob_oh=100)
@@ -89,7 +84,6 @@ class TestOxidation(unittest.TestCase):
 
 class TestRecheckOxIndexes(unittest.TestCase):
     def test_pairs_each_oo_with_an_ho(self):
-        """Caso que rompía el bug viejo: dos OO consecutivos sin HO en el medio."""
         plate= Graphene.create_from_params(2, 2, 0, 0, 0, 1.0, False)
         plate.oxide_coords= [
             [0.0, 0.0, 0.15, "OO", -1, False, "OO"],
@@ -102,11 +96,6 @@ class TestRecheckOxIndexes(unittest.TestCase):
 
 
 class TestGetNearestCarbonsToOxideAfterCNT(unittest.TestCase):
-    """Regresión Etapa 10: get_nearest_carbons_to_oxide usaba distance_2D con
-    umbral 0.1, que funciona en plano (el offset carbono->óxido es puramente en
-    Z) pero fallaba tras un CNT (ese mismo offset pasa a ser radial, ~0.149 nm,
-    por encima del viejo umbral) -> lista vacía -> IndexError en
-    change_name_oxides. Ahora usa distance_3D con umbral 0.17."""
 
     def test_every_oo_and_oe_still_finds_a_carbon_after_cnt(self):
         from graphenegui.logic import core
@@ -124,9 +113,6 @@ class TestGetNearestCarbonsToOxideAfterCNT(unittest.TestCase):
             self.assertGreater(len(near), 0, f"sin carbono encontrado para {ox[3]} en {ox[:3]}")
 
     def test_does_not_match_a_wrong_neighbor_carbon(self):
-        """El umbral 0.17 tiene que quedar por debajo de la distancia a un
-        carbono vecino equivocado (~0.206 nm) — si no, podría "encontrar" el
-        carbono de al lado en vez del real."""
         plate= Graphene.create_from_params(4, 4, 0, 0, 0, 1.0, False)
         carbon= plate.get_carbon_coords()[10]
         plate.add_oxydation_to_list_of_carbon([carbon], z_mode=0, prob_oh=100)  # fuerza OO

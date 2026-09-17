@@ -67,9 +67,6 @@ def run_multiplate(cfg):
 
 
 def build_duplicates(base_plate, cfg):
-    """Cada entrada de 'duplicates' crea una nueva placa duplicada de la base
-    (no encadena duplicados entre sí, a diferencia de la GUI donde se puede
-    duplicar cualquier placa ya creada)."""
     plates= [base_plate]
     duplicates_list= [[], []]
     center= base_plate.get_geometric_center()
