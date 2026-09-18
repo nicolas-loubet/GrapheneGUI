@@ -404,7 +404,7 @@ def open_work_with_confirmation(main_window):
             return  # canceló el primer diálogo, no se toca nada
         if choice == "new":
             if main_window.session_recorder.is_modified():
-                if not _offer_save_before_discarding(main_window):
+                if not offer_save_before_discarding(main_window):
                     return  # canceló guardar, o canceló el diálogo de guardar
             reset_session(main_window)
 
@@ -425,11 +425,13 @@ def _ask_add_or_open_new(main_window):
     if clicked is btn_new: return "new"
     return None
 
-def _offer_save_before_discarding(main_window):
-    """Devuelve True si hay que seguir adelante con 'cerrar y abrir nuevo'
-    (guardó, o eligió descartar los cambios a propósito), False si hay que
-    abortar todo el flujo de Open Work (canceló acá, o canceló el diálogo
-    de guardar que se abrió después)."""
+def confirm_close(main_window):
+    if not main_window.session_recorder.is_modified():
+        return True
+    return offer_save_before_discarding(main_window)
+
+
+def offer_save_before_discarding(main_window):
     msg= QMessageBox(main_window)
     msg.setWindowTitle("Unsaved changes")
     msg.setText("The current session has unsaved changes. Save it before closing?")

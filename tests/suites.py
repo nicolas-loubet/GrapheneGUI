@@ -15,6 +15,7 @@ from tests.unit import (
     test_nested_duplicate_schema,
     test_open_work_nested_duplicates,
     test_oxide_neighbor_disambiguation,
+    test_close_confirmation,
 )
 from tests.integration import (
     test_cli_headless,
@@ -37,6 +38,7 @@ _UNIT_MODULES= (
     test_nested_duplicate_schema,
     test_open_work_nested_duplicates,
     test_oxide_neighbor_disambiguation,
+    test_close_confirmation,
 )
 _INTEGRATION_MODULES= (test_cli_headless, test_carbon_type_headless)
 _GOLDEN_MODULES= (test_golden,)

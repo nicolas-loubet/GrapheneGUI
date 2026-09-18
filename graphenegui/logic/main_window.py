@@ -148,8 +148,13 @@ class MainWindow(QMainWindow):
         self.update_drawing_area()
 
     def closeEvent(self, event):
+        if not confirm_close(self):
+            event.ignore()
+            return
+
         print("\nThanks for using Graphene-GUI")
         print("Please cite: No cite yet, stay in touch!")
+        event.accept()
     
 
     # ================================
