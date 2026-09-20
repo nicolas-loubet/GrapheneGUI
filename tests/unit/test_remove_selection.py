@@ -24,6 +24,9 @@ class FakeRecorder:
         return True
     def record_oxidation_removed(self, plate_id, ox):
         self.calls.append(ox)
+    def batch_action(self):
+        import contextlib
+        return contextlib.nullcontext()
 
 class FakePlates:
     def __init__(self, plate):
@@ -100,6 +103,32 @@ class TestRemoveOxidesFromSelection(unittest.TestCase):
         removed= self.remove_oxides_from_selection(mw, carbons)
         self.assertEqual(removed, len(mw.session_recorder.calls))
         self.assertGreater(removed, 0)
+
+    def test_does_not_remove_oxides_of_carbons_outside_selection(self):
+        create_params= {"width": 30, "height": 15, "factor": 1.0, "center": [0, 0, 0],
+                         "periodic_boundary_x": False, "periodic_boundary_y": False}
+        plate= core.build_plate_from_create(create_params)
+        carbons= plate.get_carbon_coords()
+
+        def in_rect(c, x0, y0, x1, y1):
+            return x0 <= c[0] <= x1 and y0 <= c[1] <= y1
+
+        selection1= [c for c in carbons if in_rect(c, -0.17, -0.79, 1.72, 0.19)]
+        core.apply_oxidation(plate, selection1, z_mode=2, prob_oh=100)
+
+        carbons= plate.get_carbon_coords()
+        selection2= [c for c in carbons if in_rect(c, 0.93, -0.60, 1.65, -0.23)]
+        sel2_ids= {c[4] for c in selection2}
+        untouched= [c for c in selection1 if c[4] not in sel2_ids]
+
+        mw= FakeMainWindow(plate)
+        removed= self.remove_oxides_from_selection(mw, selection2)
+        self.assertEqual(removed, 2 * len(selection2))
+
+        for c in untouched:
+            c_now= next(cc for cc in plate.get_carbon_coords() if cc[4] == c[4])
+            found= plate.get_oxides_for_carbon(c_now)
+            self.assertEqual({o[3] for o in found}, {"OO", "HO"})
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 
 **Graphene GUI** is a Qt (PySide6)-based graphical interface for creating and functionalizing graphene and graphene oxide slabs. It allows rapid construction, modification, and export of graphene structures for molecular simulations.
 
-### Versión: 6.1
+### Versión: 6.2
 
 ## 🧪 Purpose
 

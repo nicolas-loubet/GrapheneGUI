@@ -1,3 +1,6 @@
+import copy
+from contextlib import contextmanager
+
 import yaml
 
 
@@ -13,6 +16,11 @@ class SessionRecorder:
         self._next_plate_index= 0  # para autogenerar "plateN" si no se da nombre
         self._modified= False      # ¿hay cambios sin guardar?
 
+        self._undo_stack= []
+        self._redo_stack= []
+        self._batch_depth= 0
+        self._batch_has_checkpoint= False
+
     def _mark_modified(self):
         self._modified= True
 
@@ -21,6 +29,86 @@ class SessionRecorder:
 
     def mark_saved(self):
         self._modified= False
+
+    # ================================
+    # Undo / Redo
+    # ================================
+
+    def _capture_snapshot(self):
+        return {
+            "roots": copy.deepcopy(self._roots),
+            "root_order": list(self._root_order),
+            "all_names_order": list(self._all_names_order),
+            "atom_types": copy.deepcopy(self._atom_types),
+            "next_plate_index": self._next_plate_index,
+        }
+
+    def _index_step_lists(self):
+        index= {}
+
+        def walk(name, steps):
+            index[name]= steps
+            for step in steps:
+                if step.get("type") == "duplicate":
+                    walk(step["name"], step["steps"])
+
+        for name, root in self._roots.items():
+            walk(name, root["steps"])
+        return index
+
+    def _apply_snapshot(self, snapshot):
+        self._roots= snapshot["roots"]
+        self._root_order= snapshot["root_order"]
+        self._all_names_order= snapshot["all_names_order"]
+        self._atom_types= snapshot["atom_types"]
+        self._next_plate_index= snapshot["next_plate_index"]
+        self._step_lists= self._index_step_lists()
+
+    def _checkpoint(self):
+        if self._batch_depth > 0:
+            if self._batch_has_checkpoint:
+                return
+            self._batch_has_checkpoint= True
+        self._undo_stack.append(self._capture_snapshot())
+        self._redo_stack.clear()
+
+    def begin_action(self):
+        self._batch_depth+= 1
+
+    def end_action(self):
+        self._batch_depth= max(0, self._batch_depth - 1)
+        if self._batch_depth == 0:
+            self._batch_has_checkpoint= False
+
+    @contextmanager
+    def batch_action(self):
+        self.begin_action()
+        try:
+            yield
+        finally:
+            self.end_action()
+
+    def can_undo(self):
+        return bool(self._undo_stack)
+
+    def can_redo(self):
+        return bool(self._redo_stack)
+
+    def undo(self):
+        if not self._undo_stack:
+            return False
+        self._redo_stack.append(self._capture_snapshot())
+        self._apply_snapshot(self._undo_stack.pop())
+        self._mark_modified()
+        return True
+
+    def redo(self):
+        if not self._redo_stack:
+            return False
+        self._undo_stack.append(self._capture_snapshot())
+        self._apply_snapshot(self._redo_stack.pop())
+        self._mark_modified()
+        return True
 
     # ================================
     # Placas
@@ -35,9 +123,7 @@ class SessionRecorder:
         return name
 
     def record_plate_created(self, create_params, name=None):
-        """create_params: dict con width/height/factor/center/periodic_boundary_x/y
-        (Å para width/height/center, igual que el resto del schema). Devuelve el
-        nombre asignado a la placa (autogenerado si no se pasó uno)."""
+        self._checkpoint()  # Etapa 27: antes de _register_name, que ya muta _next_plate_index
         name= self._register_name(name)
         steps= []
         self._roots[name]= {"create": dict(create_params), "steps": steps}
@@ -48,10 +134,6 @@ class SessionRecorder:
         return name
 
     def _collect_nested_duplicate_names(self, steps):
-        """Nombres de TODOS los duplicados anidados en esta lista de steps,
-        recursivo (duplicados de duplicados incluidos) -- usado por
-        remove_plate para limpiar el bookkeeping de todo el subárbol que
-        se va con la placa borrada."""
         names= []
         for step in steps:
             if step.get("type") == "duplicate":
@@ -62,6 +144,7 @@ class SessionRecorder:
     def remove_plate(self, plate_name):
         if plate_name not in self._step_lists:
             return
+        self._checkpoint()
 
         if plate_name in self._roots:
             removed_steps= self._roots[plate_name]["steps"]
@@ -91,9 +174,29 @@ class SessionRecorder:
     def has_plate(self, name):
         return name in self._step_lists
 
+    def rename_plate(self, old_name, new_name):
+        if old_name == new_name:
+            return
+        if old_name not in self._step_lists:
+            raise ValueError(f"Unknown plate: {old_name!r}")
+
+        if old_name in self._roots:
+            self._roots[new_name]= self._roots.pop(old_name)
+            self._root_order[self._root_order.index(old_name)]= new_name
+        else:
+            for steps in self._step_lists.values():
+                for step in steps:
+                    if step.get("type") == "duplicate" and step.get("name") == old_name:
+                        step["name"]= new_name
+                        break
+
+        self._step_lists[new_name]= self._step_lists.pop(old_name)
+        self._all_names_order[self._all_names_order.index(old_name)]= new_name
+
     def _steps_for(self, plate_name):
         if plate_name not in self._step_lists:
             raise ValueError(f"Unknown plate: {plate_name!r} (¿se registró con record_plate_created o record_duplicate?)")
+        self._checkpoint()
         self._mark_modified()
         return self._step_lists[plate_name]
 
@@ -121,8 +224,6 @@ class SessionRecorder:
         })
 
     def record_oxidation_cleared(self, plate_name):
-        """'Reduce All' de la GUI: saca TODOS los óxidos de la placa de una. Un único
-        evento compacto en vez de un oxidation_removed por átomo."""
         self._steps_for(plate_name).append({"type": "oxidation_cleared"})
 
     # ================================
@@ -136,12 +237,6 @@ class SessionRecorder:
         self._steps_for(plate_name).append({"type": "cnt", "vector": list(vector)})
 
     def record_cnt_restored(self, plate_name):
-        """Deshacer un CNT (plate.restore_plate() en la GUI, botón CNT
-        clickeado de nuevo sobre una placa ya enrollada). No lleva datos
-        propios -- el replay (core.apply_step) deshace el 'cnt' que haya
-        quedado activo inmediatamente antes en la misma lista de steps.
-        Después de esto la placa vuelve a ser editable (puede llevar más
-        steps atrás, incluido otro 'cnt' más adelante)."""
         self._steps_for(plate_name).append({"type": "cnt_restored"})
 
     def record_carbon_type(self, plate_name, carbons, new_type):
@@ -153,6 +248,7 @@ class SessionRecorder:
     def record_duplicate(self, source_plate_name, translation, absolute=False, name=None):
         if source_plate_name not in self._step_lists:
             raise ValueError(f"Unknown source plate: {source_plate_name!r}")
+        self._checkpoint()
         name= self._register_name(name)
         nested_steps= []
         duplicate_step= {
@@ -171,6 +267,7 @@ class SessionRecorder:
     # ================================
 
     def record_atom_type(self, name, epsilon, sigma):
+        self._checkpoint()  # Etapa 27
         self._atom_types.append({"name": name, "epsilon": epsilon, "sigma": sigma})
         self._mark_modified()
 
@@ -196,8 +293,6 @@ class SessionRecorder:
         }
 
     def to_yaml(self, export_formats=None, output_dir=".", export_name="graphene"):
-        """Arma el YAML completo (mismo schema que to_dict()) como texto, listo para
-        guardar en un archivo o mostrar en un preview antes de guardar."""
         data= self.to_dict(export_formats=export_formats, output_dir=output_dir, export_name=export_name)
         header= (
             "# Generado por \"Guardar trabajo\".\n"
@@ -206,8 +301,6 @@ class SessionRecorder:
         return header + yaml.safe_dump(data, sort_keys=False, default_flow_style=False, allow_unicode=True)
 
     def save(self, file_path, export_formats=None, output_dir=".", export_name="graphene"):
-        """Escribe to_yaml() en file_path. Devuelve file_path, para poder encadenar
-        (ej. mostrarlo en un mensaje de confirmación)."""
         content= self.to_yaml(export_formats=export_formats, output_dir=output_dir, export_name=export_name)
         with open(file_path, "w") as f:
             f.write(content)

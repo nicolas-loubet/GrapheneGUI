@@ -309,24 +309,46 @@ class Graphene:
         return False
     
     def get_oxides_for_carbon(self, carbon_center):
-        oxides_to_remove= []
+        carbon_index= carbon_center[4]
+        result= []
+        bondless= []
+        n= len(self.oxide_coords)
+        i= 0
+        while i < n:
+            ox= self.oxide_coords[i]
+            paired_ho= None
+            if ox[3] == "OO" and i+1 < n and self.oxide_coords[i+1][3] == "HO":
+                paired_ho= self.oxide_coords[i+1]
+
+            if ox[3] == "HO":
+                bondless.append(ox)  # HO huérfano, sin OO justo antes
+            else:
+                bonded= self.oxide_bonds.get(ox[4])
+                if bonded is None:
+                    bondless.append(ox)
+                    if paired_ho is not None:
+                        bondless.append(paired_ho)
+                elif carbon_index in bonded:
+                    result.append(ox)
+                    if paired_ho is not None:
+                        result.append(paired_ho)
+
+            i+= 2 if paired_ho is not None else 1
+
+        if bondless:
+            result.extend(self._oxides_for_carbon_geometric(carbon_center, bondless))
+        return result
+
+    def _oxides_for_carbon_geometric(self, carbon_center, candidates):
         x, y= carbon_center[:2]
-        
         min_dist= float("inf")
         for carbon in self.carbon_coords:
             if carbon == carbon_center: continue
-            x2,y2= carbon[:2]
-            d= self.distance_2D(x,y,x2,y2)
+            x2, y2= carbon[:2]
+            d= self.distance_2D(x, y, x2, y2)
             if d < min_dist:
                 min_dist= d
-        
-        for ox in self.oxide_coords:
-            ox_x, ox_y= ox[:2]
-            dist= self.distance_2D(x, y, ox_x, ox_y)
-            if dist < min_dist:
-                oxides_to_remove.append(ox)
-        
-        return oxides_to_remove
+        return [ox for ox in candidates if self.distance_2D(x, y, ox[0], ox[1]) < min_dist]
     
     def recheck_ox_indexes(self):
         original_ox= self.oxide_coords

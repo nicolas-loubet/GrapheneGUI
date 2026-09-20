@@ -16,6 +16,10 @@ from tests.unit import (
     test_open_work_nested_duplicates,
     test_oxide_neighbor_disambiguation,
     test_close_confirmation,
+    test_undo_redo_recorder,
+    test_undo_redo_integration,
+    test_undo_redo_plate_id_sync,
+    test_remove_oxides_batch_undo,
 )
 from tests.integration import (
     test_cli_headless,
@@ -39,6 +43,10 @@ _UNIT_MODULES= (
     test_open_work_nested_duplicates,
     test_oxide_neighbor_disambiguation,
     test_close_confirmation,
+    test_undo_redo_recorder,
+    test_undo_redo_integration,
+    test_undo_redo_plate_id_sync,
+    test_remove_oxides_batch_undo,
 )
 _INTEGRATION_MODULES= (test_cli_headless, test_carbon_type_headless)
 _GOLDEN_MODULES= (test_golden,)

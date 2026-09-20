@@ -84,6 +84,11 @@ class MainWindow(QMainWindow):
         self.open_work_shortcut= QShortcut(QKeySequence("Ctrl+Shift+O"), self)
         self.open_work_shortcut.activated.connect(self.handle_btn_open_work_clicked)
 
+        self.undo_shortcut= QShortcut(QKeySequence("Ctrl+Z"), self)
+        self.undo_shortcut.activated.connect(self.handle_undo_shortcut)
+        self.redo_shortcut= QShortcut(QKeySequence("Ctrl+Y"), self)
+        self.redo_shortcut.activated.connect(self.handle_redo_shortcut)
+        
         self.vmd_debounce_timer= QTimer(self)
         self.vmd_debounce_timer.setSingleShot(True)
         self.vmd_debounce_timer.setInterval(1500)
@@ -530,6 +535,12 @@ class MainWindow(QMainWindow):
 
     def handle_btn_open_work_clicked(self):
         open_work_with_confirmation(self)
+
+    def handle_undo_shortcut(self):
+        handle_undo(self)
+
+    def handle_redo_shortcut(self):
+        handle_redo(self)
 
     @Slot(int)
     def handle_ctype_changed(self, index):

@@ -123,15 +123,16 @@ def remove_oxides_from_selection(main_window, list_carbons):
 
     ya_removidos= set()
     removed_count= 0
-    for carbon in list_carbons:
-        for ox in plate.get_oxides_for_carbon(carbon):
-            if id(ox) in ya_removidos:
-                continue
-            ya_removidos.add(id(ox))
-            plate.remove_atom_oxide(ox)
-            if trackeable:
-                main_window.session_recorder.record_oxidation_removed(plate_id, [ox[0]*10, ox[1]*10, ox[2]*10, ox[3]])
-            removed_count+= 1
+    with main_window.session_recorder.batch_action():
+        for carbon in list_carbons:
+            for ox in plate.get_oxides_for_carbon(carbon):
+                if id(ox) in ya_removidos:
+                    continue
+                ya_removidos.add(id(ox))
+                plate.remove_atom_oxide(ox)
+                if trackeable:
+                    main_window.session_recorder.record_oxidation_removed(plate_id, [ox[0]*10, ox[1]*10, ox[2]*10, ox[3]])
+                removed_count+= 1
 
     if removed_count:
         plate.recheck_ox_indexes()
@@ -462,6 +463,67 @@ def reset_session(main_window):
     main_window.ui.comboCType.addItem(DEFAULT_CARBON_TYPE)
     main_window.buttons_that_depend_of_having_a_plate(False)
     main_window.update_drawing_area()
+
+
+# ================================
+# Undo / Redo
+# ================================
+
+def _rebuild_plates_from_recorder(main_window):
+    cfg= main_window.session_recorder.to_dict()
+
+    while len(main_window.plates) > 0:
+        main_window.plates.remove_at(0)
+    main_window.ui.comboDrawings.clear()
+
+    if cfg["plates"]:
+        plates_by_name, _, _, _, _= core.build_session_from_config(cfg)
+        registry_id_by_config_name= {}
+
+        for name, parent_name, translation_raw, absolute, _cnt_vector in core.iter_plate_build_order(cfg):
+            plate= plates_by_name[name]
+            if parent_name is not None:
+                source_id= registry_id_by_config_name[parent_name]
+                source_plate= plates_by_name[parent_name]
+                dx, dy, dz= translation_raw
+                translation= core.compute_duplicate_translation(dx, dy, dz, absolute, source_plate.get_geometric_center())
+                plate_id= main_window.plates.add(plate, duplicate_of=source_id, translation=translation)
+            else:
+                plate_id= main_window.plates.add(plate)
+            main_window.session_recorder.rename_plate(name, plate_id)
+            registry_id_by_config_name[name]= plate_id
+            main_window.ui.comboDrawings.addItem(f"Plate {len(main_window.plates)}")
+
+    main_window.ui.comboCType.clear()
+    main_window.ui.comboCType.addItem(DEFAULT_CARBON_TYPE)
+    main_window.atom_types= {DEFAULT_CARBON_TYPE: {"epsilon": 0.359824, "sigma": 3.39967}}
+    for entry in cfg["atom_types"]:
+        main_window.atom_types[entry["name"]]= {"epsilon": entry["epsilon"], "sigma": entry["sigma"]}
+        main_window.ui.comboCType.addItem(entry["name"])
+    main_window.update_ctype_controls_enabled()
+
+    main_window.information_selected_atoms= []
+    main_window.renderer.highlighted_atoms= []
+    main_window.first_carbon= None
+    main_window.set_oxide_mode(None)
+    main_window.set_ctype_mode(None)
+
+    if len(main_window.plates) > 0:
+        main_window.ui.comboDrawings.setCurrentIndex(len(main_window.plates) - 1)
+        main_window.buttons_that_depend_of_having_a_plate(True)
+    else:
+        main_window.buttons_that_depend_of_having_a_plate(False)
+    main_window.update_drawing_area()
+
+
+def handle_undo(main_window):
+    if main_window.session_recorder.undo():
+        _rebuild_plates_from_recorder(main_window)
+
+
+def handle_redo(main_window):
+    if main_window.session_recorder.redo():
+        _rebuild_plates_from_recorder(main_window)
 
 
 def _resolve_atom_type_collision(main_window, name, incoming_params):
