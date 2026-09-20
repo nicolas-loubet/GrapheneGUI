@@ -434,10 +434,10 @@ class MainWindow(QMainWindow):
 
         selected= [c for c in plate.get_carbon_coords() if min_x <= c[0] <= max_x and min_y <= c[1] <= max_y]
 
+        self.renderer.highlighted_atoms= selected
+        self.information_selected_atoms= selected
+        self.update_drawing_area()
         if selected:
-            self.renderer.highlighted_atoms= selected
-            self.information_selected_atoms= selected
-            self.update_drawing_area()
             print(f"Selected {len(selected)} carbons in rectangle ({min_x:.2f},{min_y:.2f}) to ({max_x:.2f},{max_y:.2f}) nm")
         else:
             print("No carbons selected in the rectangle")
